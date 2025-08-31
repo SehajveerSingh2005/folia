@@ -1,18 +1,15 @@
-import {
-  FolderKanban,
-  Sparkles,
-  Book,
-  Telescope,
-  ArrowRight,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { showError } from '@/utils/toast';
+import ProjectsWidget from './dashboard/ProjectsWidget';
+import TasksWidget, { Task } from './dashboard/TasksWidget';
+import QuickAdd from './dashboard/QuickAdd';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type Project = {
+  id: string;
+  name: string;
+};
 
 type Space = 'Flow' | 'Garden' | 'Journal' | 'Horizon';
 
@@ -21,37 +18,59 @@ interface DashboardOverviewProps {
   onNavigate: (space: Space) => void;
 }
 
-const spaceData = [
-  {
-    id: 'Flow',
-    icon: FolderKanban,
-    title: 'Flow',
-    description: 'Manage active projects, courses, and tasks.',
-  },
-  {
-    id: 'Garden',
-    icon: Sparkles,
-    title: 'Garden',
-    description: 'Cultivate raw ideas and quick notes.',
-  },
-  {
-    id: 'Journal',
-    icon: Book,
-    title: 'Journal',
-    description: 'Reflect daily with guided entries.',
-  },
-  {
-    id: 'Horizon',
-    icon: Telescope,
-    title: 'Horizon',
-    description: 'Set your sights on long-term goals.',
-  },
-];
-
 const DashboardOverview = ({
   firstName,
   onNavigate,
 }: DashboardOverviewProps) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const projectsPromise = supabase
+      .from('projects')
+      .select('id, name')
+      .order('created_at', { ascending: false });
+
+    const tasksPromise = supabase
+      .from('tasks')
+      .select('id, content, is_completed')
+      .order('created_at', { ascending: false });
+
+    const [projectsResult, tasksResult] = await Promise.all([
+      projectsPromise,
+      tasksPromise,
+    ]);
+
+    if (projectsResult.error) {
+      showError('Could not fetch projects.');
+      console.error(projectsResult.error);
+    } else {
+      setProjects(projectsResult.data);
+    }
+
+    if (tasksResult.error) {
+      showError('Could not fetch tasks.');
+      console.error(tasksResult.error);
+    } else {
+      setTasks(tasksResult.data);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -61,40 +80,33 @@ const DashboardOverview = ({
 
   return (
     <div>
-      <h2 className="text-4xl font-serif mb-2">
-        {getGreeting()}, {firstName}.
-      </h2>
-      <p className="text-foreground/70 mb-8">
-        What will you create today?
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {spaceData.map((space) => (
-          <Card
-            key={space.id}
-            className="flex flex-col justify-between hover:shadow-md transition-shadow"
-          >
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <space.icon className="h-6 w-6 text-primary" />
-                <CardTitle className="font-sans text-2xl font-medium">
-                  {space.title}
-                </CardTitle>
-              </div>
-              <CardDescription>{space.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => onNavigate(space.id as Space)}
-              >
-                Go to {space.title}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="mb-8">
+        <h2 className="text-4xl font-serif mb-2">
+          {getGreeting()}, {firstName}.
+        </h2>
+        <p className="text-foreground/70">
+          Here's what's on your plate today.
+        </p>
       </div>
+
+      <div className="mb-8">
+        <QuickAdd onItemAdded={fetchData} />
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ProjectsWidget
+            projects={projects}
+            onNavigate={() => onNavigate('Flow')}
+          />
+          <TasksWidget tasks={tasks} onTaskUpdate={fetchData} />
+        </div>
+      )}
     </div>
   );
 };
