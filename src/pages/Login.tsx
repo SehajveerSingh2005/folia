@@ -37,7 +37,7 @@ const Login = () => {
           </h1>
           <p className="mt-2 text-center text-sm text-foreground/70">
             Sign in to continue to your workspace
-          p>
+          </p>
         </div>
         <Auth
           supabaseClient={supabase}
