@@ -5,13 +5,15 @@ import {
   Telescope,
   Settings,
   LogOut,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type Space = 'Flow' | 'Garden' | 'Journal' | 'Horizon';
+export type View = 'Overview' | 'Flow' | 'Garden' | 'Journal' | 'Horizon';
 
 const navItems = [
+  { id: 'Overview', icon: LayoutGrid, label: 'Home' },
   { id: 'Flow', icon: FolderKanban, label: 'Flow' },
   { id: 'Garden', icon: Sparkles, label: 'Garden' },
   { id: 'Journal', icon: Book, label: 'Journal' },
@@ -19,14 +21,14 @@ const navItems = [
 ];
 
 interface SidebarProps {
-  activeSpace: Space;
-  onNavigate: (space: Space) => void;
+  activeView: View;
+  onNavigate: (view: View) => void;
   onLogout: () => void;
   firstName: string;
 }
 
 const Sidebar = ({
-  activeSpace,
+  activeView,
   onNavigate,
   onLogout,
   firstName,
@@ -45,10 +47,10 @@ const Sidebar = ({
                 variant="ghost"
                 className={cn(
                   'w-full justify-start text-md font-normal px-3 py-6',
-                  activeSpace === item.id &&
+                  activeView === item.id &&
                     'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary',
                 )}
-                onClick={() => onNavigate(item.id as Space)}
+                onClick={() => onNavigate(item.id as View)}
               >
                 <item.icon className="mr-3 h-5 w-5" />
                 {item.label}
