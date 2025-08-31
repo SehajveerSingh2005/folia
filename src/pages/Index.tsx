@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import {
   FolderKanban,
   Sparkles,
@@ -12,7 +11,7 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 z-10">
+      <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 z-20">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-serif font-medium">Folia</h1>
           <Button variant="ghost">Log In</Button>
@@ -20,8 +19,14 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="flex-grow flex items-center justify-center pt-24 sm:pt-32">
-        <div className="text-center max-w-2xl mx-auto px-4 py-16">
+      <main className="relative flex-grow flex items-center justify-center pt-24 sm:pt-32 overflow-hidden">
+        {/* Abstract Shapes */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-secondary rounded-full filter blur-3xl opacity-40"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full filter blur-3xl opacity-50"></div>
+        </div>
+
+        <div className="text-center max-w-2xl mx-auto px-4 py-16 z-10">
           <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
             A home for your thoughts, projects, and days.
           </h1>
@@ -128,10 +133,6 @@ const Index = () => {
           </Button>
         </div>
       </section>
-
-      <div className="w-full">
-        <MadeWithDyad />
-      </div>
     </div>
   );
 };
@@ -163,7 +164,7 @@ const StepCard = ({
 }) => (
   <div className="text-left md:text-center">
     <div className="flex items-center md:justify-center mb-4">
-      <div className="flex items-center justify-center h-12 w-12 rounded-full bg-secondary text-primary font-bold text-xl">
+      <div className="flex items-center md:justify-center h-12 w-12 rounded-full bg-secondary text-primary font-bold text-xl">
         {number}
       </div>
     </div>
