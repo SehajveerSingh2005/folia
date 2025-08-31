@@ -3,12 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import ProjectsWidget from './dashboard/ProjectsWidget';
 import TasksWidget, { Task } from './dashboard/TasksWidget';
+import GardenWidget from './dashboard/GardenWidget';
 import QuickAdd from './dashboard/QuickAdd';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type Project = {
   id: string;
   name: string;
+};
+
+type Note = {
+  id: string;
+  content: string;
 };
 
 type Space = 'Flow' | 'Garden' | 'Journal' | 'Horizon';
@@ -24,6 +30,7 @@ const DashboardOverview = ({
 }: DashboardOverviewProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -45,9 +52,15 @@ const DashboardOverview = ({
       .select('id, content, is_completed')
       .order('created_at', { ascending: false });
 
-    const [projectsResult, tasksResult] = await Promise.all([
+    const notesPromise = supabase
+      .from('notes')
+      .select('id, content')
+      .order('created_at', { ascending: false });
+
+    const [projectsResult, tasksResult, notesResult] = await Promise.all([
       projectsPromise,
       tasksPromise,
+      notesPromise,
     ]);
 
     if (projectsResult.error) {
@@ -62,6 +75,13 @@ const DashboardOverview = ({
       console.error(tasksResult.error);
     } else {
       setTasks(tasksResult.data);
+    }
+
+    if (notesResult.error) {
+      showError('Could not fetch notes.');
+      console.error(notesResult.error);
+    } else {
+      setNotes(notesResult.data);
     }
 
     setLoading(false);
@@ -94,17 +114,19 @@ const DashboardOverview = ({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <Skeleton className="h-64" />
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           <ProjectsWidget
             projects={projects}
             onNavigate={() => onNavigate('Flow')}
           />
           <TasksWidget tasks={tasks} onTaskUpdate={fetchData} />
+          <GardenWidget notes={notes} onNavigate={() => onNavigate('Garden')} />
         </div>
       )}
     </div>
