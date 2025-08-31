@@ -31,13 +31,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-sm w-full space-y-8">
-        <div>
-          <h1 className="text-center text-4xl font-serif font-medium text-foreground">
+      <div className="max-w-md w-full space-y-12">
+        <div className="text-center">
+          <h1 className="text-5xl md:text-6xl font-serif font-normal text-foreground">
             Welcome to Folia
           </h1>
-          <p className="mt-2 text-center text-sm text-foreground/70">
-            Sign in to continue to your workspace
+          <p className="mt-4 text-lg text-foreground/70 max-w-sm mx-auto">
+            Your digital home for thoughts, projects, and days.
           </p>
         </div>
         <Auth
