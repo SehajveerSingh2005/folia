@@ -14,7 +14,7 @@ const Index = () => {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 z-10">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-serif font-medium">Second Brain</h1>
+          <h1 className="text-xl font-serif font-medium">Folia</h1>
           <Button variant="ghost">Log In</Button>
         </div>
       </header>
@@ -26,7 +26,7 @@ const Index = () => {
             A home for your thoughts, projects, and days.
           </h1>
           <p className="text-lg md:text-xl text-foreground/80 mb-10">
-            No setup. No stress. Just a second brain that grows with you.
+            No setup. No stress. Folia is a second brain that grows with you.
           </p>
           <Button
             size="lg"
@@ -99,7 +99,7 @@ const Index = () => {
             <StepCard
               number="3"
               title="Start thinking freely"
-              description="Your second brain is ready. Dive in and capture your first thought without friction."
+              description="Your Folia space is ready. Dive in and capture your first thought without friction."
             />
           </div>
         </div>
