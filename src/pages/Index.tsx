@@ -6,6 +6,7 @@ import {
   Telescope,
   ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
@@ -14,7 +15,9 @@ const Index = () => {
       <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 z-20">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-serif font-medium">Folia</h1>
-          <Button variant="ghost">Log In</Button>
+          <Button asChild variant="ghost">
+            <Link to="/login">Log In</Link>
+          </Button>
         </div>
       </header>
 
@@ -34,11 +37,14 @@ const Index = () => {
             No setup. No stress. Folia is a second brain that grows with you.
           </p>
           <Button
+            asChild
             size="lg"
             className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
           >
-            Get Started Free
-            <ArrowRight className="ml-2 h-5 w-5" />
+            <Link to="/login">
+              Get Started Free
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </Button>
         </div>
       </main>
@@ -124,12 +130,15 @@ const Index = () => {
             get started.
           </p>
           <Button
+            asChild
             size="lg"
             variant="secondary"
             className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
           >
-            Get Started Free
-            <ArrowRight className="ml-2 h-5 w-5" />
+            <Link to="/login">
+              Get Started Free
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </Button>
         </div>
       </section>
