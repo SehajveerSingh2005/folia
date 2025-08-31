@@ -3,16 +3,31 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
 
 const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const checkUserProfile = async (user: User) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profile && profile.first_name) {
+        navigate('/dashboard');
+      } else {
+        navigate('/onboarding');
+      }
+    };
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        navigate('/dashboard');
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        await checkUserProfile(session.user);
       }
     });
 
@@ -21,7 +36,7 @@ const Login = () => {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        navigate('/dashboard');
+        await checkUserProfile(session.user);
       }
     };
     checkSession();
