@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { User } from '@supabase/supabase-js';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 type Profile = {
   first_name: string | null;
-  last_name: string | null;
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,15 +25,16 @@ const Dashboard = () => {
         return;
       }
 
-      setUser(user);
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name')
         .eq('id', user.id)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
+        navigate('/login');
+        return;
       }
 
       if (userProfile && userProfile.first_name) {
@@ -67,7 +66,7 @@ const Dashboard = () => {
     await supabase.auth.signOut();
   };
 
-  if (loading) {
+  if (loading || !profile) {
     return (
       <div className="flex h-screen items-center justify-center">
         Loading...
@@ -76,20 +75,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-serif font-medium">Folia</h1>
-        <Button onClick={handleLogout}>Log Out</Button>
-      </header>
-      <main>
-        <h2 className="text-3xl font-sans">
-          Welcome back, {profile?.first_name}.
-        </h2>
-        <p className="text-foreground/70 mt-2">
-          This is your personal dashboard. What will you create today?
-        </p>
-      </main>
-    </div>
+    <DashboardLayout
+      firstName={profile.first_name || 'User'}
+      onLogout={handleLogout}
+    />
   );
 };
 
