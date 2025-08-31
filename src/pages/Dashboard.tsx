@@ -19,25 +19,32 @@ const Dashboard = () => {
     const fetchData = async () => {
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', user.id)
-          .single();
 
-        if (userProfile && userProfile.first_name) {
-          setProfile(userProfile);
-        } else {
-          navigate('/onboarding');
-          return;
-        }
-      } else {
+      if (userError || !user) {
         navigate('/login');
         return;
       }
+
+      setUser(user);
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
+      }
+
+      if (userProfile && userProfile.first_name) {
+        setProfile(userProfile);
+      } else {
+        navigate('/onboarding');
+        return;
+      }
+
       setLoading(false);
     };
 

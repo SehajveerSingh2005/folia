@@ -10,11 +10,17 @@ const Login = () => {
 
   useEffect(() => {
     const checkUserProfile = async (user: User) => {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('first_name')
         .eq('id', user.id)
         .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 means no rows found, which is expected for a new user.
+        // We only want to log other, unexpected errors.
+        console.error('Error fetching profile:', error);
+      }
 
       if (profile && profile.first_name) {
         navigate('/dashboard');
