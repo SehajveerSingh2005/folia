@@ -7,6 +7,7 @@ import GardenWidget from './dashboard/GardenWidget';
 import QuickAdd from './dashboard/QuickAdd';
 import { Skeleton } from '@/components/ui/skeleton';
 import JournalWidget from './dashboard/JournalWidget';
+import HorizonWidget from './dashboard/HorizonWidget';
 
 type Project = {
   id: string;
@@ -16,6 +17,12 @@ type Project = {
 type Note = {
   id: string;
   content: string;
+};
+
+type Goal = {
+  id: string;
+  title: string;
+  status: string;
 };
 
 type Space = 'Flow' | 'Garden' | 'Journal' | 'Horizon';
@@ -32,6 +39,7 @@ const DashboardOverview = ({
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [hasTodayEntry, setHasTodayEntry] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -66,13 +74,24 @@ const DashboardOverview = ({
       .eq('entry_date', today)
       .single();
 
-    const [projectsResult, tasksResult, notesResult, journalResult] =
-      await Promise.all([
-        projectsPromise,
-        tasksPromise,
-        notesPromise,
-        journalPromise,
-      ]);
+    const goalsPromise = supabase
+      .from('goals')
+      .select('id, title, status')
+      .order('created_at', { ascending: false });
+
+    const [
+      projectsResult,
+      tasksResult,
+      notesResult,
+      journalResult,
+      goalsResult,
+    ] = await Promise.all([
+      projectsPromise,
+      tasksPromise,
+      notesPromise,
+      journalPromise,
+      goalsPromise,
+    ]);
 
     if (projectsResult.error) {
       showError('Could not fetch projects.');
@@ -99,6 +118,13 @@ const DashboardOverview = ({
       setHasTodayEntry(true);
     } else {
       setHasTodayEntry(false);
+    }
+
+    if (goalsResult.error) {
+      showError('Could not fetch goals.');
+      console.error(goalsResult.error);
+    } else {
+      setGoals(goalsResult.data);
     }
 
     setLoading(false);
@@ -132,6 +158,7 @@ const DashboardOverview = ({
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-64 lg:col-span-2" />
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
@@ -139,7 +166,9 @@ const DashboardOverview = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TasksWidget tasks={tasks} onTaskUpdate={fetchData} />
+          <div className="lg:col-span-2">
+            <TasksWidget tasks={tasks} onTaskUpdate={fetchData} />
+          </div>
           <ProjectsWidget
             projects={projects}
             onNavigate={() => onNavigate('Flow')}
@@ -148,6 +177,10 @@ const DashboardOverview = ({
           <JournalWidget
             hasTodayEntry={hasTodayEntry}
             onNavigate={() => onNavigate('Journal')}
+          />
+          <HorizonWidget
+            goals={goals}
+            onNavigate={() => onNavigate('Horizon')}
           />
         </div>
       )}
