@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Archive, FolderKanban, Trash2 } from 'lucide-react';
+import { Archive as ArchiveIcon, FolderKanban, Trash2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import {
   DropdownMenu,
@@ -38,7 +38,7 @@ const Archive = () => {
     if (error) {
       showError('Could not fetch archived items.');
       console.error(error);
-    } else {
+    } else if (data) {
       setCompletedItems(data);
     }
     setLoading(false);
@@ -63,18 +63,18 @@ const Archive = () => {
   };
 
   const handleDelete = async (itemId: string) => {
-     const { error } = await supabase.from('loom_items').delete().eq('id', itemId);
+    const { error } = await supabase.from('loom_items').delete().eq('id', itemId);
     if (error) showError(error.message);
     else {
       showSuccess('Item permanently deleted.');
       fetchCompletedItems();
     }
-  }
+  };
 
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
-        <Archive className="h-10 w-10 text-primary" />
+        <ArchiveIcon className="h-10 w-10 text-primary" />
         <div>
           <h2 className="text-4xl font-serif">Archive</h2>
           <p className="text-foreground/70">
@@ -95,7 +95,7 @@ const Archive = () => {
                   </CardTitle>
                   <CardDescription>{item.type}</CardDescription>
                 </div>
-                 <DropdownMenu>
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
                       <MoreVertical className="h-4 w-4" />
@@ -118,7 +118,7 @@ const Archive = () => {
               </CardHeader>
             </Card>
           ))}
-           {completedItems.length === 0 && (
+          {completedItems.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">Your archive is empty.</p>
               <p className="text-sm text-foreground/50">Completed items from Flow will appear here.</p>

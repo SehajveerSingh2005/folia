@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type LedgerItem = {
   id: string;
@@ -13,14 +20,21 @@ type LedgerItem = {
   is_done: boolean;
 };
 
+type LoomItem = {
+  id: string;
+  name: string;
+};
+
 const TasksWidget = () => {
   const [tasks, setTasks] = useState<LedgerItem[]>([]);
+  const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
   const [newTaskContent, setNewTaskContent] = useState('');
+  const [selectedLoomItem, setSelectedLoomItem] = useState<string | undefined>(undefined);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
-  const fetchTasks = async () => {
-    const { data, error } = await supabase
+  const fetchData = async () => {
+    const { data: taskData, error: taskError } = await supabase
       .from('ledger_items')
       .select('id, content, is_done')
       .is('loom_item_id', null)
@@ -28,28 +42,30 @@ const TasksWidget = () => {
       .limit(10)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching tasks:', error);
-    } else if (data) {
-      setTasks(data);
-    }
+    if (taskError) console.error('Error fetching tasks:', taskError);
+    else if (taskData) setTasks(taskData);
+
+    const { data: loomData, error: loomError } = await supabase
+      .from('loom_items')
+      .select('id, name')
+      .neq('status', 'Completed');
+    
+    if (loomError) console.error('Error fetching loom items:', loomError);
+    else if (loomData) setLoomItems(loomData);
   };
 
   useEffect(() => {
-    fetchTasks();
+    fetchData();
   }, []);
 
   useEffect(() => {
     const checkOverflow = () => {
       const current = scrollContainerRef.current;
-      if (current) {
-        setIsOverflowing(current.scrollHeight > current.clientHeight);
-      }
+      if (current) setIsOverflowing(current.scrollHeight > current.clientHeight);
     };
     const timeoutId = setTimeout(checkOverflow, 100);
     return () => clearTimeout(timeoutId);
   }, [tasks]);
-
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +76,18 @@ const TasksWidget = () => {
 
     const { error } = await supabase
       .from('ledger_items')
-      .insert({ content: newTaskContent, user_id: user.id, type: 'Task' });
+      .insert({ 
+        content: newTaskContent, 
+        user_id: user.id, 
+        type: 'Task',
+        loom_item_id: selectedLoomItem || null
+      });
 
-    if (error) {
-      showError(error.message);
-    } else {
+    if (error) showError(error.message);
+    else {
       setNewTaskContent('');
-      fetchTasks();
+      setSelectedLoomItem(undefined);
+      fetchData();
     }
   };
 
@@ -76,20 +97,15 @@ const TasksWidget = () => {
       .update({ is_done: !isDone })
       .eq('id', taskId);
 
-    if (error) {
-      showError(error.message);
-    } else {
-      fetchTasks();
-    }
+    if (error) showError(error.message);
+    else fetchData();
   };
 
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <CardTitle className="font-sans font-medium">Inbox</CardTitle>
-        <CardDescription>
-          Quick tasks from your Flow.
-        </CardDescription>
+        <CardDescription>Quick tasks from your Flow.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col overflow-hidden">
         <div className="relative flex-grow overflow-hidden">
@@ -112,16 +128,28 @@ const TasksWidget = () => {
             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
           )}
         </div>
-        <form onSubmit={handleAddTask} className="flex-shrink-0 flex gap-2 mt-4 pt-2 border-t">
+        <form onSubmit={handleAddTask} className="flex-shrink-0 flex flex-col gap-2 mt-4 pt-2 border-t">
           <Input
             placeholder="Add a task..."
             value={newTaskContent}
             onChange={(e) => setNewTaskContent(e.target.value)}
             className="h-8"
           />
-          <Button type="submit" size="sm">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Select value={selectedLoomItem} onValueChange={setSelectedLoomItem}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Link to item (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {loomItems.map(item => (
+                  <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="submit" size="sm">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
