@@ -111,11 +111,13 @@ const DashboardOverview = ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const y = layout.reduce((maxY, item) => Math.max(maxY, item.y + item.h), 0);
+
     const newWidget = {
       user_id: user.id,
       widget_type: widgetType,
       x: 0,
-      y: Infinity, // This will place it at the bottom
+      y: y,
       w,
       h,
     };
@@ -128,6 +130,7 @@ const DashboardOverview = ({
 
     if (error) {
       showError('Failed to add widget.');
+      console.error(error);
     } else if (data) {
       setWidgets(prevWidgets => [...prevWidgets, data]);
       showSuccess('Widget added!');
