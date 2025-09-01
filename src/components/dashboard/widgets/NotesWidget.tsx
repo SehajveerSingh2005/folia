@@ -41,7 +41,7 @@ const NotesWidget = () => {
           Plant a new seed in your Garden.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col overflow-y-auto">
+      <CardContent className="flex-grow flex flex-col overflow-y-auto min-h-0">
         <Textarea
           placeholder="What's on your mind?"
           value={content}

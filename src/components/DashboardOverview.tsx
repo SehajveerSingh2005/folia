@@ -200,6 +200,7 @@ const DashboardOverview = ({
       isResizable={isEditable}
       compactType={null}
       preventCollision={true}
+      isBounded={true}
     >
       {widgets.map(widget => {
         const WidgetComponent = widgetMap[widget.widget_type];
@@ -214,7 +215,10 @@ const DashboardOverview = ({
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 z-10 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleRemoveWidget(widget.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveWidget(widget.id);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>

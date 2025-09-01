@@ -7,8 +7,24 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        setIsLoggedIn(true);
+      }
+    };
+    checkSession();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
       {/* Header */}
@@ -16,7 +32,9 @@ const Index = () => {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-serif font-medium">Folia</h1>
           <Button asChild variant="ghost">
-            <Link to="/login">Log In</Link>
+            <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+              {isLoggedIn ? "Dashboard" : "Log In"}
+            </Link>
           </Button>
         </div>
       </header>
@@ -41,8 +59,8 @@ const Index = () => {
             size="lg"
             className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
           >
-            <Link to="/login">
-              Get Started Free
+            <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+              {isLoggedIn ? "Go to Your Dashboard" : "Get Started Free"}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
@@ -135,8 +153,8 @@ const Index = () => {
             variant="secondary"
             className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
           >
-            <Link to="/login">
-              Get Started Free
+            <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+              {isLoggedIn ? "Go to Your Dashboard" : "Get Started Free"}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
