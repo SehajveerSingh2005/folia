@@ -30,6 +30,7 @@ interface DashboardOverviewProps {
   onNavigate: (space: string) => void;
   isEditable: boolean;
   addWidgetTrigger: { type: string; w: number; h: number } | null;
+  onWidgetAdded: () => void;
 }
 
 const widgetMap: { [key: string]: React.ComponentType<any> } = {
@@ -39,6 +40,13 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
   Notes: NotesWidget,
   Journal: JournalWidget,
   Goals: GoalsWidget,
+};
+
+const widgetNavigationMap: { [key: string]: string } = {
+  Tasks: 'Flow',
+  Notes: 'Garden',
+  Journal: 'Journal',
+  Goals: 'Horizon',
 };
 
 const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
@@ -53,6 +61,7 @@ const DashboardOverview = ({
   onNavigate,
   isEditable,
   addWidgetTrigger,
+  onWidgetAdded,
 }: DashboardOverviewProps) => {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layout, setLayout] = useState<Layout[]>([]);
@@ -104,6 +113,7 @@ const DashboardOverview = ({
   useEffect(() => {
     if (addWidgetTrigger) {
       addNewWidget(addWidgetTrigger.type, addWidgetTrigger.w, addWidgetTrigger.h);
+      onWidgetAdded();
     }
   }, [addWidgetTrigger]);
 
@@ -159,6 +169,21 @@ const DashboardOverview = ({
     await Promise.all(updates);
   };
 
+  const handleWidgetClick = (e: React.MouseEvent, widgetType: string) => {
+    if (isEditable) return;
+    
+    const target = e.target as HTMLElement;
+    // Check if the click was on an interactive element
+    if (target.closest('button, input, textarea, label, [role="checkbox"]')) {
+      return;
+    }
+
+    const space = widgetNavigationMap[widgetType];
+    if (space) {
+      onNavigate(space);
+    }
+  };
+
   if (loading) {
     return <Skeleton className="h-[500px] w-full" />;
   }
@@ -173,11 +198,17 @@ const DashboardOverview = ({
       onLayoutChange={handleLayoutChange}
       isDraggable={isEditable}
       isResizable={isEditable}
+      compactType={null}
+      preventCollision={true}
     >
       {widgets.map(widget => {
         const WidgetComponent = widgetMap[widget.widget_type];
         return (
-          <div key={widget.id} className="relative group bg-card rounded-lg">
+          <div 
+            key={widget.id} 
+            className="relative group bg-card rounded-lg"
+            onClick={(e) => handleWidgetClick(e, widget.widget_type)}
+          >
             {isEditable && (
               <Button
                 variant="destructive"

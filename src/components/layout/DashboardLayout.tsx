@@ -24,6 +24,10 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
     setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() }); // Add unique id to trigger effect
   };
 
+  const onWidgetAdded = () => {
+    setAddWidgetTrigger(null);
+  };
+
   const renderContent = () => {
     switch (activeView) {
       case 'Overview':
@@ -33,6 +37,7 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
             onNavigate={setActiveView}
             isEditable={isEditable}
             addWidgetTrigger={addWidgetTrigger}
+            onWidgetAdded={onWidgetAdded}
           />
         );
       case 'Flow':
@@ -50,6 +55,7 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
             onNavigate={setActiveView}
             isEditable={isEditable}
             addWidgetTrigger={addWidgetTrigger}
+            onWidgetAdded={onWidgetAdded}
           />
         );
     }

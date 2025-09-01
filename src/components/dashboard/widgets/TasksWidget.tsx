@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,6 +16,8 @@ type Task = {
 const TasksWidget = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskContent, setNewTaskContent] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
@@ -23,7 +25,7 @@ const TasksWidget = () => {
       .select('id, content, is_completed')
       .is('project_id', null)
       .eq('is_completed', false)
-      .limit(5)
+      .limit(10)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -36,6 +38,19 @@ const TasksWidget = () => {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      const current = scrollContainerRef.current;
+      if (current) {
+        setIsOverflowing(current.scrollHeight > current.clientHeight);
+      }
+    };
+    // Check after a short delay to allow for rendering
+    const timeoutId = setTimeout(checkOverflow, 100);
+    return () => clearTimeout(timeoutId);
+  }, [tasks]);
+
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,20 +93,25 @@ const TasksWidget = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col overflow-hidden">
-        <div className="flex-grow space-y-2 overflow-y-auto pr-2">
-          {tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-3">
-              <Checkbox
-                id={`task-${task.id}`}
-                checked={task.is_completed}
-                onCheckedChange={() => handleToggleTask(task.id, task.is_completed)}
-              />
-              <label htmlFor={`task-${task.id}`} className="text-sm">
-                {task.content}
-              </label>
-            </div>
-          ))}
-           {tasks.length === 0 && <p className="text-sm text-muted-foreground">Inbox is clear!</p>}
+        <div className="relative flex-grow overflow-hidden">
+          <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto pr-2 space-y-2">
+            {tasks.map((task) => (
+              <div key={task.id} className="flex items-center gap-3">
+                <Checkbox
+                  id={`task-${task.id}`}
+                  checked={task.is_completed}
+                  onCheckedChange={() => handleToggleTask(task.id, task.is_completed)}
+                />
+                <label htmlFor={`task-${task.id}`} className="text-sm">
+                  {task.content}
+                </label>
+              </div>
+            ))}
+            {tasks.length === 0 && <p className="text-sm text-muted-foreground">Inbox is clear!</p>}
+          </div>
+          {isOverflowing && (
+            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+          )}
         </div>
         <form onSubmit={handleAddTask} className="flex-shrink-0 flex gap-2 mt-4 pt-2 border-t">
           <Input

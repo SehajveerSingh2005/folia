@@ -41,14 +41,14 @@ const NotesWidget = () => {
           Plant a new seed in your Garden.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col">
+      <CardContent className="flex-grow flex flex-col overflow-y-auto">
         <Textarea
           placeholder="What's on your mind?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="flex-grow"
         />
-        <Button onClick={handleAddNote} disabled={isSubmitting} className="mt-2 self-end">
+        <Button onClick={handleAddNote} disabled={isSubmitting} className="mt-2 self-end flex-shrink-0">
           {isSubmitting ? 'Saving...' : 'Save Note'}
         </Button>
       </CardContent>
