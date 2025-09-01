@@ -77,8 +77,8 @@ const TasksWidget = () => {
           Quick tasks from your Flow.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-between">
-        <div className="space-y-2">
+      <CardContent className="flex-grow flex flex-col overflow-hidden">
+        <div className="flex-grow space-y-2 overflow-y-auto pr-2">
           {tasks.map((task) => (
             <div key={task.id} className="flex items-center gap-3">
               <Checkbox
@@ -93,7 +93,7 @@ const TasksWidget = () => {
           ))}
            {tasks.length === 0 && <p className="text-sm text-muted-foreground">Inbox is clear!</p>}
         </div>
-        <form onSubmit={handleAddTask} className="flex gap-2 mt-4 pt-2 border-t">
+        <form onSubmit={handleAddTask} className="flex-shrink-0 flex gap-2 mt-4 pt-2 border-t">
           <Input
             placeholder="Add a task..."
             value={newTaskContent}
