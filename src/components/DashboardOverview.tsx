@@ -198,7 +198,7 @@ const DashboardOverview = ({
       onLayoutChange={handleLayoutChange}
       isDraggable={isEditable}
       isResizable={isEditable}
-      compactType={null}
+      compactType="vertical"
       preventCollision={true}
       isBounded={true}
     >
