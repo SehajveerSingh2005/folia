@@ -6,11 +6,18 @@ import {
   Settings,
   LogOut,
   LayoutGrid,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export type View = 'Overview' | 'Flow' | 'Garden' | 'Journal' | 'Horizon';
+export type View =
+  | 'Overview'
+  | 'Flow'
+  | 'Garden'
+  | 'Journal'
+  | 'Horizon'
+  | 'Archive';
 
 const navItems = [
   { id: 'Overview', icon: LayoutGrid, label: 'Home' },
@@ -18,6 +25,7 @@ const navItems = [
   { id: 'Garden', icon: Sparkles, label: 'Garden' },
   { id: 'Journal', icon: Book, label: 'Journal' },
   { id: 'Horizon', icon: Telescope, label: 'Horizon' },
+  { id: 'Archive', icon: Archive, label: 'Archive' },
 ];
 
 interface SidebarProps {

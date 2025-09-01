@@ -4,6 +4,7 @@ import Flow from '@/components/spaces/Flow';
 import Garden from '@/components/spaces/Garden';
 import Journal from '@/components/spaces/Journal';
 import Horizon from '@/components/spaces/Horizon';
+import Archive from '@/components/spaces/Archive';
 import DashboardOverview from '@/components/DashboardOverview';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil } from 'lucide-react';
@@ -60,6 +61,8 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         return <Journal />;
       case 'Horizon':
         return <Horizon />;
+      case 'Archive':
+        return <Archive />;
       default:
         return (
           <DashboardOverview

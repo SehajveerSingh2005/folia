@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Sparkles, Trash2, PlusCircle } from 'lucide-react';
+import { Sparkles, Trash2, PlusCircle, ArrowUpCircle } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -37,16 +36,28 @@ type GardenItem = {
 };
 
 const categories = ['Writing', 'Project', 'Life', 'Business', 'Random'];
+const loomItemTypes = [
+  'Project',
+  'Book',
+  'Course',
+  'Writing',
+  'Open Source',
+  'Habit',
+  'Misc',
+];
 
 const Garden = () => {
   const [items, setItems] = useState<GardenItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [itemToPromote, setItemToPromote] = useState<GardenItem | null>(null);
   const [newItem, setNewItem] = useState({
     content: '',
     category: '',
     moods: '',
   });
+  const [promotedItem, setPromotedItem] = useState({ name: '', type: '' });
 
   const fetchItems = async () => {
     setLoading(true);
@@ -93,7 +104,7 @@ const Garden = () => {
       showError(error.message);
     } else {
       setNewItem({ content: '', category: '', moods: '' });
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
       fetchItems();
     }
   };
@@ -112,6 +123,49 @@ const Garden = () => {
     }
   };
 
+  const openPromoteDialog = (item: GardenItem) => {
+    setItemToPromote(item);
+    setPromotedItem({ name: item.content, type: '' });
+    setIsPromoteDialogOpen(true);
+  };
+
+  const handlePromoteItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemToPromote || promotedItem.name.trim() === '') return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Create the new loom_item
+    const { error: loomError } = await supabase.from('loom_items').insert({
+      name: promotedItem.name,
+      type: promotedItem.type || null,
+      user_id: user.id,
+    });
+
+    if (loomError) {
+      showError(`Failed to promote: ${loomError.message}`);
+      return;
+    }
+
+    // 2. Delete the original garden_item
+    const { error: gardenError } = await supabase
+      .from('garden_items')
+      .delete()
+      .eq('id', itemToPromote.id);
+
+    if (gardenError) {
+      showError(`Item promoted, but failed to delete original note: ${gardenError.message}`);
+    } else {
+      showSuccess('Idea promoted to Flow!');
+    }
+
+    // 3. Reset and refetch
+    setIsPromoteDialogOpen(false);
+    setItemToPromote(null);
+    fetchItems();
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -124,7 +178,7 @@ const Garden = () => {
             </p>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -200,15 +254,60 @@ const Garden = () => {
               <CardContent className="flex-grow">
                 <p className="whitespace-pre-wrap">{item.content}</p>
               </CardContent>
-              <div className="p-4 border-t flex flex-wrap gap-2">
-                {item.moods?.map((mood) => (
-                  <Badge key={mood} variant="outline">{mood}</Badge>
-                ))}
-              </div>
+              <CardFooter className="border-t p-2 flex flex-col items-stretch gap-2">
+                 <div className="flex flex-wrap gap-2 px-2 pt-2">
+                  {item.moods?.map((mood) => (
+                    <Badge key={mood} variant="outline">{mood}</Badge>
+                  ))}
+                </div>
+                <Button variant="ghost" className="w-full justify-center" onClick={() => openPromoteDialog(item)}>
+                  <ArrowUpCircle className="mr-2 h-4 w-4" />
+                  Promote to Flow
+                </Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Promote to Project Dialog */}
+      <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Promote to Flow</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePromoteItem} className="space-y-4">
+            <Textarea
+              value={promotedItem.name}
+              onChange={(e) =>
+                setPromotedItem({ ...promotedItem, name: e.target.value })
+              }
+              rows={3}
+              required
+            />
+            <Select
+              onValueChange={(value) =>
+                setPromotedItem({ ...promotedItem, type: value })
+              }
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a type for the new item" />
+              </SelectTrigger>
+              <SelectContent>
+                {loomItemTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="submit" className="w-full">
+              Create Item in Flow
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -25,8 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   PlusCircle,
   FolderKanban,
@@ -67,7 +65,7 @@ const loomItemTypes = [
 ];
 
 const Flow = () => {
-  const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
+  const [activeItems, setActiveItems] = useState<LoomItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', type: '' });
@@ -77,9 +75,11 @@ const Flow = () => {
 
   const fetchFlowData = async () => {
     setLoading(true);
+    // Fetch only active loom items
     const { data: loomData, error: loomError } = await supabase
       .from('loom_items')
       .select('id, name, type, status')
+      .neq('status', 'Completed')
       .order('created_at', { ascending: false });
 
     if (loomError) {
@@ -89,6 +89,7 @@ const Flow = () => {
       return;
     }
 
+    // Fetch all ledger items
     const { data: ledgerData, error: ledgerError } = await supabase
       .from('ledger_items')
       .select('id, content, is_done, loom_item_id')
@@ -99,13 +100,14 @@ const Flow = () => {
       console.error(ledgerError);
     }
 
+    // Combine them
     const itemsWithTasks = loomData.map((item) => ({
       ...item,
       tasks:
         ledgerData?.filter((task) => task.loom_item_id === item.id) || [],
     }));
 
-    setLoomItems(itemsWithTasks);
+    setActiveItems(itemsWithTasks);
     setLoading(false);
   };
 
@@ -176,14 +178,14 @@ const Flow = () => {
     }
   };
 
-  const handleUpdateLoomStatus = async (loomId: string, status: string) => {
+  const handleArchiveLoomItem = async (loomId: string) => {
     const { error } = await supabase
       .from('loom_items')
-      .update({ status })
+      .update({ status: 'Completed' })
       .eq('id', loomId);
     if (error) showError(error.message);
     else {
-      showSuccess(`Item moved to ${status === 'Completed' ? 'Archive' : 'Active'}.`);
+      showSuccess('Item moved to Archive.');
       fetchFlowData();
     }
   };
@@ -196,102 +198,6 @@ const Flow = () => {
       fetchFlowData();
     }
   };
-
-  const activeItems = loomItems.filter((item) => item.status !== 'Completed');
-  const completedItems = loomItems.filter((item) => item.status === 'Completed');
-
-  const renderLoomList = (items: LoomItem[]) => (
-    <div className="space-y-6">
-      {items.map((item) => (
-        <Card key={item.id}>
-          <CardHeader className="flex flex-row justify-between items-center">
-            <div>
-              <CardTitle className="font-sans font-medium">
-                {item.name}
-              </CardTitle>
-              <CardDescription>{item.type}</CardDescription>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {item.status !== 'Completed' ? (
-                  <DropdownMenuItem
-                    onClick={() => handleUpdateLoomStatus(item.id, 'Completed')}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    Archive
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={() => handleUpdateLoomStatus(item.id, 'Active')}
-                  >
-                    <FolderKanban className="mr-2 h-4 w-4" />
-                    Move to Active
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  className="text-red-500"
-                  onClick={() => handleDeleteLoomItem(item.id)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {item.tasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3">
-                  <Checkbox
-                    id={task.id}
-                    checked={task.is_done}
-                    onCheckedChange={() =>
-                      handleToggleTask(task.id, task.is_done)
-                    }
-                  />
-                  <label
-                    htmlFor={task.id}
-                    className={`flex-grow ${
-                      task.is_done ? 'line-through text-foreground/50' : ''
-                    }`}
-                  >
-                    {task.content}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-          {item.status !== 'Completed' && (
-            <CardFooter>
-              <form
-                onSubmit={(e) => handleAddTask(e, item.id)}
-                className="flex gap-2 w-full"
-              >
-                <Input
-                  placeholder="Add a task..."
-                  value={newTaskContent[item.id] || ''}
-                  onChange={(e) =>
-                    setNewTaskContent({
-                      ...newTaskContent,
-                      [item.id]: e.target.value,
-                    })
-                  }
-                />
-                <Button type="submit" variant="ghost" size="icon">
-                  <PlusCircle className="h-5 w-5" />
-                </Button>
-              </form>
-            </CardFooter>
-          )}
-        </Card>
-      ))}
-    </div>
-  );
 
   return (
     <div>
@@ -349,18 +255,95 @@ const Flow = () => {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Archive</TabsTrigger>
-        </TabsList>
-        <TabsContent value="active" className="pt-6">
-          {loading ? <p>Loading...</p> : renderLoomList(activeItems)}
-        </TabsContent>
-        <TabsContent value="completed" className="pt-6">
-          {loading ? <p>Loading...</p> : renderLoomList(completedItems)}
-        </TabsContent>
-      </Tabs>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="space-y-6">
+          {activeItems.map((item) => (
+            <Card key={item.id}>
+              <CardHeader className="flex flex-row justify-between items-center">
+                <div>
+                  <CardTitle className="font-sans font-medium">
+                    {item.name}
+                  </CardTitle>
+                  <CardDescription>{item.type}</CardDescription>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() => handleArchiveLoomItem(item.id)}
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      Archive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-500"
+                      onClick={() => handleDeleteLoomItem(item.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {item.tasks.map((task) => (
+                    <div key={task.id} className="flex items-center gap-3">
+                      <Checkbox
+                        id={task.id}
+                        checked={task.is_done}
+                        onCheckedChange={() =>
+                          handleToggleTask(task.id, task.is_done)
+                        }
+                      />
+                      <label
+                        htmlFor={task.id}
+                        className={`flex-grow ${
+                          task.is_done ? 'line-through text-foreground/50' : ''
+                        }`}
+                      >
+                        {task.content}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <form
+                  onSubmit={(e) => handleAddTask(e, item.id)}
+                  className="flex gap-2 w-full"
+                >
+                  <Input
+                    placeholder="Add a task..."
+                    value={newTaskContent[item.id] || ''}
+                    onChange={(e) =>
+                      setNewTaskContent({
+                        ...newTaskContent,
+                        [item.id]: e.target.value,
+                      })
+                    }
+                  />
+                  <Button type="submit" variant="ghost" size="icon">
+                    <PlusCircle className="h-5 w-5" />
+                  </Button>
+                </form>
+              </CardFooter>
+            </Card>
+          ))}
+           {activeItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-lg text-foreground/70">Your flow is clear!</p>
+              <p className="text-sm text-foreground/50">Create a new item to get started.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
