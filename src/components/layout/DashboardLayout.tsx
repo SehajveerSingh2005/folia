@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar, { View } from './Sidebar';
 import Flow from '@/components/spaces/Flow';
 import Garden from '@/components/spaces/Garden';
@@ -12,20 +12,31 @@ import AddWidgetSheet from '@/components/dashboard/AddWidgetSheet';
 interface DashboardLayoutProps {
   firstName: string;
   onLogout: () => void;
-}
+};
 
 const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
   const [activeView, setActiveView] = useState<View>('Overview');
   const [isEditable, setIsEditable] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
+  
+  // Create a ref to hold a function that can save the current layout
+  const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
 
   const handleAddWidget = (widgetType: string, w: number, h: number) => {
-    setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() }); // Add unique id to trigger effect
+    setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() });
   };
 
   const onWidgetAdded = () => {
     setAddWidgetTrigger(null);
+  };
+
+  const handleViewChange = (view: View) => {
+    // If we're leaving the Overview view, save the layout first
+    if (activeView === 'Overview' && view !== 'Overview' && saveLayoutRef.current) {
+      saveLayoutRef.current();
+    }
+    setActiveView(view);
   };
 
   const renderContent = () => {
@@ -34,10 +45,11 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         return (
           <DashboardOverview
             firstName={firstName}
-            onNavigate={setActiveView}
+            onNavigate={handleViewChange}
             isEditable={isEditable}
             addWidgetTrigger={addWidgetTrigger}
             onWidgetAdded={onWidgetAdded}
+            setSaveLayoutRef={saveLayoutRef}
           />
         );
       case 'Flow':
@@ -52,10 +64,11 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         return (
           <DashboardOverview
             firstName={firstName}
-            onNavigate={setActiveView}
+            onNavigate={handleViewChange}
             isEditable={isEditable}
             addWidgetTrigger={addWidgetTrigger}
             onWidgetAdded={onWidgetAdded}
+            setSaveLayoutRef={saveLayoutRef}
           />
         );
     }
@@ -65,7 +78,7 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar
         activeView={activeView}
-        onNavigate={setActiveView}
+        onNavigate={handleViewChange}
         onLogout={onLogout}
         firstName={firstName}
       />
