@@ -3,53 +3,52 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Telescope } from 'lucide-react';
 
-type Goal = {
+type HorizonItem = {
   id: string;
   title: string;
-  status: string;
+  priority: string | null;
 };
 
 const GoalsWidget = () => {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [items, setItems] = useState<HorizonItem[]>([]);
 
   useEffect(() => {
-    const fetchGoals = async () => {
+    const fetchItems = async () => {
       const { data, error } = await supabase
-        .from('goals')
-        .select('id, title, status')
-        .neq('status', 'Completed')
+        .from('horizon_items')
+        .select('id, title, priority')
         .limit(3)
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching goals:', error);
+        console.error('Error fetching horizon items:', error);
       } else if (data) {
-        setGoals(data);
+        setItems(data);
       }
     };
-    fetchGoals();
+    fetchItems();
   }, []);
 
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Horizon Goals</CardTitle>
+        <CardTitle className="font-sans font-medium">Horizon Items</CardTitle>
         <CardDescription>
-          Your current long-term objectives.
+          Your future goals and ideas.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-3">
-          {goals.map((goal) => (
-            <div key={goal.id} className="flex items-start gap-3">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-start gap-3">
               <Telescope className="h-5 w-5 mt-0.5 text-primary" />
               <div>
-                <p className="font-medium text-sm">{goal.title}</p>
-                <p className="text-xs text-muted-foreground">{goal.status}</p>
+                <p className="font-medium text-sm">{item.title}</p>
+                {item.priority && <p className="text-xs text-muted-foreground">{item.priority} Priority</p>}
               </div>
             </div>
           ))}
-          {goals.length === 0 && <p className="text-sm text-muted-foreground">No active goals. Time to set some!</p>}
+          {items.length === 0 && <p className="text-sm text-muted-foreground">No items in your horizon yet.</p>}
         </div>
       </CardContent>
     </Card>

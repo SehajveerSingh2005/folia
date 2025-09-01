@@ -21,8 +21,8 @@ const NotesWidget = () => {
     }
 
     const { error } = await supabase
-      .from('notes')
-      .insert({ content, user_id: user.id });
+      .from('garden_items')
+      .insert({ content, user_id: user.id, category: 'Random' });
 
     if (error) {
       showError(error.message);

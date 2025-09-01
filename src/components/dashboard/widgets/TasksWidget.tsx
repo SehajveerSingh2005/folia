@@ -7,24 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { showError } from '@/utils/toast';
 
-type Task = {
+type LedgerItem = {
   id: string;
   content: string;
-  is_completed: boolean;
+  is_done: boolean;
 };
 
 const TasksWidget = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<LedgerItem[]>([]);
   const [newTaskContent, setNewTaskContent] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
-      .from('tasks')
-      .select('id, content, is_completed')
-      .is('project_id', null)
-      .eq('is_completed', false)
+      .from('ledger_items')
+      .select('id, content, is_done')
+      .is('loom_item_id', null)
+      .eq('is_done', false)
       .limit(10)
       .order('created_at', { ascending: true });
 
@@ -46,7 +46,6 @@ const TasksWidget = () => {
         setIsOverflowing(current.scrollHeight > current.clientHeight);
       }
     };
-    // Check after a short delay to allow for rendering
     const timeoutId = setTimeout(checkOverflow, 100);
     return () => clearTimeout(timeoutId);
   }, [tasks]);
@@ -60,8 +59,8 @@ const TasksWidget = () => {
     if (!user) return;
 
     const { error } = await supabase
-      .from('tasks')
-      .insert({ content: newTaskContent, user_id: user.id });
+      .from('ledger_items')
+      .insert({ content: newTaskContent, user_id: user.id, type: 'Task' });
 
     if (error) {
       showError(error.message);
@@ -71,10 +70,10 @@ const TasksWidget = () => {
     }
   };
 
-  const handleToggleTask = async (taskId: string, isCompleted: boolean) => {
+  const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const { error } = await supabase
-      .from('tasks')
-      .update({ is_completed: !isCompleted })
+      .from('ledger_items')
+      .update({ is_done: !isDone })
       .eq('id', taskId);
 
     if (error) {
@@ -99,8 +98,8 @@ const TasksWidget = () => {
               <div key={task.id} className="flex items-center gap-3">
                 <Checkbox
                   id={`task-${task.id}`}
-                  checked={task.is_completed}
-                  onCheckedChange={() => handleToggleTask(task.id, task.is_completed)}
+                  checked={task.is_done}
+                  onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
                 />
                 <label htmlFor={`task-${task.id}`} className="text-sm">
                   {task.content}

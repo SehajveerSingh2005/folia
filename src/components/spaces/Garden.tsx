@@ -9,151 +9,201 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Trash2 } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast';
+import { Input } from '@/components/ui/input';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Sparkles, Trash2, PlusCircle } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
+import { Badge } from '@/components/ui/badge';
 
-type Note = {
+type GardenItem = {
   id: string;
   content: string;
+  category: string | null;
+  moods: string[] | null;
   created_at: string;
 };
 
-const Garden = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newNoteContent, setNewNoteContent] = useState('');
+const categories = ['Writing', 'Project', 'Life', 'Business', 'Random'];
 
-  const fetchNotes = async () => {
+const Garden = () => {
+  const [items, setItems] = useState<GardenItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newItem, setNewItem] = useState({
+    content: '',
+    category: '',
+    moods: '',
+  });
+
+  const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('notes')
-      .select('id, content, created_at')
+      .from('garden_items')
+      .select('id, content, category, moods, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
       showError('Could not fetch notes.');
       console.error(error);
     } else {
-      setNotes(data);
+      setItems(data);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchNotes();
+    fetchItems();
   }, []);
 
-  const handleAddNote = async (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newNoteContent.trim() === '') return;
+    if (newItem.content.trim() === '') return;
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
-      .from('notes')
-      .insert({ content: newNoteContent, user_id: user.id });
+    const moodsArray =
+      newItem.moods.trim() === ''
+        ? null
+        : newItem.moods.split(',').map((m) => m.trim());
+
+    const { error } = await supabase.from('garden_items').insert({
+      content: newItem.content,
+      category: newItem.category || null,
+      moods: moodsArray,
+      user_id: user.id,
+    });
 
     if (error) {
       showError(error.message);
     } else {
-      setNewNoteContent('');
-      fetchNotes();
+      setNewItem({ content: '', category: '', moods: '' });
+      setIsDialogOpen(false);
+      fetchItems();
     }
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    const { error } = await supabase.from('notes').delete().eq('id', noteId);
+  const handleDeleteItem = async (itemId: string) => {
+    const { error } = await supabase
+      .from('garden_items')
+      .delete()
+      .eq('id', itemId);
 
     if (error) {
       showError(error.message);
     } else {
       showSuccess('Note deleted.');
-      fetchNotes();
+      fetchItems();
     }
   };
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-8">
-        <Sparkles className="h-10 w-10 text-primary" />
-        <div>
-          <h2 className="text-4xl font-serif">Garden</h2>
-          <p className="text-foreground/70">
-            Cultivate raw ideas and quick notes.
-          </p>
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-4">
+          <Sparkles className="h-10 w-10 text-primary" />
+          <div>
+            <h2 className="text-4xl font-serif">Garden</h2>
+            <p className="text-foreground/70">
+              Cultivate raw ideas and quick notes.
+            </p>
+          </div>
         </div>
-      </div>
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="font-sans font-medium">New Note</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAddNote} className="flex flex-col gap-2">
-            <Textarea
-              placeholder="What's on your mind?"
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              rows={3}
-            />
-            <Button type="submit" className="self-end">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
               Plant Seed
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New Note</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddItem} className="space-y-4">
+              <Textarea
+                placeholder="What's on your mind?"
+                value={newItem.content}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, content: e.target.value })
+                }
+                rows={5}
+                required
+              />
+              <Select
+                onValueChange={(value) =>
+                  setNewItem({ ...newItem, category: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Moods (comma-separated, optional)"
+                value={newItem.moods}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, moods: e.target.value })
+                }
+              />
+              <Button type="submit" className="w-full">
+                Save Note
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {loading ? (
         <p>Loading notes...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {notes.map((note) => (
-            <Card key={note.id} className="flex flex-col">
-              <CardContent className="p-4 flex-grow">
-                <p className="whitespace-pre-wrap">{note.content}</p>
+          {items.map((item) => (
+            <Card key={item.id} className="flex flex-col">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    {item.category && <Badge variant="secondary">{item.category}</Badge>}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleDeleteItem(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <p className="whitespace-pre-wrap">{item.content}</p>
               </CardContent>
-              <div className="p-2 border-t flex justify-between items-center">
-                <p className="text-xs text-foreground/60">
-                  {new Date(note.created_at).toLocaleDateString()}
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete your note.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDeleteNote(note.id)}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+              <div className="p-4 border-t flex flex-wrap gap-2">
+                {item.moods?.map((mood) => (
+                  <Badge key={mood} variant="outline">{mood}</Badge>
+                ))}
               </div>
             </Card>
           ))}
