@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar, { View } from './Sidebar';
 import Flow from '@/components/spaces/Flow';
 import Loom from '@/components/spaces/Loom';
@@ -17,15 +18,31 @@ interface DashboardLayoutProps {
   onLogout: () => void;
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
-  const [activeView, setActiveView] = useState<View>('Overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const getViewFromHash = (): View => {
+    const hash = location.hash.substring(1);
+    if (hash) {
+      return capitalize(hash) as View;
+    }
+    return 'Overview';
+  };
+
+  const [activeView, setActiveView] = useState<View>(getViewFromHash());
   const [isEditable, setIsEditable] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Create a ref to hold a function that can save the current layout
   const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    setActiveView(getViewFromHash());
+  }, [location.hash]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -47,7 +64,6 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
   };
 
   const handleViewChange = (view: View) => {
-    // If we're leaving the Overview view, save the layout first
     if (
       activeView === 'Overview' &&
       view !== 'Overview' &&
@@ -55,7 +71,8 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
     ) {
       saveLayoutRef.current();
     }
-    setActiveView(view);
+    const path = view === 'Overview' ? '/dashboard' : `/dashboard#${view.toLowerCase()}`;
+    navigate(path);
   };
 
   const renderContent = () => {
@@ -101,7 +118,6 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar
         activeView={activeView}
-        onNavigate={handleViewChange}
         onLogout={onLogout}
         firstName={firstName}
         onSearch={() => setIsSearchOpen(true)}

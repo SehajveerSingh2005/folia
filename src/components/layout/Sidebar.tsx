@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export type View =
   | 'Overview'
@@ -23,7 +23,7 @@ export type View =
   | 'Horizon'
   | 'Archive';
 
-const navItems = [
+const navItems: { id: View; icon: React.ElementType; label: string }[] = [
   { id: 'Overview', icon: LayoutGrid, label: 'Home' },
   { id: 'Loom', icon: ClipboardList, label: 'Loom' },
   { id: 'Flow', icon: FolderKanban, label: 'Flow' },
@@ -35,7 +35,6 @@ const navItems = [
 
 interface SidebarProps {
   activeView: View;
-  onNavigate: (view: View) => void;
   onLogout: () => void;
   firstName: string;
   onSearch: () => void;
@@ -43,7 +42,6 @@ interface SidebarProps {
 
 const Sidebar = ({
   activeView,
-  onNavigate,
   onLogout,
   firstName,
   onSearch,
@@ -72,16 +70,18 @@ const Sidebar = ({
           {navItems.map((item) => (
             <li key={item.id}>
               <Button
+                asChild
                 variant="ghost"
                 className={cn(
                   'w-full justify-start text-md font-normal px-3 py-6',
                   activeView === item.id &&
                     'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary',
                 )}
-                onClick={() => onNavigate(item.id as View)}
               >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.label}
+                <Link to={item.id === 'Overview' ? '/dashboard' : `/dashboard#${item.id.toLowerCase()}`}>
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </Link>
               </Button>
             </li>
           ))}
