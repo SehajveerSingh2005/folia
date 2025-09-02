@@ -56,7 +56,7 @@ const AddTaskDialog = ({
   onOpenChange,
   onTaskAdded,
 }: AddTaskDialogProps) => {
-  const [loomItems, setLoomItems] useState<LoomItem[]>([]);
+  const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
