@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -16,6 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -23,7 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Telescope, PlusCircle, Trash2, Link as LinkIcon } from 'lucide-react';
+import {
+  Telescope,
+  PlusCircle,
+  Trash2,
+  Link as LinkIcon,
+  ArrowUpCircle,
+} from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -45,17 +53,29 @@ const itemTypes = [
   'Misc',
 ];
 const priorities = ['High', 'Medium', 'Low'];
+const loomItemTypes = [
+  'Project',
+  'Book',
+  'Course',
+  'Writing',
+  'Open Source',
+  'Habit',
+  'Misc',
+];
 
 const Horizon = () => {
   const [items, setItems] = useState<HorizonItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [itemToPromote, setItemToPromote] = useState<HorizonItem | null>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     type: '',
     priority: '',
     link: '',
   });
+  const [promotedItem, setPromotedItem] = useState({ name: '', type: '' });
 
   const fetchItems = async () => {
     setLoading(true);
@@ -99,7 +119,7 @@ const Horizon = () => {
     } else {
       showSuccess('Item added to Horizon!');
       setNewItem({ title: '', type: '', priority: '', link: '' });
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
       fetchItems();
     }
   };
@@ -117,6 +137,53 @@ const Horizon = () => {
     }
   };
 
+  const openPromoteDialog = (item: HorizonItem) => {
+    setItemToPromote(item);
+    setPromotedItem({ name: item.title, type: '' });
+    setIsPromoteDialogOpen(true);
+  };
+
+  const handlePromoteItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemToPromote || promotedItem.name.trim() === '') return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Create the new loom_item
+    const { error: loomError } = await supabase.from('loom_items').insert({
+      name: promotedItem.name,
+      type: promotedItem.type || null,
+      user_id: user.id,
+    });
+
+    if (loomError) {
+      showError(`Failed to promote: ${loomError.message}`);
+      return;
+    }
+
+    // 2. Delete the original horizon_item
+    const { error: horizonError } = await supabase
+      .from('horizon_items')
+      .delete()
+      .eq('id', itemToPromote.id);
+
+    if (horizonError) {
+      showError(
+        `Item promoted, but failed to delete original item: ${horizonError.message}`,
+      );
+    } else {
+      showSuccess('Item promoted to Flow!');
+    }
+
+    // 3. Reset and refetch
+    setIsPromoteDialogOpen(false);
+    setItemToPromote(null);
+    fetchItems();
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -129,7 +196,7 @@ const Horizon = () => {
             </p>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -200,7 +267,7 @@ const Horizon = () => {
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <CardTitle className="font-sans font-medium">
@@ -234,10 +301,59 @@ const Horizon = () => {
                   </a>
                 </CardContent>
               )}
+              <CardFooter className="border-t p-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center"
+                  onClick={() => openPromoteDialog(item)}
+                >
+                  <ArrowUpCircle className="mr-2 h-4 w-4" />
+                  Promote to Flow
+                </Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Promote to Flow Dialog */}
+      <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Promote to Flow</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePromoteItem} className="space-y-4">
+            <Textarea
+              value={promotedItem.name}
+              onChange={(e) =>
+                setPromotedItem({ ...promotedItem, name: e.target.value })
+              }
+              rows={3}
+              required
+            />
+            <Select
+              onValueChange={(value) =>
+                setPromotedItem({ ...promotedItem, type: value })
+              }
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a type for the new item" />
+              </SelectTrigger>
+              <SelectContent>
+                {loomItemTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="submit" className="w-full">
+              Create Item in Flow
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
