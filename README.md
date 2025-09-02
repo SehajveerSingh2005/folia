@@ -4,8 +4,6 @@
 
 Folia is a thoughtfully designed digital second brain that helps you organize every part of your life without the stress of a blank page. It provides dedicated, structured spaces for your active projects, raw ideas, daily reflections, and long-term goals, allowing you to focus on what truly matters.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fusername%2Ffolia-os&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY&envDescription=Your%20Supabase%20project%20URL%20and%20Anon%20Key.&project-name=folia-clone&repository-name=folia-clone)
-
 ---
 
 ## Live Demo
