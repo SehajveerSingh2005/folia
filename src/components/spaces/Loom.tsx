@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, ClipboardList } from 'lucide-react';
+import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
+import { format, isToday, isPast, parseISO } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import EditTaskDialog from './loom/EditTaskDialog';
+import { cn } from '@/lib/utils';
 
 type LedgerItem = {
   id: string;
@@ -13,6 +17,8 @@ type LedgerItem = {
   is_done: boolean;
   loom_item_id: string | null;
   completed_at: string | null;
+  due_date: string | null;
+  priority: string | null;
 };
 
 type LoomItem = {
@@ -28,9 +34,12 @@ type ProjectTasks = {
 
 const Loom = () => {
   const [inboxTasks, setInboxTasks] = useState<LedgerItem[]>([]);
+  const [dueTodayTasks, setDueTodayTasks] = useState<LedgerItem[]>([]);
   const [projectTasks, setProjectTasks] = useState<ProjectTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTaskContent, setNewTaskContent] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -42,7 +51,6 @@ const Loom = () => {
 
     if (tasksError) {
       showError('Could not fetch tasks.');
-      console.error(tasksError);
       setLoading(false);
       return;
     }
@@ -52,29 +60,21 @@ const Loom = () => {
       .select('id, name')
       .neq('status', 'Completed');
 
-    if (projectsError) {
-      showError('Could not fetch projects.');
-    }
+    if (projectsError) showError('Could not fetch projects.');
 
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const incompleteTasks = tasks.filter(task => !task.is_done);
+    
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
 
-    const visibleTasks = tasks.filter(task => {
-      if (!task.is_done) return true; // Keep incomplete tasks
-      if (task.loom_item_id) return true; // Keep completed project tasks
-      if (task.completed_at) { // For completed inbox tasks
-        return new Date(task.completed_at) > twentyFourHoursAgo;
-      }
-      return false; // Hide completed inbox tasks without a completion date
-    });
-
-    setInboxTasks(visibleTasks.filter((task) => !task.loom_item_id));
+    setDueTodayTasks(incompleteTasks.filter(task => task.due_date === todayString));
+    setInboxTasks(incompleteTasks.filter((task) => !task.loom_item_id && task.due_date !== todayString));
 
     if (projects) {
       const groupedByProject = projects.map((project) => ({
         projectId: project.id,
         projectName: project.name,
-        tasks: visibleTasks.filter((task) => task.loom_item_id === project.id),
+        tasks: incompleteTasks.filter((task) => task.loom_item_id === project.id),
       })).filter(group => group.tasks.length > 0);
       setProjectTasks(groupedByProject);
     }
@@ -120,25 +120,50 @@ const Loom = () => {
     else fetchTasks();
   };
 
+  const openEditDialog = (task: LedgerItem) => {
+    setSelectedTask(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const getPriorityBadge = (priority: string | null) => {
+    if (!priority) return null;
+    const variant = priority === 'High' ? 'destructive' : priority === 'Medium' ? 'default' : 'secondary';
+    return <Badge variant={variant}><Flag className="h-3 w-3 mr-1" /> {priority}</Badge>;
+  };
+
   const renderTaskList = (tasks: LedgerItem[]) => (
-    <div className="space-y-3">
-      {tasks.map((task) => (
-        <div key={task.id} className="flex items-center gap-3">
-          <Checkbox
-            id={task.id}
-            checked={task.is_done}
-            onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
-          />
-          <label
-            htmlFor={task.id}
-            className={`flex-grow ${
-              task.is_done ? 'line-through text-foreground/50' : ''
-            }`}
+    <div className="space-y-1">
+      {tasks.map((task) => {
+        const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
+        return (
+          <div
+            key={task.id}
+            className="flex items-center gap-3 group p-2 rounded-md hover:bg-secondary/50 cursor-pointer"
+            onClick={() => openEditDialog(task)}
           >
-            {task.content}
-          </label>
-        </div>
-      ))}
+            <Checkbox
+              id={task.id}
+              checked={task.is_done}
+              onCheckedChange={(e) => {
+                e.stopPropagation();
+                handleToggleTask(task.id, task.is_done);
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <span className="flex-grow">{task.content}</span>
+            <div className="flex items-center gap-2">
+              {getPriorityBadge(task.priority)}
+              {task.due_date && (
+                <div className={cn("flex items-center text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
+                  {isOverdue && <AlertCircle className="h-3 w-3 mr-1" />}
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {format(parseISO(task.due_date), 'MMM d')}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -160,10 +185,20 @@ const Loom = () => {
         <div className="space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle className="font-sans font-medium">Inbox</CardTitle>
+              <CardTitle className="font-sans font-medium">Due Today</CardTitle>
             </CardHeader>
             <CardContent>
-              {renderTaskList(inboxTasks)}
+              {dueTodayTasks.length > 0 ? renderTaskList(dueTodayTasks) : <p className="text-sm text-muted-foreground">Nothing due today. Enjoy your day!</p>}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-sans font-medium">Inbox</CardTitle>
+              <CardDescription>Tasks that are not assigned to a project.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {inboxTasks.length > 0 ? renderTaskList(inboxTasks) : <p className="text-sm text-muted-foreground">Inbox is empty.</p>}
               <form onSubmit={handleAddTask} className="flex gap-2 mt-4">
                 <Input
                   placeholder="Add a task to your inbox..."
@@ -183,11 +218,19 @@ const Loom = () => {
                 <CardTitle className="font-sans font-medium">{project.projectName}</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderTaskList(project.tasks)}
+                {project.tasks.length > 0 ? renderTaskList(project.tasks) : <p className="text-sm text-muted-foreground">No tasks for this project.</p>}
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+      {selectedTask && (
+        <EditTaskDialog
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          task={selectedTask}
+          onTaskUpdated={fetchTasks}
+        />
       )}
     </div>
   );
