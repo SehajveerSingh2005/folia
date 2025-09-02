@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,73 +37,73 @@ const formSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   priority: z.string().nullable(),
   due_date: z.date().nullable(),
+  loom_item_id: z.string().nullable(),
 });
 
-type LedgerItem = {
+type LoomItem = {
   id: string;
-  content: string;
-  priority: string | null;
-  due_date: string | null;
+  name: string;
 };
 
-interface EditTaskDialogProps {
+interface AddTaskDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  task: LedgerItem | null;
-  onTaskUpdated: () => void;
+  onTaskAdded: () => void;
 }
 
-const EditTaskDialog = ({
+const AddTaskDialog = ({
   isOpen,
   onOpenChange,
-  task,
-  onTaskUpdated,
-}: EditTaskDialogProps) => {
+  onTaskAdded,
+}: AddTaskDialogProps) => {
+  const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      content: '',
+      priority: null,
+      due_date: null,
+      loom_item_id: null,
+    },
   });
 
   useEffect(() => {
-    if (task) {
-      form.reset({
-        content: task.content || '',
-        priority: task.priority || null,
-        due_date: task.due_date ? new Date(task.due_date) : null,
-      });
+    if (isOpen) {
+      const fetchLoomItems = async () => {
+        const { data, error } = await supabase
+          .from('loom_items')
+          .select('id, name')
+          .neq('status', 'Completed');
+        if (error) {
+          showError('Could not fetch projects.');
+        } else {
+          setLoomItems(data);
+        }
+      };
+      fetchLoomItems();
     }
-  }, [task, form]);
+  }, [isOpen]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!task) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-    const { error } = await supabase
-      .from('ledger_items')
-      .update({
-        ...values,
-        due_date: values.due_date
-          ? values.due_date.toISOString().split('T')[0]
-          : null,
-      })
-      .eq('id', task.id);
+    const { error } = await supabase.from('ledger_items').insert({
+      ...values,
+      due_date: values.due_date
+        ? values.due_date.toISOString().split('T')[0]
+        : null,
+      user_id: user.id,
+      type: 'Task',
+    });
 
     if (error) {
       showError(error.message);
     } else {
-      showSuccess('Task updated.');
-      onTaskUpdated();
+      showSuccess('Task created.');
+      onTaskAdded();
       onOpenChange(false);
-    }
-  };
-
-  const handleDeleteTask = async () => {
-    if (!task) return;
-    const { error } = await supabase.from('ledger_items').delete().eq('id', task.id);
-    if (error) {
-      showError(error.message);
-    } else {
-      showSuccess('Task deleted.');
-      onTaskUpdated();
-      onOpenChange(false);
+      form.reset();
     }
   };
 
@@ -111,13 +111,31 @@ const EditTaskDialog = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
+          <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Make changes to your task here. Click save when you're done.
+            Add a new task to your Loom. Assign it to a project or leave it in the inbox.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <Input {...form.register('content')} placeholder="Task content" />
+          <Controller
+            control={form.control}
+            name="loom_item_id"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Link to project (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loomItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
           <div className="grid grid-cols-2 gap-4">
             <Controller
               control={form.control}
@@ -171,13 +189,9 @@ const EditTaskDialog = ({
               )}
             />
           </div>
-          <DialogFooter className="sm:justify-between">
-            <Button type="button" variant="destructive" onClick={handleDeleteTask}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+          <DialogFooter>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+              {form.formState.isSubmitting ? 'Creating...' : 'Create Task'}
             </Button>
           </DialogFooter>
         </form>
@@ -186,4 +200,4 @@ const EditTaskDialog = ({
   );
 };
 
-export default EditTaskDialog;
+export default AddTaskDialog;

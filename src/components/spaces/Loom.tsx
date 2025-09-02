@@ -3,12 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag } from 'lucide-react';
+import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag, Pencil } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, isToday, isPast, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import EditTaskDialog from './loom/EditTaskDialog';
+import AddTaskDialog from './loom/AddTaskDialog';
 import { cn } from '@/lib/utils';
 
 type LedgerItem = {
@@ -19,11 +19,6 @@ type LedgerItem = {
   completed_at: string | null;
   due_date: string | null;
   priority: string | null;
-};
-
-type LoomItem = {
-  id: string;
-  name: string;
 };
 
 type ProjectTasks = {
@@ -37,8 +32,8 @@ const Loom = () => {
   const [dueTodayTasks, setDueTodayTasks] = useState<LedgerItem[]>([]);
   const [projectTasks, setProjectTasks] = useState<ProjectTasks[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTaskContent, setNewTaskContent] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
 
   const fetchTasks = async () => {
@@ -62,19 +57,21 @@ const Loom = () => {
 
     if (projectsError) showError('Could not fetch projects.');
 
-    const incompleteTasks = tasks.filter(task => !task.is_done);
+    const visibleTasks = tasks.filter(task => 
+      !task.is_done || 
+      (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
+    );
     
-    const today = new Date();
-    const todayString = format(today, 'yyyy-MM-dd');
+    const todayString = format(new Date(), 'yyyy-MM-dd');
 
-    setDueTodayTasks(incompleteTasks.filter(task => task.due_date === todayString));
-    setInboxTasks(incompleteTasks.filter((task) => !task.loom_item_id && task.due_date !== todayString));
+    setDueTodayTasks(visibleTasks.filter(task => task.due_date === todayString));
+    setInboxTasks(visibleTasks.filter((task) => !task.loom_item_id && task.due_date !== todayString));
 
     if (projects) {
       const groupedByProject = projects.map((project) => ({
         projectId: project.id,
         projectName: project.name,
-        tasks: incompleteTasks.filter((task) => task.loom_item_id === project.id),
+        tasks: visibleTasks.filter((task) => task.loom_item_id === project.id),
       })).filter(group => group.tasks.length > 0);
       setProjectTasks(groupedByProject);
     }
@@ -85,27 +82,6 @@ const Loom = () => {
   useEffect(() => {
     fetchTasks();
   }, []);
-
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTaskContent.trim() === '') return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from('ledger_items').insert({
-      content: newTaskContent,
-      user_id: user.id,
-      type: 'Task',
-    });
-
-    if (error) {
-      showError(error.message);
-    } else {
-      showSuccess('Task added to Inbox.');
-      setNewTaskContent('');
-      fetchTasks();
-    }
-  };
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
@@ -150,8 +126,13 @@ const Loom = () => {
               }}
               onClick={(e) => e.stopPropagation()}
             />
-            <span className="flex-grow">{task.content}</span>
-            <div className="flex items-center gap-2">
+            <label
+              htmlFor={task.id}
+              className={cn("flex-grow", task.is_done && "line-through text-muted-foreground")}
+            >
+              {task.content}
+            </label>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               {getPriorityBadge(task.priority)}
               {task.due_date && (
                 <div className={cn("flex items-center text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
@@ -160,6 +141,7 @@ const Loom = () => {
                   {format(parseISO(task.due_date), 'MMM d')}
                 </div>
               )}
+              <Pencil className="h-3 w-3 text-muted-foreground" />
             </div>
           </div>
         );
@@ -167,63 +149,54 @@ const Loom = () => {
     </div>
   );
 
+  const TaskColumn = ({ title, description, tasks, children }: { title: string, description?: string, tasks: LedgerItem[], children?: React.ReactNode }) => (
+    <Card className="w-96 flex-shrink-0 flex flex-col h-full">
+      <CardHeader>
+        <CardTitle className="font-sans font-medium">{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="flex-grow overflow-y-auto">
+        {tasks.length > 0 ? renderTaskList(tasks) : <p className="text-sm text-muted-foreground">Nothing here.</p>}
+        {children}
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-8">
-        <ClipboardList className="h-10 w-10 text-primary" />
-        <div>
-          <h2 className="text-4xl font-serif">Loom</h2>
-          <p className="text-foreground/70">
-            A unified view of all your tasks.
-          </p>
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center mb-8 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <ClipboardList className="h-10 w-10 text-primary" />
+          <div>
+            <h2 className="text-4xl font-serif">Loom</h2>
+            <p className="text-foreground/70">
+              A unified view of all your tasks.
+            </p>
+          </div>
         </div>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Task
+        </Button>
       </div>
 
       {loading ? (
         <p>Loading tasks...</p>
       ) : (
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-sans font-medium">Due Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dueTodayTasks.length > 0 ? renderTaskList(dueTodayTasks) : <p className="text-sm text-muted-foreground">Nothing due today. Enjoy your day!</p>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-sans font-medium">Inbox</CardTitle>
-              <CardDescription>Tasks that are not assigned to a project.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {inboxTasks.length > 0 ? renderTaskList(inboxTasks) : <p className="text-sm text-muted-foreground">Inbox is empty.</p>}
-              <form onSubmit={handleAddTask} className="flex gap-2 mt-4">
-                <Input
-                  placeholder="Add a task to your inbox..."
-                  value={newTaskContent}
-                  onChange={(e) => setNewTaskContent(e.target.value)}
-                />
-                <Button type="submit" variant="ghost" size="icon">
-                  <PlusCircle className="h-5 w-5" />
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
+        <div className="flex-grow flex gap-6 overflow-x-auto pb-4">
+          <TaskColumn title="Due Today" tasks={dueTodayTasks} />
+          <TaskColumn title="Inbox" description="Tasks not assigned to a project." tasks={inboxTasks} />
           {projectTasks.map((project) => (
-            <Card key={project.projectId}>
-              <CardHeader>
-                <CardTitle className="font-sans font-medium">{project.projectName}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {project.tasks.length > 0 ? renderTaskList(project.tasks) : <p className="text-sm text-muted-foreground">No tasks for this project.</p>}
-              </CardContent>
-            </Card>
+            <TaskColumn key={project.projectId} title={project.projectName} tasks={project.tasks} />
           ))}
         </div>
       )}
+
+      <AddTaskDialog
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onTaskAdded={fetchTasks}
+      />
       {selectedTask && (
         <EditTaskDialog
           isOpen={isEditDialogOpen}
