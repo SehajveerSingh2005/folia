@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Tag } from 'lucide-react';
+import { Tag, Check } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const categories = ['Writing', 'Project', 'Life', 'Business', 'Random'];
 
@@ -48,8 +49,8 @@ const NotesWidget = () => {
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Quick Note</CardTitle>
-        <CardDescription>
+        <CardTitle className="font-sans font-medium text-base sm:text-lg">Quick Note</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
           Plant a new seed in your Garden.
         </CardDescription>
       </CardHeader>
@@ -58,17 +59,16 @@ const NotesWidget = () => {
           placeholder="What's on your mind?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="flex-grow"
+          className="flex-grow border-none focus:ring-0 resize-none bg-transparent p-0 text-sm"
         />
-        <div className="flex justify-between items-center mt-auto pt-2">
+        <div className="flex justify-between items-center mt-auto pt-2 border-t">
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Tag className="mr-2 h-4 w-4" />
-                {category || 'Category'}
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Tag className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="p-0 w-56">
+            <PopoverContent className="p-0 w-56" onClick={(e) => e.stopPropagation()}>
               <Command>
                 <CommandInput placeholder="Select category..." />
                 <CommandList>
@@ -91,9 +91,16 @@ const NotesWidget = () => {
               </Command>
             </PopoverContent>
           </Popover>
-          <Button onClick={handleAddNote} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Note'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={handleAddNote} disabled={isSubmitting} variant="ghost" size="icon" className="h-8 w-8">
+                <Check className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Save Note</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardContent>
     </Card>

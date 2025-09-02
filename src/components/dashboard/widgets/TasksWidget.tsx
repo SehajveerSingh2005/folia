@@ -117,8 +117,8 @@ const TasksWidget = () => {
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Tasks</CardTitle>
-        <CardDescription>Your upcoming tasks.</CardDescription>
+        <CardTitle className="font-sans font-medium text-base sm:text-lg">Tasks</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Your upcoming tasks.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col overflow-hidden">
         <div className="relative flex-grow overflow-hidden">
@@ -130,7 +130,7 @@ const TasksWidget = () => {
                   checked={task.is_done}
                   onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
                 />
-                <label htmlFor={`task-${task.id}`} className="text-sm flex-grow">
+                <label htmlFor={`task-${task.id}`} className="text-xs sm:text-sm flex-grow">
                   {task.content}
                 </label>
                 {task.loom_item_name && <Badge variant="secondary">{task.loom_item_name}</Badge>}
@@ -156,7 +156,7 @@ const TasksWidget = () => {
                     <LinkIcon className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-56">
+                <PopoverContent className="p-0 w-56" onClick={(e) => e.stopPropagation()}>
                   <Command>
                     <CommandInput placeholder="Link to..." />
                     <CommandList>
