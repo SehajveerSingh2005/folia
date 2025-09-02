@@ -6,10 +6,18 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
 import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+import DashboardLayoutPage from "./pages/DashboardLayoutPage";
+import DashboardOverviewWrapper from "./components/DashboardOverviewWrapper";
+import Flow from "./components/spaces/Flow";
+import Loom from "./components/spaces/Loom";
+import Garden from "./components/spaces/Garden";
+import Journal from "./components/spaces/Journal";
+import Horizon from "./components/spaces/Horizon";
+import Archive from "./components/spaces/Archive";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +32,18 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+            <Route element={<DashboardLayoutPage />}>
+              <Route path="/dashboard" element={<DashboardOverviewWrapper />} />
+              <Route path="/flow" element={<Flow />} />
+              <Route path="/loom" element={<Loom />} />
+              <Route path="/garden" element={<Garden />} />
+              <Route path="/journal" element={<Journal />} />
+              <Route path="/horizon" element={<Horizon />} />
+              <Route path="/archive" element={<Archive />} />
+            </Route>
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

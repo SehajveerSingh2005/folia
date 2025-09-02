@@ -23,14 +23,14 @@ export type View =
   | 'Horizon'
   | 'Archive';
 
-const navItems: { id: View; icon: React.ElementType; label: string }[] = [
-  { id: 'Overview', icon: LayoutGrid, label: 'Home' },
-  { id: 'Loom', icon: ClipboardList, label: 'Loom' },
-  { id: 'Flow', icon: FolderKanban, label: 'Flow' },
-  { id: 'Garden', icon: Sparkles, label: 'Garden' },
-  { id: 'Journal', icon: Book, label: 'Journal' },
-  { id: 'Horizon', icon: Telescope, label: 'Horizon' },
-  { id: 'Archive', icon: Archive, label: 'Archive' },
+const navItems: { id: View; icon: React.ElementType; label: string; path: string }[] = [
+  { id: 'Overview', icon: LayoutGrid, label: 'Home', path: '/dashboard' },
+  { id: 'Loom', icon: ClipboardList, label: 'Loom', path: '/loom' },
+  { id: 'Flow', icon: FolderKanban, label: 'Flow', path: '/flow' },
+  { id: 'Garden', icon: Sparkles, label: 'Garden', path: '/garden' },
+  { id: 'Journal', icon: Book, label: 'Journal', path: '/journal' },
+  { id: 'Horizon', icon: Telescope, label: 'Horizon', path: '/horizon' },
+  { id: 'Archive', icon: Archive, label: 'Archive', path: '/archive' },
 ];
 
 interface SidebarProps {
@@ -78,7 +78,7 @@ const Sidebar = ({
                     'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary',
                 )}
               >
-                <Link to={item.id === 'Overview' ? '/dashboard' : `/dashboard#${item.id.toLowerCase()}`}>
+                <Link to={item.path}>
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.label}
                 </Link>

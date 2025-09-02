@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 type Profile = {
   first_name: string | null;
 };
 
-const Dashboard = () => {
+const DashboardLayoutPage = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,8 +77,10 @@ const Dashboard = () => {
     <DashboardLayout
       firstName={profile.first_name || 'User'}
       onLogout={handleLogout}
-    />
+    >
+      <Outlet context={{ firstName: profile.first_name || 'User' }} />
+    </DashboardLayout>
   );
 };
 
-export default Dashboard;
+export default DashboardLayoutPage;

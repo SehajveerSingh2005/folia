@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { View } from './layout/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
 type SearchResult = {
   id: string;
@@ -29,14 +30,13 @@ type SearchResult = {
 interface GlobalSearchProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onNavigate: (view: View) => void;
 }
 
 const GlobalSearch = ({
   isOpen,
   onOpenChange,
-  onNavigate,
 }: GlobalSearchProps) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +68,7 @@ const GlobalSearch = ({
   }, [debouncedSearchTerm, isOpen]);
 
   const handleSelect = (result: SearchResult) => {
-    onNavigate(result.type);
+    navigate(result.path);
     onOpenChange(false);
     setSearchTerm('');
   };

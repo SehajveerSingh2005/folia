@@ -1,48 +1,35 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar, { View } from './Sidebar';
-import Flow from '@/components/spaces/Flow';
-import Loom from '@/components/spaces/Loom';
-import Garden from '@/components/spaces/Garden';
-import Journal from '@/components/spaces/Journal';
-import Horizon from '@/components/spaces/Horizon';
-import Archive from '@/components/spaces/Archive';
-import DashboardOverview from '@/components/DashboardOverview';
-import { Button } from '@/components/ui/button';
-import { Plus, Pencil } from 'lucide-react';
-import AddWidgetSheet from '@/components/dashboard/AddWidgetSheet';
 import GlobalSearch from '@/components/GlobalSearch';
 
 interface DashboardLayoutProps {
   firstName: string;
   onLogout: () => void;
+  children: React.ReactNode;
 }
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const capitalize = (s: string) => {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
-const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
+const DashboardLayout = ({ firstName, onLogout, children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const getViewFromHash = (): View => {
-    const hash = location.hash.substring(1);
-    if (hash) {
-      return capitalize(hash) as View;
-    }
-    return 'Overview';
+
+  const getViewFromPath = (): View => {
+    const path = location.pathname.split('/').pop() || '';
+    if (path === 'dashboard') return 'Overview';
+    return capitalize(path) as View;
   };
 
-  const [activeView, setActiveView] = useState<View>(getViewFromHash());
-  const [isEditable, setIsEditable] = useState(false);
-  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
+  const [activeView, setActiveView] = useState<View>(getViewFromPath());
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
-
   useEffect(() => {
-    setActiveView(getViewFromHash());
-  }, [location.hash]);
+    setActiveView(getViewFromPath());
+  }, [location.pathname]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -55,65 +42,6 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  const handleAddWidget = (widgetType: string, w: number, h: number) => {
-    setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() });
-  };
-
-  const onWidgetAdded = () => {
-    setAddWidgetTrigger(null);
-  };
-
-  const handleViewChange = (view: View) => {
-    if (
-      activeView === 'Overview' &&
-      view !== 'Overview' &&
-      saveLayoutRef.current
-    ) {
-      saveLayoutRef.current();
-    }
-    const path = view === 'Overview' ? '/dashboard' : `/dashboard#${view.toLowerCase()}`;
-    navigate(path);
-  };
-
-  const renderContent = () => {
-    switch (activeView) {
-      case 'Overview':
-        return (
-          <DashboardOverview
-            firstName={firstName}
-            onNavigate={handleViewChange}
-            isEditable={isEditable}
-            addWidgetTrigger={addWidgetTrigger}
-            onWidgetAdded={onWidgetAdded}
-            setSaveLayoutRef={saveLayoutRef}
-          />
-        );
-      case 'Flow':
-        return <Flow />;
-      case 'Loom':
-        return <Loom />;
-      case 'Garden':
-        return <Garden />;
-      case 'Journal':
-        return <Journal />;
-      case 'Horizon':
-        return <Horizon />;
-      case 'Archive':
-        return <Archive />;
-      default:
-        return (
-          <DashboardOverview
-            firstName={firstName}
-            onNavigate={handleViewChange}
-            isEditable={isEditable}
-            addWidgetTrigger={addWidgetTrigger}
-            onWidgetAdded={onWidgetAdded}
-            setSaveLayoutRef={saveLayoutRef}
-          />
-        );
-    }
-  };
-
   return (
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar
@@ -123,32 +51,11 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         onSearch={() => setIsSearchOpen(true)}
       />
       <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
-        {activeView === 'Overview' && (
-          <div className="flex justify-end items-center mb-4 gap-2">
-            <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Widget
-            </Button>
-            <Button
-              variant={isEditable ? 'default' : 'outline'}
-              onClick={() => setIsEditable(!isEditable)}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              {isEditable ? 'Done Editing' : 'Edit Layout'}
-            </Button>
-          </div>
-        )}
-        <div className="flex-grow">{renderContent()}</div>
+        {children}
       </main>
-      <AddWidgetSheet
-        isOpen={isAddSheetOpen}
-        onOpenChange={setIsAddSheetOpen}
-        onAddWidget={handleAddWidget}
-      />
       <GlobalSearch
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
-        onNavigate={handleViewChange}
       />
     </div>
   );
