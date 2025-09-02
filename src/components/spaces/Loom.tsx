@@ -171,7 +171,7 @@ const Loom = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-8 flex-shrink-0">
+      <div className="flex justify-between items-center mb-8 flex-shrink-0 pr-4">
         <div className="flex items-center gap-4">
           <ClipboardList className="h-10 w-10 text-primary" />
           <div>
