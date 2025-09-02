@@ -52,10 +52,12 @@ const widgetNavigationMap: { [key: string]: string } = {
 };
 
 const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
-  { widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
-  { widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
-  { widget_type: 'Tasks', x: 0, y: 2, w: 6, h: 4 },
-  { widget_type: 'Notes', x: 6, y: 2, w: 6, h: 4 },
+  { widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
+  { widget_type: 'Clock', x: 4, y: 0, w: 3, h: 2 },
+  { widget_type: 'Notes', x: 7, y: 0, w: 3, h: 3 },
+  { widget_type: 'Tasks', x: 0, y: 2, w: 3, h: 4 },
+  { widget_type: 'Journal', x: 3, y: 2, w: 4, h: 4 },
+  { widget_type: 'Goals', x: 7, y: 3, w: 3, h: 3 },
 ];
 
 // Default sizes for new widgets
