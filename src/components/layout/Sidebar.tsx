@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 export type View =
   | 'Overview'
-  | 'Flow'
+  | 'Loom'
   | 'Garden'
   | 'Journal'
   | 'Horizon'
@@ -21,7 +21,7 @@ export type View =
 
 const navItems = [
   { id: 'Overview', icon: LayoutGrid, label: 'Home' },
-  { id: 'Flow', icon: FolderKanban, label: 'Flow' },
+  { id: 'Loom', icon: FolderKanban, label: 'Loom' },
   { id: 'Garden', icon: Sparkles, label: 'Garden' },
   { id: 'Journal', icon: Book, label: 'Journal' },
   { id: 'Horizon', icon: Telescope, label: 'Horizon' },

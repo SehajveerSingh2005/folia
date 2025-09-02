@@ -78,7 +78,7 @@ const loomItemTypes = [
   'Misc',
 ];
 
-const Flow = () => {
+const Loom = () => {
   const [activeItems, setActiveItems] = useState<LoomItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -209,7 +209,7 @@ const Flow = () => {
         <div className="flex items-center gap-4">
           <FolderKanban className="h-10 w-10 text-primary" />
           <div>
-            <h2 className="text-4xl font-serif">Flow</h2>
+            <h2 className="text-4xl font-serif">Loom</h2>
             <p className="text-foreground/70">
               Manage active projects, courses, and tasks.
             </p>
@@ -365,4 +365,4 @@ const Flow = () => {
   );
 };
 
-export default Flow;
+export default Loom;

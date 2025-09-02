@@ -45,7 +45,7 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
-  Tasks: 'Flow',
+  Tasks: 'Loom',
   Notes: 'Garden',
   Journal: 'Journal',
   Goals: 'Horizon',
