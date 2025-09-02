@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Book } from 'lucide-react';
+import { Book, ClipboardCheck } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -101,6 +101,34 @@ const Journal = () => {
     if (!isDirty) setIsDirty(true);
   };
 
+  const fetchAndAppendTasks = async () => {
+    if (!selectedDate) return;
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+    const { data, error } = await supabase
+      .from('ledger_items')
+      .select('content')
+      .eq('is_done', true)
+      .gte('completed_at', `${dateStr}T00:00:00.000Z`)
+      .lte('completed_at', `${dateStr}T23:59:59.999Z`);
+
+    if (error) {
+      showError('Could not fetch completed tasks.');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const tasksSummary = data.map((task) => `- ${task.content}`).join('\n');
+      const newEntryText =
+        (entry?.entry || '') +
+        `\n\n**Completed Today:**\n${tasksSummary}`;
+      handleInputChange('entry', newEntryText);
+      showSuccess(`${data.length} tasks added to your entry.`);
+    } else {
+      showSuccess('No tasks were completed on this day.');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
       <div className="lg:col-span-1">
@@ -130,31 +158,43 @@ const Journal = () => {
       <div className="lg:col-span-2">
         <Card className="h-full">
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-4">
               <CardTitle className="font-sans font-medium text-2xl">
                 {selectedDate
                   ? format(selectedDate, 'MMMM d, yyyy')
                   : 'Select a date'}
               </CardTitle>
-              {entry && (
-                <div className="w-40">
-                  <Select
-                    value={entry.mood || 'Neutral'}
-                    onValueChange={(value) => handleInputChange('mood', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select mood" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {moodOptions.map((mood) => (
-                        <SelectItem key={mood} value={mood}>
-                          {mood}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchAndAppendTasks}
+                >
+                  <ClipboardCheck className="mr-2 h-4 w-4" />
+                  Import Tasks
+                </Button>
+                {entry && (
+                  <div className="w-40">
+                    <Select
+                      value={entry.mood || 'Neutral'}
+                      onValueChange={(value) =>
+                        handleInputChange('mood', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select mood" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {moodOptions.map((mood) => (
+                          <SelectItem key={mood} value={mood}>
+                            {mood}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>

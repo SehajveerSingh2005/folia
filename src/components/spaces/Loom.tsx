@@ -96,9 +96,13 @@ const Loom = () => {
   };
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
+    const newStatus = !isDone;
     const { error } = await supabase
       .from('ledger_items')
-      .update({ is_done: !isDone })
+      .update({
+        is_done: newStatus,
+        completed_at: newStatus ? new Date().toISOString() : null,
+      })
       .eq('id', taskId);
     if (error) showError(error.message);
     else fetchTasks();
