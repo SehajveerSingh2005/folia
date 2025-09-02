@@ -175,7 +175,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <FormLabel>Theme</FormLabel>
+              <p className="text-sm font-medium">Theme</p>
               <ThemeToggle />
             </div>
           </CardContent>
