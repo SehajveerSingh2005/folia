@@ -64,8 +64,8 @@ const Loom = () => {
     
     const todayString = format(new Date(), 'yyyy-MM-dd');
 
-    setDueTodayTasks(visibleTasks.filter(task => task.due_date === todayString));
-    setInboxTasks(visibleTasks.filter((task) => !task.loom_item_id && task.due_date !== todayString));
+    setDueTodayTasks(visibleTasks.filter(task => task.due_date && format(parseISO(task.due_date), 'yyyy-MM-dd') === todayString));
+    setInboxTasks(visibleTasks.filter((task) => !task.loom_item_id && (!task.due_date || format(parseISO(task.due_date), 'yyyy-MM-dd') !== todayString)));
 
     if (projects) {
       const groupedByProject = projects.map((project) => ({
@@ -85,15 +85,36 @@ const Loom = () => {
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
+    const completed_at = newStatus ? new Date().toISOString() : null;
+
+    const updateTaskInState = (task: LedgerItem) => ({
+      ...task,
+      is_done: newStatus,
+      completed_at,
+    });
+
+    const allTaskLists = {
+      dueToday: setDueTodayTasks,
+      inbox: setInboxTasks,
+    };
+
+    for (const listSetter of Object.values(allTaskLists)) {
+      listSetter((prev: LedgerItem[]) => prev.map(t => t.id === taskId ? updateTaskInState(t) : t));
+    }
+    setProjectTasks(prev => prev.map(proj => ({
+      ...proj,
+      tasks: proj.tasks.map(t => t.id === taskId ? updateTaskInState(t) : t)
+    })));
+
     const { error } = await supabase
       .from('ledger_items')
-      .update({
-        is_done: newStatus,
-        completed_at: newStatus ? new Date().toISOString() : null,
-      })
+      .update({ is_done: newStatus, completed_at })
       .eq('id', taskId);
-    if (error) showError(error.message);
-    else fetchTasks();
+
+    if (error) {
+      showError(error.message);
+      fetchTasks(); 
+    }
   };
 
   const openEditDialog = (task: LedgerItem) => {
@@ -120,9 +141,7 @@ const Loom = () => {
             <Checkbox
               id={task.id}
               checked={task.is_done}
-              onCheckedChange={() => {
-                handleToggleTask(task.id, task.is_done);
-              }}
+              onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
               onClick={(e) => e.stopPropagation()}
             />
             <label

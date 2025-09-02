@@ -9,7 +9,8 @@ import { X } from 'lucide-react';
 // Import all widgets
 import WelcomeWidget from './dashboard/widgets/WelcomeWidget';
 import ClockWidget from './dashboard/widgets/ClockWidget';
-import TasksWidget from './dashboard/widgets/TasksWidget';
+import DueTodayWidget from './dashboard/widgets/DueTodayWidget';
+import InboxWidget from './dashboard/widgets/InboxWidget';
 import NotesWidget from './dashboard/widgets/NotesWidget';
 import JournalWidget from './dashboard/widgets/JournalWidget';
 import GoalsWidget from './dashboard/widgets/GoalsWidget';
@@ -38,14 +39,18 @@ interface DashboardOverviewProps {
 const widgetMap: { [key: string]: React.ComponentType<any> } = {
   Welcome: WelcomeWidget,
   Clock: ClockWidget,
-  Tasks: TasksWidget,
+  Tasks: DueTodayWidget, // For backwards compatibility
+  DueToday: DueTodayWidget,
+  Inbox: InboxWidget,
   Notes: NotesWidget,
   Journal: JournalWidget,
   Goals: GoalsWidget,
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
-  Tasks: 'Flow',
+  Tasks: 'Loom',
+  DueToday: 'Loom',
+  Inbox: 'Loom',
   Notes: 'Garden',
   Journal: 'Journal',
   Goals: 'Horizon',
@@ -54,8 +59,8 @@ const widgetNavigationMap: { [key: string]: string } = {
 const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
   { widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
   { widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
-  { widget_type: 'Tasks', x: 0, y: 2, w: 6, h: 4 },
-  { widget_type: 'Notes', x: 6, y: 2, w: 6, h: 4 },
+  { widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
+  { widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
   { widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
   { widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
 ];
@@ -64,7 +69,8 @@ const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
 const defaultWidgetSizes: { [key: string]: { w: number, h: number } } = {
   Welcome: { w: 8, h: 2 },
   Clock: { w: 4, h: 2 },
-  Tasks: { w: 6, h: 4 },
+  DueToday: { w: 6, h: 4 },
+  Inbox: { w: 6, h: 4 },
   Notes: { w: 6, h: 4 },
   Journal: { w: 6, h: 4 },
   Goals: { w: 6, h: 4 },

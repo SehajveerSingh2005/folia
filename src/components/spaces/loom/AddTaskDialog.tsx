@@ -56,19 +56,25 @@ const AddTaskDialog = ({
   onOpenChange,
   onTaskAdded,
 }: AddTaskDialogProps) => {
-  const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
+  const [loomItems, setLoomItems] useState<LoomItem[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       content: '',
       priority: null,
-      due_date: null,
+      due_date: new Date(),
       loom_item_id: null,
     },
   });
 
   useEffect(() => {
     if (isOpen) {
+      form.reset({
+        content: '',
+        priority: null,
+        due_date: new Date(),
+        loom_item_id: null,
+      });
       const fetchLoomItems = async () => {
         const { data, error } = await supabase
           .from('loom_items')
@@ -82,7 +88,7 @@ const AddTaskDialog = ({
       };
       fetchLoomItems();
     }
-  }, [isOpen]);
+  }, [isOpen, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +109,6 @@ const AddTaskDialog = ({
       showSuccess('Task created.');
       onTaskAdded();
       onOpenChange(false);
-      form.reset();
     }
   };
 
