@@ -105,7 +105,7 @@ const TasksWidget = () => {
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <CardTitle className="font-sans font-medium">Inbox</CardTitle>
-        <CardDescription>Quick tasks from your Flow.</CardDescription>
+        <CardDescription>Unlinked tasks and ideas.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col overflow-hidden">
         <div className="relative flex-grow overflow-hidden">
@@ -129,15 +129,19 @@ const TasksWidget = () => {
           )}
         </div>
         <form onSubmit={handleAddTask} className="flex-shrink-0 flex flex-col gap-2 mt-4 pt-2 border-t">
-          <Input
-            placeholder="Add a task..."
-            value={newTaskContent}
-            onChange={(e) => setNewTaskContent(e.target.value)}
-            className="h-8"
-          />
           <div className="flex gap-2">
+            <Input
+              placeholder="Add a task..."
+              value={newTaskContent}
+              onChange={(e) => setNewTaskContent(e.target.value)}
+            />
+            <Button type="submit" size="icon" className="flex-shrink-0">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {loomItems.length > 0 && (
             <Select value={selectedLoomItem} onValueChange={setSelectedLoomItem}>
-              <SelectTrigger className="h-8">
+              <SelectTrigger className="h-8 text-xs text-muted-foreground">
                 <SelectValue placeholder="Link to item (optional)" />
               </SelectTrigger>
               <SelectContent>
@@ -146,10 +150,7 @@ const TasksWidget = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit" size="sm">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          )}
         </form>
       </CardContent>
     </Card>
