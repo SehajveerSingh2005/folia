@@ -4,20 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Link as LinkIcon } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 
-type LedgerItem = {
+type EnrichedLedgerItem = {
   id: string;
   content: string;
   is_done: boolean;
+  loom_item_name: string | null;
 };
 
 type LoomItem = {
@@ -26,24 +27,23 @@ type LoomItem = {
 };
 
 const TasksWidget = () => {
-  const [tasks, setTasks] = useState<LedgerItem[]>([]);
+  const [tasks, setTasks] = useState<EnrichedLedgerItem[]>([]);
   const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
   const [newTaskContent, setNewTaskContent] = useState('');
-  const [selectedLoomItem, setSelectedLoomItem] = useState<string | undefined>(undefined);
+  const [selectedLoomItem, setSelectedLoomItem] = useState<LoomItem | null>(null);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
   const fetchData = async () => {
     const { data: taskData, error: taskError } = await supabase
       .from('ledger_items')
-      .select('id, content, is_done')
-      .is('loom_item_id', null)
+      .select('id, content, is_done, loom_item_id')
       .eq('is_done', false)
-      .limit(10)
+      .limit(20)
       .order('created_at', { ascending: true });
 
     if (taskError) console.error('Error fetching tasks:', taskError);
-    else if (taskData) setTasks(taskData);
 
     const { data: loomData, error: loomError } = await supabase
       .from('loom_items')
@@ -52,6 +52,19 @@ const TasksWidget = () => {
     
     if (loomError) console.error('Error fetching loom items:', loomError);
     else if (loomData) setLoomItems(loomData);
+
+    if (taskData && loomData) {
+      const enrichedTasks = taskData.map(task => {
+        const loomItem = loomData.find(item => item.id === task.loom_item_id);
+        return {
+          ...task,
+          loom_item_name: loomItem ? loomItem.name : null
+        };
+      });
+      setTasks(enrichedTasks);
+    } else if (taskData) {
+      setTasks(taskData.map(t => ({...t, loom_item_name: null})));
+    }
   };
 
   useEffect(() => {
@@ -80,13 +93,13 @@ const TasksWidget = () => {
         content: newTaskContent, 
         user_id: user.id, 
         type: 'Task',
-        loom_item_id: selectedLoomItem || null
+        loom_item_id: selectedLoomItem?.id || null
       });
 
     if (error) showError(error.message);
     else {
       setNewTaskContent('');
-      setSelectedLoomItem(undefined);
+      setSelectedLoomItem(null);
       fetchData();
     }
   };
@@ -104,8 +117,8 @@ const TasksWidget = () => {
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Inbox</CardTitle>
-        <CardDescription>Unlinked tasks and ideas.</CardDescription>
+        <CardTitle className="font-sans font-medium">Tasks</CardTitle>
+        <CardDescription>Your upcoming tasks.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col overflow-hidden">
         <div className="relative flex-grow overflow-hidden">
@@ -117,12 +130,13 @@ const TasksWidget = () => {
                   checked={task.is_done}
                   onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
                 />
-                <label htmlFor={`task-${task.id}`} className="text-sm">
+                <label htmlFor={`task-${task.id}`} className="text-sm flex-grow">
                   {task.content}
                 </label>
+                {task.loom_item_name && <Badge variant="secondary">{task.loom_item_name}</Badge>}
               </div>
             ))}
-            {tasks.length === 0 && <p className="text-sm text-muted-foreground">Inbox is clear!</p>}
+            {tasks.length === 0 && <p className="text-sm text-muted-foreground">All tasks complete!</p>}
           </div>
           {isOverflowing && (
             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
@@ -135,21 +149,45 @@ const TasksWidget = () => {
               value={newTaskContent}
               onChange={(e) => setNewTaskContent(e.target.value)}
             />
+            {loomItems.length > 0 && (
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="flex-shrink-0">
+                    <LinkIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-56">
+                  <Command>
+                    <CommandInput placeholder="Link to..." />
+                    <CommandList>
+                      <CommandEmpty>No items found.</CommandEmpty>
+                      <CommandGroup>
+                        {loomItems.map((item) => (
+                          <CommandItem
+                            key={item.id}
+                            value={item.name}
+                            onSelect={() => {
+                              setSelectedLoomItem(item);
+                              setIsPopoverOpen(false);
+                            }}
+                          >
+                            {item.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
             <Button type="submit" size="icon" className="flex-shrink-0">
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          {loomItems.length > 0 && (
-            <Select value={selectedLoomItem} onValueChange={setSelectedLoomItem}>
-              <SelectTrigger className="h-8 text-xs text-muted-foreground">
-                <SelectValue placeholder="Link to item (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {loomItems.map(item => (
-                  <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {selectedLoomItem && (
+            <div className="text-xs text-muted-foreground">
+              Linking to: <Badge variant="outline">{selectedLoomItem.name}</Badge>
+            </div>
           )}
         </form>
       </CardContent>

@@ -3,23 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { showError, showSuccess } from '@/utils/toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Tag } from 'lucide-react';
 
 const categories = ['Writing', 'Project', 'Life', 'Business', 'Random'];
 
 const NotesWidget = () => {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
-  const [moods, setMoods] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const handleAddNote = async () => {
     if (content.trim() === '') return;
@@ -32,15 +27,12 @@ const NotesWidget = () => {
       return;
     }
 
-    const moodsArray = moods.trim() === '' ? null : moods.split(',').map(m => m.trim());
-
     const { error } = await supabase
       .from('garden_items')
       .insert({ 
           content, 
           user_id: user.id, 
           category: category || 'Random',
-          moods: moodsArray 
       });
 
     if (error) {
@@ -49,7 +41,6 @@ const NotesWidget = () => {
       showSuccess('Note added to Garden.');
       setContent('');
       setCategory('');
-      setMoods('');
     }
     setIsSubmitting(false);
   };
@@ -69,24 +60,41 @@ const NotesWidget = () => {
           onChange={(e) => setContent(e.target.value)}
           className="flex-grow"
         />
-        <div className="flex gap-2">
-            <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                </SelectContent>
-            </Select>
-            <Input 
-                placeholder="Tags (comma-separated)"
-                value={moods}
-                onChange={(e) => setMoods(e.target.value)}
-            />
+        <div className="flex justify-between items-center mt-auto pt-2">
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Tag className="mr-2 h-4 w-4" />
+                {category || 'Category'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-56">
+              <Command>
+                <CommandInput placeholder="Select category..." />
+                <CommandList>
+                  <CommandEmpty>No categories found.</CommandEmpty>
+                  <CommandGroup>
+                    {categories.map((cat) => (
+                      <CommandItem
+                        key={cat}
+                        value={cat}
+                        onSelect={(currentValue) => {
+                          setCategory(currentValue === category ? '' : currentValue);
+                          setIsPopoverOpen(false);
+                        }}
+                      >
+                        {cat}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <Button onClick={handleAddNote} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Note'}
+          </Button>
         </div>
-        <Button onClick={handleAddNote} disabled={isSubmitting} className="mt-auto">
-          {isSubmitting ? 'Saving...' : 'Save Note'}
-        </Button>
       </CardContent>
     </Card>
   );
