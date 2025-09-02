@@ -7,12 +7,14 @@ import {
   LogOut,
   LayoutGrid,
   Archive,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export type View =
   | 'Overview'
+  | 'Flow'
   | 'Loom'
   | 'Garden'
   | 'Journal'
@@ -21,7 +23,8 @@ export type View =
 
 const navItems = [
   { id: 'Overview', icon: LayoutGrid, label: 'Home' },
-  { id: 'Loom', icon: FolderKanban, label: 'Loom' },
+  { id: 'Loom', icon: ClipboardList, label: 'Loom' },
+  { id: 'Flow', icon: FolderKanban, label: 'Flow' },
   { id: 'Garden', icon: Sparkles, label: 'Garden' },
   { id: 'Journal', icon: Book, label: 'Journal' },
   { id: 'Horizon', icon: Telescope, label: 'Horizon' },

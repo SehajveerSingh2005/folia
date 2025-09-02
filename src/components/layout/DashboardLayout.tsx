@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Sidebar, { View } from './Sidebar';
+import Flow from '@/components/spaces/Flow';
 import Loom from '@/components/spaces/Loom';
 import Garden from '@/components/spaces/Garden';
 import Journal from '@/components/spaces/Journal';
@@ -53,6 +54,8 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
             setSaveLayoutRef={saveLayoutRef}
           />
         );
+      case 'Flow':
+        return <Flow />;
       case 'Loom':
         return <Loom />;
       case 'Garden':
