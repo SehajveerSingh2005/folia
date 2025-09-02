@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export type View =
   | 'Overview'
@@ -44,6 +45,8 @@ const Sidebar = ({
   onLogout,
   firstName,
 }: SidebarProps) => {
+  const navigate = useNavigate();
+
   return (
     <aside className="w-64 flex flex-col bg-secondary/40 p-4 border-r">
       <div className="mb-8">
@@ -74,6 +77,7 @@ const Sidebar = ({
         <Button
           variant="ghost"
           className="w-full justify-start text-md font-normal px-3 py-6"
+          onClick={() => navigate('/settings')}
         >
           <Settings className="mr-3 h-5 w-5" />
           Settings
