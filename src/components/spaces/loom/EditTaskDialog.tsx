@@ -44,6 +44,7 @@ type LedgerItem = {
   content: string;
   priority: string | null;
   due_date: string | null;
+  loom_item_id: string | null;
 };
 
 interface EditTaskDialogProps {
@@ -81,7 +82,7 @@ const EditTaskDialog = ({
       .update({
         ...values,
         due_date: values.due_date
-          ? values.due_date.toISOString().split('T')[0]
+          ? format(values.due_date, 'yyyy-MM-dd')
           : null,
       })
       .eq('id', task.id);
@@ -172,10 +173,14 @@ const EditTaskDialog = ({
             />
           </div>
           <DialogFooter className="sm:justify-between">
-            <Button type="button" variant="destructive" onClick={handleDeleteTask}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+            {task?.loom_item_id ? (
+              <Button type="button" variant="destructive" onClick={handleDeleteTask}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            ) : (
+              <div />
+            )}
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>

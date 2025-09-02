@@ -91,7 +91,7 @@ const AddTaskDialog = ({
     const { error } = await supabase.from('ledger_items').insert({
       ...values,
       due_date: values.due_date
-        ? values.due_date.toISOString().split('T')[0]
+        ? format(values.due_date, 'yyyy-MM-dd')
         : null,
       user_id: user.id,
       type: 'Task',

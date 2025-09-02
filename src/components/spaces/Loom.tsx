@@ -120,8 +120,7 @@ const Loom = () => {
             <Checkbox
               id={task.id}
               checked={task.is_done}
-              onCheckedChange={(e) => {
-                e.stopPropagation();
+              onCheckedChange={() => {
                 handleToggleTask(task.id, task.is_done);
               }}
               onClick={(e) => e.stopPropagation()}
@@ -132,16 +131,18 @@ const Loom = () => {
             >
               {task.content}
             </label>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-2 ml-auto">
               {getPriorityBadge(task.priority)}
-              {task.due_date && (
-                <div className={cn("flex items-center text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
-                  {isOverdue && <AlertCircle className="h-3 w-3 mr-1" />}
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {format(parseISO(task.due_date), 'MMM d')}
-                </div>
-              )}
-              <Pencil className="h-3 w-3 text-muted-foreground" />
+              <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                {task.due_date && (
+                  <div className={cn("flex items-center text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
+                    {isOverdue && <AlertCircle className="h-3 w-3 mr-1" />}
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {format(parseISO(task.due_date), 'MMM d')}
+                  </div>
+                )}
+                <Pencil className="h-3 w-3 text-muted-foreground" />
+              </div>
             </div>
           </div>
         );
