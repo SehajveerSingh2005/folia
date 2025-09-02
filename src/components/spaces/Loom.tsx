@@ -149,19 +149,6 @@ const Loom = () => {
     </div>
   );
 
-  const TaskColumn = ({ title, description, tasks, children }: { title: string, description?: string, tasks: LedgerItem[], children?: React.ReactNode }) => (
-    <Card className="w-96 flex-shrink-0 flex flex-col h-full">
-      <CardHeader>
-        <CardTitle className="font-sans font-medium">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
-        {tasks.length > 0 ? renderTaskList(tasks) : <p className="text-sm text-muted-foreground">Nothing here.</p>}
-        {children}
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-8 flex-shrink-0">
@@ -183,12 +170,42 @@ const Loom = () => {
       {loading ? (
         <p>Loading tasks...</p>
       ) : (
-        <div className="flex-grow flex gap-6 overflow-x-auto pb-4">
-          <TaskColumn title="Due Today" tasks={dueTodayTasks} />
-          <TaskColumn title="Inbox" description="Tasks not assigned to a project." tasks={inboxTasks} />
-          {projectTasks.map((project) => (
-            <TaskColumn key={project.projectId} title={project.projectName} tasks={project.tasks} />
-          ))}
+        <div className="flex-grow overflow-y-auto pr-4 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-sans font-medium">Due Today</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dueTodayTasks.length > 0 ? renderTaskList(dueTodayTasks) : <p className="text-sm text-muted-foreground">Nothing due today. Enjoy your day!</p>}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-sans font-medium">Inbox</CardTitle>
+                  <CardDescription>Tasks not assigned to a project.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {inboxTasks.length > 0 ? renderTaskList(inboxTasks) : <p className="text-sm text-muted-foreground">Inbox is empty.</p>}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              {projectTasks.map((project) => (
+                <Card key={project.projectId}>
+                  <CardHeader>
+                    <CardTitle className="font-sans font-medium">{project.projectName}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {project.tasks.length > 0 ? renderTaskList(project.tasks) : <p className="text-sm text-muted-foreground">No tasks for this project.</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

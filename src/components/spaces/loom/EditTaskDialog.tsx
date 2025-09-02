@@ -26,7 +26,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { CalendarIcon, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
@@ -68,7 +68,7 @@ const EditTaskDialog = ({
       form.reset({
         content: task.content || '',
         priority: task.priority || null,
-        due_date: task.due_date ? new Date(task.due_date) : null,
+        due_date: task.due_date ? parseISO(task.due_date) : null,
       });
     }
   }, [task, form]);
