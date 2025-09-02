@@ -10,20 +10,33 @@ import DashboardOverview from '@/components/DashboardOverview';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil } from 'lucide-react';
 import AddWidgetSheet from '@/components/dashboard/AddWidgetSheet';
+import GlobalSearch from '@/components/GlobalSearch';
 
 interface DashboardLayoutProps {
   firstName: string;
   onLogout: () => void;
-};
+}
 
 const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
   const [activeView, setActiveView] = useState<View>('Overview');
   const [isEditable, setIsEditable] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
-  
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   // Create a ref to hold a function that can save the current layout
   const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   const handleAddWidget = (widgetType: string, w: number, h: number) => {
     setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() });
@@ -35,7 +48,11 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
 
   const handleViewChange = (view: View) => {
     // If we're leaving the Overview view, save the layout first
-    if (activeView === 'Overview' && view !== 'Overview' && saveLayoutRef.current) {
+    if (
+      activeView === 'Overview' &&
+      view !== 'Overview' &&
+      saveLayoutRef.current
+    ) {
       saveLayoutRef.current();
     }
     setActiveView(view);
@@ -87,14 +104,12 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         onNavigate={handleViewChange}
         onLogout={onLogout}
         firstName={firstName}
+        onSearch={() => setIsSearchOpen(true)}
       />
       <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
         {activeView === 'Overview' && (
           <div className="flex justify-end items-center mb-4 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddSheetOpen(true)}
-            >
+            <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Widget
             </Button>
@@ -113,6 +128,11 @@ const DashboardLayout = ({ firstName, onLogout }: DashboardLayoutProps) => {
         isOpen={isAddSheetOpen}
         onOpenChange={setIsAddSheetOpen}
         onAddWidget={handleAddWidget}
+      />
+      <GlobalSearch
+        isOpen={isSearchOpen}
+        onOpenChange={setIsSearchOpen}
+        onNavigate={handleViewChange}
       />
     </div>
   );

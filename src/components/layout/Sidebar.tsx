@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Archive,
   ClipboardList,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ interface SidebarProps {
   onNavigate: (view: View) => void;
   onLogout: () => void;
   firstName: string;
+  onSearch: () => void;
 }
 
 const Sidebar = ({
@@ -44,6 +46,7 @@ const Sidebar = ({
   onNavigate,
   onLogout,
   firstName,
+  onSearch,
 }: SidebarProps) => {
   const navigate = useNavigate();
 
@@ -54,6 +57,17 @@ const Sidebar = ({
         <p className="text-sm text-foreground/60">Welcome, {firstName}</p>
       </div>
       <nav className="flex-grow">
+        <Button
+          variant="outline"
+          className="w-full justify-start text-md font-normal px-3 mb-4 text-muted-foreground"
+          onClick={onSearch}
+        >
+          <Search className="mr-3 h-5 w-5" />
+          Search...
+          <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </Button>
         <ul>
           {navItems.map((item) => (
             <li key={item.id}>
