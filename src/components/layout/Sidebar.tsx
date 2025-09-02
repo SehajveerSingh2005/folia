@@ -66,12 +66,18 @@ const Sidebar = ({
           isCompact ? 'w-20' : 'w-64'
         )}
       >
-        <div className="mb-8 px-3">
-          <h1 className="text-2xl font-serif font-medium truncate">
-            {isCompact ? 'F' : 'Folia'}
-          </h1>
-          {!isCompact && (
-            <p className="text-sm text-foreground/60 truncate">Welcome, {firstName}</p>
+        <div className={cn("mb-8", !isCompact && "px-3")}>
+          {isCompact ? (
+            <div className="flex justify-center items-center h-[44px]">
+              <img src="/logo.png" alt="Folia Logo" className="h-8 w-auto" />
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-serif font-medium truncate">
+                Folia
+              </h1>
+              <p className="text-sm text-foreground/60 truncate">Welcome, {firstName}</p>
+            </>
           )}
         </div>
         <nav className="flex-grow">
