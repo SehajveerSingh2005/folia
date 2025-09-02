@@ -52,12 +52,12 @@ const widgetNavigationMap: { [key: string]: string } = {
 };
 
 const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
-  { widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
-  { widget_type: 'Clock', x: 4, y: 0, w: 3, h: 2 },
-  { widget_type: 'Notes', x: 7, y: 0, w: 3, h: 3 },
-  { widget_type: 'Tasks', x: 0, y: 2, w: 3, h: 4 },
-  { widget_type: 'Journal', x: 3, y: 2, w: 4, h: 4 },
-  { widget_type: 'Goals', x: 7, y: 3, w: 3, h: 3 },
+  { widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
+  { widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
+  { widget_type: 'Tasks', x: 0, y: 2, w: 6, h: 4 },
+  { widget_type: 'Notes', x: 6, y: 2, w: 6, h: 4 },
+  { widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
+  { widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
 ];
 
 // Default sizes for new widgets
@@ -92,33 +92,11 @@ const DashboardOverview = ({
     }
   }, [layout]);
 
-  // Load widgets from localStorage or database
+  // Load widgets from database
   const loadWidgets = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    try {
-      // First try to load from localStorage
-      const savedWidgets = localStorage.getItem(`dashboardWidgets_${user.id}`);
-      if (savedWidgets) {
-        const parsedWidgets = JSON.parse(savedWidgets);
-        setWidgets(parsedWidgets);
-        const formattedLayout = parsedWidgets.map((w: Widget) => ({ 
-          i: w.id, 
-          x: w.x, 
-          y: w.y, 
-          w: w.w, 
-          h: w.h 
-        }));
-        setLayout(formattedLayout);
-        setLoading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('Could not load widgets from localStorage', e);
-    }
-
-    // If no localStorage data, load from database
     const { data, error } = await supabase
       .from('widgets')
       .select('*')
