@@ -73,7 +73,3 @@ To get a local copy up and running, follow these simple steps.
     ```
 
 The application should now be running on `http://localhost:8080`.
-
----
-
-This project was built with Dyad.
