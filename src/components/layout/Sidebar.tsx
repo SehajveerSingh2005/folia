@@ -72,12 +72,15 @@ const Sidebar = ({
               <img src="/logo.png" alt="Folia Logo" className="h-8 w-auto" />
             </div>
           ) : (
-            <>
-              <h1 className="text-2xl font-serif font-medium truncate">
-                Folia
-              </h1>
-              <p className="text-sm text-foreground/60 truncate">Welcome, {firstName}</p>
-            </>
+            <div className="flex items-center gap-3 h-[44px]">
+              <img src="/logo.png" alt="Folia Logo" className="h-8 w-auto" />
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-serif font-medium truncate leading-none">
+                  Folia
+                </h1>
+                <p className="text-sm text-foreground/60 truncate leading-none pt-1">Welcome, {firstName}</p>
+              </div>
+            </div>
           )}
         </div>
         <nav className="flex-grow">
