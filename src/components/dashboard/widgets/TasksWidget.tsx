@@ -19,6 +19,8 @@ type EnrichedLedgerItem = {
   content: string;
   is_done: boolean;
   loom_item_name: string | null;
+  loom_item_id: string | null;
+  completed_at: string | null;
 };
 
 type LoomItem = {
@@ -38,9 +40,8 @@ const TasksWidget = () => {
   const fetchData = async () => {
     const { data: taskData, error: taskError } = await supabase
       .from('ledger_items')
-      .select('id, content, is_done, loom_item_id')
-      .eq('is_done', false)
-      .limit(20)
+      .select('id, content, is_done, loom_item_id, completed_at')
+      .limit(50)
       .order('created_at', { ascending: true });
 
     if (taskError) console.error('Error fetching tasks:', taskError);
@@ -53,17 +54,27 @@ const TasksWidget = () => {
     if (loomError) console.error('Error fetching loom items:', loomError);
     else if (loomData) setLoomItems(loomData);
 
-    if (taskData && loomData) {
-      const enrichedTasks = taskData.map(task => {
-        const loomItem = loomData.find(item => item.id === task.loom_item_id);
+    if (taskData) {
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      const visibleTasks = taskData.filter(task => {
+        if (!task.is_done) return true;
+        if (task.loom_item_id) return true;
+        if (task.completed_at) {
+          return new Date(task.completed_at) > twentyFourHoursAgo;
+        }
+        return false;
+      });
+
+      const enrichedTasks = visibleTasks.map(task => {
+        const loomItem = loomData?.find(item => item.id === task.loom_item_id);
         return {
           ...task,
           loom_item_name: loomItem ? loomItem.name : null
         };
       });
       setTasks(enrichedTasks);
-    } else if (taskData) {
-      setTasks(taskData.map(t => ({...t, loom_item_name: null})));
     }
   };
 
@@ -134,7 +145,12 @@ const TasksWidget = () => {
                   checked={task.is_done}
                   onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
                 />
-                <label htmlFor={`task-${task.id}`} className="text-xs sm:text-sm flex-grow">
+                <label
+                  htmlFor={`task-${task.id}`}
+                  className={`text-xs sm:text-sm flex-grow ${
+                    task.is_done ? 'line-through text-foreground/50' : ''
+                  }`}
+                >
                   {task.content}
                 </label>
                 {task.loom_item_name && <Badge variant="secondary">{task.loom_item_name}</Badge>}

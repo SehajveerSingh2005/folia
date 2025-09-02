@@ -12,6 +12,7 @@ type LedgerItem = {
   content: string;
   is_done: boolean;
   loom_item_id: string | null;
+  completed_at: string | null;
 };
 
 type LoomItem = {
@@ -37,7 +38,6 @@ const Loom = () => {
     const { data: tasks, error: tasksError } = await supabase
       .from('ledger_items')
       .select('*')
-      .eq('is_done', false)
       .order('created_at', { ascending: true });
 
     if (tasksError) {
@@ -56,13 +56,25 @@ const Loom = () => {
       showError('Could not fetch projects.');
     }
 
-    setInboxTasks(tasks.filter((task) => !task.loom_item_id));
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const visibleTasks = tasks.filter(task => {
+      if (!task.is_done) return true; // Keep incomplete tasks
+      if (task.loom_item_id) return true; // Keep completed project tasks
+      if (task.completed_at) { // For completed inbox tasks
+        return new Date(task.completed_at) > twentyFourHoursAgo;
+      }
+      return false; // Hide completed inbox tasks without a completion date
+    });
+
+    setInboxTasks(visibleTasks.filter((task) => !task.loom_item_id));
 
     if (projects) {
       const groupedByProject = projects.map((project) => ({
         projectId: project.id,
         projectName: project.name,
-        tasks: tasks.filter((task) => task.loom_item_id === project.id),
+        tasks: visibleTasks.filter((task) => task.loom_item_id === project.id),
       })).filter(group => group.tasks.length > 0);
       setProjectTasks(groupedByProject);
     }
@@ -117,7 +129,12 @@ const Loom = () => {
             checked={task.is_done}
             onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
           />
-          <label htmlFor={task.id} className="flex-grow">
+          <label
+            htmlFor={task.id}
+            className={`flex-grow ${
+              task.is_done ? 'line-through text-foreground/50' : ''
+            }`}
+          >
             {task.content}
           </label>
         </div>
