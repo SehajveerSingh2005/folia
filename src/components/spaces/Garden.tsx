@@ -193,9 +193,9 @@ const Garden = () => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <Sparkles className="h-10 w-10 text-primary" />
+          <Sparkles className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-4xl font-serif">Garden</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Garden</h2>
             <p className="text-foreground/70">
               Cultivate raw ideas and quick notes.
             </p>

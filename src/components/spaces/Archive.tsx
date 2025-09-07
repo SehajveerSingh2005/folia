@@ -74,9 +74,9 @@ const Archive = () => {
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
-        <ArchiveIcon className="h-10 w-10 text-primary" />
+        <ArchiveIcon className="h-10 w-10 text-primary flex-shrink-0" />
         <div>
-          <h2 className="text-4xl font-serif">Archive</h2>
+          <h2 className="text-3xl sm:text-4xl font-serif">Archive</h2>
           <p className="text-foreground/70">
             A record of your completed projects and endeavors.
           </p>

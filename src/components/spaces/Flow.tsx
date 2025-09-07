@@ -300,9 +300,9 @@ const Flow = () => {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
-          <FolderKanban className="h-10 w-10 text-primary" />
+          <FolderKanban className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-4xl font-serif">Flow</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Flow</h2>
             <p className="text-foreground/70">
               Manage active projects, courses, and tasks.
             </p>

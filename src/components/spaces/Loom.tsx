@@ -175,9 +175,9 @@ const Loom = () => {
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-8 flex-shrink-0 pr-4">
         <div className="flex items-center gap-4">
-          <ClipboardList className="h-10 w-10 text-primary" />
+          <ClipboardList className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-4xl font-serif">Loom</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Loom</h2>
             <p className="text-foreground/70">
               A unified view of all your tasks.
             </p>

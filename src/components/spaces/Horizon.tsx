@@ -188,9 +188,9 @@ const Horizon = () => {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
-          <Telescope className="h-10 w-10 text-primary" />
+          <Telescope className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-4xl font-serif">Horizon</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Horizon</h2>
             <p className="text-foreground/70">
               Set your sights on the future.
             </p>

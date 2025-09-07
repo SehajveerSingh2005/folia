@@ -139,9 +139,9 @@ const Journal = () => {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
       <div className="lg:col-span-2">
         <div className="flex items-center gap-4 mb-6">
-          <Book className="h-10 w-10 text-primary" />
+          <Book className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-4xl font-serif">Journal</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Journal</h2>
             <p className="text-foreground/70">Reflect daily on your thoughts and progress.</p>
           </div>
         </div>
