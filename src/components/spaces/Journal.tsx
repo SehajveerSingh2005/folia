@@ -136,8 +136,8 @@ const Journal = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 h-full">
-      <div className="xl:col-span-1">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+      <div className="lg:col-span-1">
         <div className="flex items-center gap-4 mb-6">
           <Book className="h-10 w-10 text-primary" />
           <div>
@@ -157,7 +157,7 @@ const Journal = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="xl:col-span-2">
+      <div className="lg:col-span-2">
         <Card className="h-full flex flex-col">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
