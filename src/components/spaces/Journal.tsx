@@ -31,6 +31,7 @@ type CompletedTask = {
   id: string;
   content: string;
   notes: string | null;
+  loom_items: { name: string } | null;
 };
 
 const moodOptions = ['Excellent', 'Good', 'Neutral', 'Low', 'Bad'];
@@ -78,7 +79,7 @@ const Journal = () => {
 
     const { data, error } = await supabase
       .from('ledger_items')
-      .select('id, content, notes')
+      .select('id, content, notes, loom_items(name)')
       .eq('is_done', true)
       .gte('completed_at', `${dateStr}T00:00:00.000Z`)
       .lte('completed_at', `${dateStr}T23:59:59.999Z`);
@@ -97,6 +98,9 @@ const Journal = () => {
     const tasksSummary = tasksToAppend
       .map(task => {
         let taskString = `- ${task.content}`;
+        if (task.loom_items && task.loom_items.name) {
+          taskString += ` [*${task.loom_items.name}*]`;
+        }
         if (task.notes) {
           taskString += `\n  - *Notes: ${task.notes}*`;
         }
