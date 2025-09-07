@@ -43,6 +43,7 @@ import {
   Link as LinkIcon,
   ArrowDownUp,
   ListCollapse,
+  StickyNote,
 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import {
@@ -567,17 +568,20 @@ const Flow = () => {
                               >
                                 {task.content}
                               </label>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openTaskEditDialog(task);
-                                }}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
+                              <div className="flex items-center gap-2 ml-auto">
+                                {task.notes && <StickyNote className="h-3 w-3 text-muted-foreground" />}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openTaskEditDialog(task);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
