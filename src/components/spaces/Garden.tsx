@@ -271,40 +271,38 @@ const Garden = () => {
           {filteredItems.map((item) => (
             <Card key={item.id} className="flex flex-col">
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    {item.category && <Badge variant="secondary">{item.category}</Badge>}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => openEditDialog(item)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-500"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div>
+                  {item.category && <Badge variant="secondary">{item.category}</Badge>}
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="whitespace-pre-wrap">{item.content}</p>
               </CardContent>
-              <CardFooter className="border-t p-2">
-                <Button variant="ghost" className="w-full justify-center" onClick={() => openPromoteDialog(item)}>
+              <CardFooter className="border-t p-2 flex justify-between items-center">
+                <Button variant="ghost" className="flex-grow justify-center" onClick={() => openPromoteDialog(item)}>
                   <ArrowUpCircle className="mr-2 h-4 w-4" />
                   Promote to Flow
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-500"
+                      onClick={() => handleDeleteItem(item.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardFooter>
             </Card>
           ))}
