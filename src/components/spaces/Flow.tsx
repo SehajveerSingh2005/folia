@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,6 +41,8 @@ import {
   List,
   LayoutGrid,
   Link as LinkIcon,
+  ArrowDownUp,
+  ListCollapse,
 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import {
@@ -49,12 +50,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import EditLoomItemDialog from './flow/EditLoomItemDialog';
 import EditTaskDialog from './loom/EditTaskDialog';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 
 type LedgerItem = {
@@ -90,8 +92,12 @@ const loomItemTypes = [
   'Misc',
 ];
 
+type ViewMode = 'list' | 'compact' | 'grid';
+type SortMode = 'newest' | 'oldest' | 'deadline' | 'name';
+
 const Flow = () => {
   const [activeItems, setActiveItems] = useState<LoomItem[]>([]);
+  const [sortedItems, setSortedItems] = useState<LoomItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -102,14 +108,24 @@ const Flow = () => {
   const [newTaskContent, setNewTaskContent] = useState<{
     [key: string]: string;
   }>({});
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+  
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedView = localStorage.getItem('flowViewMode');
-    return (savedView === 'grid' || savedView === 'list') ? savedView : 'list';
+    return (savedView === 'grid' || savedView === 'list' || savedView === 'compact') ? savedView as ViewMode : 'list';
+  });
+
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    const savedSort = localStorage.getItem('flowSortMode');
+    return (savedSort === 'newest' || savedSort === 'oldest' || savedSort === 'deadline' || savedSort === 'name') ? savedSort as SortMode : 'newest';
   });
 
   useEffect(() => {
     localStorage.setItem('flowViewMode', viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem('flowSortMode', sortMode);
+  }, [sortMode]);
 
   const fetchFlowData = async () => {
     setLoading(true);
@@ -146,6 +162,28 @@ const Flow = () => {
   useEffect(() => {
     fetchFlowData();
   }, []);
+
+  useEffect(() => {
+    let itemsToSort = [...activeItems];
+    
+    itemsToSort.sort((a, b) => {
+        switch (sortMode) {
+            case 'oldest':
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            case 'deadline':
+                if (!a.deadline_date) return 1;
+                if (!b.deadline_date) return -1;
+                return new Date(a.deadline_date).getTime() - new Date(b.deadline_date).getTime();
+            case 'name':
+                return a.name.localeCompare(b.name);
+            case 'newest':
+            default:
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+    });
+
+    setSortedItems(itemsToSort);
+  }, [activeItems, sortMode]);
 
   const handleAddLoomItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,8 +232,6 @@ const Flow = () => {
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
-
-    // Optimistically update the UI
     const originalActiveItems = [...activeItems];
     const updatedActiveItems = activeItems.map(item => ({
         ...item,
@@ -207,7 +243,6 @@ const Flow = () => {
     }));
     setActiveItems(updatedActiveItems);
 
-    // Update the database
     const { error } = await supabase
       .from('ledger_items')
       .update({
@@ -216,7 +251,6 @@ const Flow = () => {
       })
       .eq('id', taskId);
 
-    // If the update fails, revert the UI and show an error
     if (error) {
       showError("Failed to update task. Please try again.");
       setActiveItems(originalActiveItems);
@@ -254,6 +288,13 @@ const Flow = () => {
     setIsTaskEditDialogOpen(true);
   };
 
+  const viewIcons: Record<ViewMode, React.ElementType> = {
+    list: List,
+    compact: ListCollapse,
+    grid: LayoutGrid,
+  };
+  const CurrentViewIcon = viewIcons[viewMode];
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -267,20 +308,39 @@ const Flow = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={(value) => {
-              if (value) setViewMode(value as 'list' | 'grid');
-            }}
-          >
-            <ToggleGroupItem value="list" aria-label="List view">
-              <List className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="grid" aria-label="Grid view">
-              <LayoutGrid className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <ArrowDownUp className="mr-2 h-4 w-4" />
+                Sort
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuRadioGroup value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                <DropdownMenuRadioItem value="newest">Newest First</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="oldest">Oldest First</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="deadline">By Deadline</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="name">By Name (A-Z)</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <CurrentViewIcon className="mr-2 h-4 w-4" />
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuRadioGroup value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                <DropdownMenuRadioItem value="list">List</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="compact">Compact List</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -342,7 +402,7 @@ const Flow = () => {
 
       {loading ? (
         <p>Loading...</p>
-      ) : activeItems.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-lg text-foreground/70">Your flow is clear!</p>
           <p className="text-sm text-foreground/50">
@@ -352,157 +412,202 @@ const Flow = () => {
       ) : (
         <div
           className={cn(
-            viewMode === 'list'
-              ? 'space-y-6'
-              : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6',
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+              : 'space-y-4',
           )}
         >
-          {activeItems.map((item) => (
-            <Card key={item.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="font-sans font-medium">
-                      {item.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                      <span>{item.type}</span>
-                      {item.status && (
-                        <>
-                          •<Badge variant="outline">{item.status}</Badge>
-                        </>
-                      )}
+          {sortedItems.map((item) =>
+            viewMode === 'compact' ? (
+              <Card key={item.id} className="p-3">
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center gap-3 flex-grow overflow-hidden">
+                    <div className="flex-grow overflow-hidden">
+                      <p className="font-medium truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <span>{item.type}</span>
+                        {item.status && (
+                          <>
+                            •<Badge variant="outline">{item.status}</Badge>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => openEditDialog(item)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleArchiveLoomItem(item.id)}
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        Archive
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-500"
-                        onClick={() => handleDeleteLoomItem(item.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-4 pt-2">
-                  <span>
-                    Started:{' '}
-                    {item.start_date
-                      ? format(new Date(item.start_date), 'MMM d, yyyy')
-                      : 'Not set'}
-                  </span>
-                  <span>
-                    Deadline:{' '}
-                    {item.deadline_date
-                      ? format(new Date(item.deadline_date), 'MMM d, yyyy')
-                      : 'Not set'}
-                  </span>
-                  {item.link && (
-                     <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                        <Button variant="outline" size="xs" className="h-6 px-2">
-                           <LinkIcon className="mr-1 h-3 w-3" />
-                           Link
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    {item.link && (
+                      <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <LinkIcon className="h-4 w-4" />
                         </Button>
-                     </a>
-                  )}
+                      </a>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleArchiveLoomItem(item.id)}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteLoomItem(item.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="notes">
-                    <AccordionTrigger>Notes</AccordionTrigger>
-                    <AccordionContent className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
-                      {item.notes || 'No notes yet.'}
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="tasks">
-                    <AccordionTrigger>
-                      Tasks ({item.tasks.filter((t) => t.is_done).length}/
-                      {item.tasks.length})
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2">
-                        {item.tasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50"
-                          >
-                            <Checkbox
-                              id={`flow-task-${task.id}`}
-                              checked={task.is_done}
-                              onCheckedChange={() =>
-                                handleToggleTask(task.id, task.is_done)
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <label
-                              htmlFor={`flow-task-${task.id}`}
-                              className={`flex-grow cursor-pointer ${
-                                task.is_done
-                                  ? 'line-through text-foreground/50'
-                                  : ''
-                              }`}
-                              onClick={() => openTaskEditDialog(task)}
-                            >
-                              {task.content}
-                            </label>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openTaskEditDialog(task);
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
+              </Card>
+            ) : (
+              <Card key={item.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="font-sans font-medium">
+                        {item.name}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <span>{item.type}</span>
+                        {item.status && (
+                          <>
+                            •<Badge variant="outline">{item.status}</Badge>
+                          </>
+                        )}
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-              <CardFooter>
-                <form
-                  onSubmit={(e) => handleAddTask(e, item.id)}
-                  className="flex gap-2 w-full"
-                >
-                  <Input
-                    placeholder="Add a task..."
-                    value={newTaskContent[item.id] || ''}
-                    onChange={(e) =>
-                      setNewTaskContent({
-                        ...newTaskContent,
-                        [item.id]: e.target.value,
-                      })
-                    }
-                  />
-                  <Button type="submit" variant="ghost" size="icon">
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
-                </form>
-              </CardFooter>
-            </Card>
-          ))}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleArchiveLoomItem(item.id)}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteLoomItem(item.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-4 pt-2">
+                    <span>
+                      Started:{' '}
+                      {item.start_date
+                        ? format(new Date(item.start_date), 'MMM d, yyyy')
+                        : 'Not set'}
+                    </span>
+                    <span>
+                      Deadline:{' '}
+                      {item.deadline_date
+                        ? format(new Date(item.deadline_date), 'MMM d, yyyy')
+                        : 'Not set'}
+                    </span>
+                    {item.link && (
+                       <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                          <Button variant="outline" size="xs" className="h-6 px-2">
+                             <LinkIcon className="mr-1 h-3 w-3" />
+                             Link
+                          </Button>
+                       </a>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="notes">
+                      <AccordionTrigger>Notes</AccordionTrigger>
+                      <AccordionContent className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
+                        {item.notes || 'No notes yet.'}
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="tasks">
+                      <AccordionTrigger>
+                        Tasks ({item.tasks.filter((t) => t.is_done).length}/
+                        {item.tasks.length})
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-2">
+                          {item.tasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50"
+                            >
+                              <Checkbox
+                                id={`flow-task-${task.id}`}
+                                checked={task.is_done}
+                                onCheckedChange={() =>
+                                  handleToggleTask(task.id, task.is_done)
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <label
+                                htmlFor={`flow-task-${task.id}`}
+                                className={`flex-grow cursor-pointer ${
+                                  task.is_done
+                                    ? 'line-through text-foreground/50'
+                                    : ''
+                                }`}
+                                onClick={() => openTaskEditDialog(task)}
+                              >
+                                {task.content}
+                              </label>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTaskEditDialog(task);
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+                <CardFooter>
+                  <form
+                    onSubmit={(e) => handleAddTask(e, item.id)}
+                    className="flex gap-2 w-full"
+                  >
+                    <Input
+                      placeholder="Add a task..."
+                      value={newTaskContent[item.id] || ''}
+                      onChange={(e) =>
+                        setNewTaskContent({
+                          ...newTaskContent,
+                          [item.id]: e.target.value,
+                        })
+                      }
+                    />
+                    <Button type="submit" variant="ghost" size="icon">
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </form>
+                </CardFooter>
+              </Card>
+            )
+          )}
         </div>
       )}
       {selectedItem && (
