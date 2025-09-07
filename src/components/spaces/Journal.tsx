@@ -136,8 +136,8 @@ const Journal = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-      <div className="lg:col-span-1">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
+      <div className="lg:col-span-2">
         <div className="flex items-center gap-4 mb-6">
           <Book className="h-10 w-10 text-primary" />
           <div>
@@ -146,18 +146,18 @@ const Journal = () => {
           </div>
         </div>
         <Card>
-          <CardContent className="p-2">
+          <CardContent className="p-2 flex justify-center">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="w-full"
+              className="w-auto"
               disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
             />
           </CardContent>
         </Card>
       </div>
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-3">
         <Card className="h-full flex flex-col">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
