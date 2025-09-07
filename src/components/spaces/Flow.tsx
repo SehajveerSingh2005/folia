@@ -38,6 +38,8 @@ import {
   Trash2,
   FolderKanban,
   Pencil,
+  List,
+  LayoutGrid,
 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import {
@@ -50,6 +52,8 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import EditLoomItemDialog from './flow/EditLoomItemDialog';
 import EditTaskDialog from './loom/EditTaskDialog';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 
 type LedgerItem = {
   id: string;
@@ -94,6 +98,7 @@ const Flow = () => {
   const [newTaskContent, setNewTaskContent] = useState<{
     [key: string]: string;
   }>({});
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const fetchFlowData = async () => {
     setLoading(true);
@@ -230,57 +235,98 @@ const Flow = () => {
             </p>
           </div>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Item</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddLoomItem} className="space-y-4">
-              <Input
-                placeholder="Name (e.g., Launch new website)"
-                value={newItem.name}
-                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                required
-              />
-              <Select onValueChange={(value) => setNewItem({ ...newItem, type: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {loomItemTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button type="submit" className="w-full">
-                Create
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(value) => {
+              if (value) setViewMode(value as 'list' | 'grid');
+            }}
+          >
+            <ToggleGroupItem value="list" aria-label="List view">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Item
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Item</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddLoomItem} className="space-y-4">
+                <Input
+                  placeholder="Name (e.g., Launch new website)"
+                  value={newItem.name}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, name: e.target.value })
+                  }
+                  required
+                />
+                <Select
+                  onValueChange={(value) =>
+                    setNewItem({ ...newItem, type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loomItemTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="submit" className="w-full">
+                  Create
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {loading ? (
         <p>Loading...</p>
+      ) : activeItems.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-foreground/70">Your flow is clear!</p>
+          <p className="text-sm text-foreground/50">
+            Create a new item to get started.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div
+          className={cn(
+            viewMode === 'list'
+              ? 'space-y-6'
+              : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6',
+          )}
+        >
           {activeItems.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="font-sans font-medium">{item.name}</CardTitle>
+                    <CardTitle className="font-sans font-medium">
+                      {item.name}
+                    </CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                       <span>{item.type}</span>
-                      {item.status && <>•<Badge variant="outline">{item.status}</Badge></>}
+                      {item.status && (
+                        <>
+                          •<Badge variant="outline">{item.status}</Badge>
+                        </>
+                      )}
                     </div>
                   </div>
                   <DropdownMenu>
@@ -294,11 +340,16 @@ const Flow = () => {
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleArchiveLoomItem(item.id)}>
+                      <DropdownMenuItem
+                        onClick={() => handleArchiveLoomItem(item.id)}
+                      >
                         <Archive className="mr-2 h-4 w-4" />
                         Archive
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteLoomItem(item.id)}>
+                      <DropdownMenuItem
+                        className="text-red-500"
+                        onClick={() => handleDeleteLoomItem(item.id)}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
@@ -307,14 +358,20 @@ const Flow = () => {
                 </div>
                 <div className="text-xs text-muted-foreground flex gap-4 pt-2">
                   <span>
-                    Started: {item.start_date ? format(new Date(item.start_date), 'MMM d, yyyy') : 'Not set'}
+                    Started:{' '}
+                    {item.start_date
+                      ? format(new Date(item.start_date), 'MMM d, yyyy')
+                      : 'Not set'}
                   </span>
                   <span>
-                    Deadline: {item.deadline_date ? format(new Date(item.deadline_date), 'MMM d, yyyy') : 'Not set'}
+                    Deadline:{' '}
+                    {item.deadline_date
+                      ? format(new Date(item.deadline_date), 'MMM d, yyyy')
+                      : 'Not set'}
                   </span>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-grow">
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="notes">
                     <AccordionTrigger>Notes</AccordionTrigger>
@@ -323,20 +380,32 @@ const Flow = () => {
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="tasks">
-                    <AccordionTrigger>Tasks ({item.tasks.filter(t => t.is_done).length}/{item.tasks.length})</AccordionTrigger>
+                    <AccordionTrigger>
+                      Tasks ({item.tasks.filter((t) => t.is_done).length}/
+                      {item.tasks.length})
+                    </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2">
                         {item.tasks.map((task) => (
-                          <div key={task.id} className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50">
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50"
+                          >
                             <Checkbox
                               id={`flow-task-${task.id}`}
                               checked={task.is_done}
-                              onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
+                              onCheckedChange={() =>
+                                handleToggleTask(task.id, task.is_done)
+                              }
                               onClick={(e) => e.stopPropagation()}
                             />
                             <label
                               htmlFor={`flow-task-${task.id}`}
-                              className={`flex-grow cursor-pointer ${task.is_done ? 'line-through text-foreground/50' : ''}`}
+                              className={`flex-grow cursor-pointer ${
+                                task.is_done
+                                  ? 'line-through text-foreground/50'
+                                  : ''
+                              }`}
                               onClick={() => openTaskEditDialog(task)}
                             >
                               {task.content}
@@ -360,11 +429,19 @@ const Flow = () => {
                 </Accordion>
               </CardContent>
               <CardFooter>
-                <form onSubmit={(e) => handleAddTask(e, item.id)} className="flex gap-2 w-full">
+                <form
+                  onSubmit={(e) => handleAddTask(e, item.id)}
+                  className="flex gap-2 w-full"
+                >
                   <Input
                     placeholder="Add a task..."
                     value={newTaskContent[item.id] || ''}
-                    onChange={(e) => setNewTaskContent({ ...newTaskContent, [item.id]: e.target.value })}
+                    onChange={(e) =>
+                      setNewTaskContent({
+                        ...newTaskContent,
+                        [item.id]: e.target.value,
+                      })
+                    }
                   />
                   <Button type="submit" variant="ghost" size="icon">
                     <PlusCircle className="h-5 w-5" />
@@ -373,12 +450,6 @@ const Flow = () => {
               </CardFooter>
             </Card>
           ))}
-          {activeItems.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-lg text-foreground/70">Your flow is clear!</p>
-              <p className="text-sm text-foreground/50">Create a new item to get started.</p>
-            </div>
-          )}
         </div>
       )}
       {selectedItem && (
