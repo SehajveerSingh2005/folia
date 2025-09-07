@@ -49,11 +49,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import EditLoomItemDialog from './flow/EditLoomItemDialog';
+import EditTaskDialog from './loom/EditTaskDialog';
 
 type LedgerItem = {
   id: string;
   content: string;
   is_done: boolean;
+  priority: string | null;
+  due_date: string | null;
+  loom_item_id: string | null;
 };
 
 type LoomItem = {
@@ -84,6 +88,8 @@ const Flow = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LoomItem | null>(null);
+  const [isTaskEditDialogOpen, setIsTaskEditDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
   const [newItem, setNewItem] = useState({ name: '', type: '' });
   const [newTaskContent, setNewTaskContent] = useState<{
     [key: string]: string;
@@ -106,7 +112,7 @@ const Flow = () => {
 
     const { data: ledgerData, error: ledgerError } = await supabase
       .from('ledger_items')
-      .select('id, content, is_done, loom_item_id')
+      .select('*')
       .order('created_at', { ascending: true });
 
     if (ledgerError) showError('Could not fetch tasks.');
@@ -205,6 +211,11 @@ const Flow = () => {
   const openEditDialog = (item: LoomItem) => {
     setSelectedItem(item);
     setIsEditDialogOpen(true);
+  };
+
+  const openTaskEditDialog = (task: LedgerItem) => {
+    setSelectedTask(task);
+    setIsTaskEditDialogOpen(true);
   };
 
   return (
@@ -314,20 +325,33 @@ const Flow = () => {
                   <AccordionItem value="tasks">
                     <AccordionTrigger>Tasks ({item.tasks.filter(t => t.is_done).length}/{item.tasks.length})</AccordionTrigger>
                     <AccordionContent>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {item.tasks.map((task) => (
-                          <div key={task.id} className="flex items-center gap-3">
+                          <div key={task.id} className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50">
                             <Checkbox
-                              id={task.id}
+                              id={`flow-task-${task.id}`}
                               checked={task.is_done}
                               onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <label
-                              htmlFor={task.id}
-                              className={`flex-grow ${task.is_done ? 'line-through text-foreground/50' : ''}`}
+                              htmlFor={`flow-task-${task.id}`}
+                              className={`flex-grow cursor-pointer ${task.is_done ? 'line-through text-foreground/50' : ''}`}
+                              onClick={() => openTaskEditDialog(task)}
                             >
                               {task.content}
                             </label>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openTaskEditDialog(task);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -363,6 +387,14 @@ const Flow = () => {
           onOpenChange={setIsEditDialogOpen}
           item={selectedItem}
           onItemUpdated={fetchFlowData}
+        />
+      )}
+      {selectedTask && (
+        <EditTaskDialog
+          isOpen={isTaskEditDialogOpen}
+          onOpenChange={setIsTaskEditDialogOpen}
+          task={selectedTask}
+          onTaskUpdated={fetchFlowData}
         />
       )}
     </div>
