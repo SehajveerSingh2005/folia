@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import EditTaskDialog from './loom/EditTaskDialog';
 import AddTaskDialog from './loom/AddTaskDialog';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 type LedgerItem = {
   id: string;
@@ -216,16 +217,33 @@ const Loom = () => {
             </div>
 
             <div className="space-y-6">
-              {projectTasks.map((project) => (
-                <Card key={project.projectId}>
-                  <CardHeader>
-                    <CardTitle className="font-sans font-medium">{project.projectName}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {project.tasks.length > 0 ? renderTaskList(project.tasks) : <p className="text-sm text-muted-foreground">No tasks for this project.</p>}
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-sans font-medium">Projects</CardTitle>
+                  <CardDescription>Tasks organized by project.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {projectTasks.length > 0 ? (
+                    <Accordion type="multiple" className="w-full">
+                      {projectTasks.map((project) => (
+                        <AccordionItem value={project.projectId} key={project.projectId}>
+                          <AccordionTrigger>
+                            <div className="flex justify-between w-full pr-4">
+                              <span>{project.projectName}</span>
+                              <Badge variant="secondary">{project.tasks.length}</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            {project.tasks.length > 0 ? renderTaskList(project.tasks) : <p className="text-sm text-muted-foreground px-4 pb-2">No tasks for this project.</p>}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No projects with active tasks.</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
