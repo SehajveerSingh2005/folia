@@ -136,8 +136,8 @@ const Journal = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-      <div className="lg:col-span-1">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 h-full">
+      <div className="xl:col-span-1">
         <div className="flex items-center gap-4 mb-6">
           <Book className="h-10 w-10 text-primary" />
           <div>
@@ -157,14 +157,14 @@ const Journal = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="lg:col-span-2">
+      <div className="xl:col-span-2">
         <Card className="h-full flex flex-col">
           <CardHeader>
-            <div className="flex justify-between items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="font-sans font-medium text-2xl">
                 {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-center">
                 {!isEditing && entry && (
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
@@ -221,7 +221,7 @@ const Journal = () => {
             )}
           </CardContent>
           {isEditing && (
-            <CardFooter className="border-t pt-4 flex justify-between">
+            <CardFooter className="border-t pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
               <Popover onOpenChange={(open) => open && fetchCompletedTasks()}>
                 <PopoverTrigger asChild>
                   <Button variant="outline">
