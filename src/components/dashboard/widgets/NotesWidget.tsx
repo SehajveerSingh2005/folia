@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Tag, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { AutoGrowTextarea } from '@/components/ui/auto-grow-textarea';
 
 const categories = ['Writing', 'Project', 'Life', 'Business', 'Random'];
 
@@ -55,7 +55,7 @@ const NotesWidget = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-2">
-        <Textarea
+        <AutoGrowTextarea
           placeholder="What's on your mind?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
