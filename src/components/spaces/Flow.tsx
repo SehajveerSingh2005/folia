@@ -187,6 +187,20 @@ const Flow = () => {
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
+
+    // Optimistically update the UI
+    const originalActiveItems = [...activeItems];
+    const updatedActiveItems = activeItems.map(item => ({
+        ...item,
+        tasks: item.tasks.map(task => 
+            task.id === taskId 
+                ? { ...task, is_done: newStatus } 
+                : task
+        )
+    }));
+    setActiveItems(updatedActiveItems);
+
+    // Update the database
     const { error } = await supabase
       .from('ledger_items')
       .update({
@@ -194,8 +208,12 @@ const Flow = () => {
         completed_at: newStatus ? new Date().toISOString() : null,
       })
       .eq('id', taskId);
-    if (error) showError(error.message);
-    else fetchFlowData();
+
+    // If the update fails, revert the UI and show an error
+    if (error) {
+      showError("Failed to update task. Please try again.");
+      setActiveItems(originalActiveItems);
+    }
   };
 
   const handleArchiveLoomItem = async (loomId: string) => {
