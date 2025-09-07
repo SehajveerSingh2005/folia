@@ -102,7 +102,14 @@ const Flow = () => {
   const [newTaskContent, setNewTaskContent] = useState<{
     [key: string]: string;
   }>({});
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+    const savedView = localStorage.getItem('flowViewMode');
+    return (savedView === 'grid' || savedView === 'list') ? savedView : 'list';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('flowViewMode', viewMode);
+  }, [viewMode]);
 
   const fetchFlowData = async () => {
     setLoading(true);
