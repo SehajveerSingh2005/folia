@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag, Pencil } from 'lucide-react';
+import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, isToday, isPast, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ type LedgerItem = {
   completed_at: string | null;
   due_date: string | null;
   priority: string | null;
+  notes: string | null;
 };
 
 type ProjectTasks = {
@@ -151,6 +152,7 @@ const Loom = () => {
               {task.content}
             </label>
             <div className="flex items-center gap-2 ml-auto">
+              {task.notes && <StickyNote className="h-3 w-3 text-muted-foreground" />}
               {getPriorityBadge(task.priority)}
               <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                 {task.due_date && (

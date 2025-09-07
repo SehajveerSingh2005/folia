@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -37,6 +38,7 @@ const formSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   priority: z.string().nullable(),
   due_date: z.date().nullable(),
+  notes: z.string().nullable(),
 });
 
 type LedgerItem = {
@@ -45,6 +47,7 @@ type LedgerItem = {
   priority: string | null;
   due_date: string | null;
   loom_item_id: string | null;
+  notes: string | null;
 };
 
 interface EditTaskDialogProps {
@@ -70,6 +73,7 @@ const EditTaskDialog = ({
         content: task.content || '',
         priority: task.priority || null,
         due_date: task.due_date ? parseISO(task.due_date) : null,
+        notes: task.notes || null,
       });
     }
   }, [task, form]);
@@ -172,6 +176,7 @@ const EditTaskDialog = ({
               )}
             />
           </div>
+          <Textarea {...form.register('notes')} placeholder="Notes..." />
           <DialogFooter className="sm:justify-between">
             {task?.loom_item_id ? (
               <Button type="button" variant="destructive" onClick={handleDeleteTask}>

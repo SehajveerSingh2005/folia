@@ -47,6 +47,7 @@ const formSchema = z.object({
   type: z.string().nullable(),
   status: z.string().nullable(),
   notes: z.string().nullable(),
+  link: z.string().url().nullable().or(z.literal('')),
   start_date: z.date().nullable(),
   deadline_date: z.date().nullable(),
 });
@@ -57,6 +58,7 @@ type LoomItem = {
   type: string | null;
   status: string | null;
   notes: string | null;
+  link: string | null;
   start_date: string | null;
   deadline_date: string | null;
 };
@@ -81,6 +83,7 @@ const EditLoomItemDialog = ({
       type: item?.type || null,
       status: item?.status || null,
       notes: item?.notes || null,
+      link: item?.link || null,
       start_date: item?.start_date ? new Date(item.start_date) : null,
       deadline_date: item?.deadline_date ? new Date(item.deadline_date) : null,
     },
@@ -122,6 +125,7 @@ const EditLoomItemDialog = ({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <Input {...form.register('name')} placeholder="Item Name" />
+          <Input {...form.register('link')} placeholder="https://example.com" />
           <Controller
             control={form.control}
             name="type"

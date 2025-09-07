@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ import {
   Pencil,
   List,
   LayoutGrid,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import {
@@ -62,6 +64,7 @@ type LedgerItem = {
   priority: string | null;
   due_date: string | null;
   loom_item_id: string | null;
+  notes: string | null;
 };
 
 type LoomItem = {
@@ -70,6 +73,7 @@ type LoomItem = {
   type: string | null;
   status: string | null;
   notes: string | null;
+  link: string | null;
   start_date: string | null;
   deadline_date: string | null;
   created_at: string;
@@ -94,7 +98,7 @@ const Flow = () => {
   const [selectedItem, setSelectedItem] = useState<LoomItem | null>(null);
   const [isTaskEditDialogOpen, setIsTaskEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
-  const [newItem, setNewItem] = useState({ name: '', type: '' });
+  const [newItem, setNewItem] = useState({ name: '', type: '', notes: '', link: '' });
   const [newTaskContent, setNewTaskContent] = useState<{
     [key: string]: string;
   }>({});
@@ -145,6 +149,8 @@ const Flow = () => {
     const { error } = await supabase.from('loom_items').insert({
       name: newItem.name,
       type: newItem.type || null,
+      notes: newItem.notes || null,
+      link: newItem.link || null,
       user_id: user.id,
       start_date: new Date().toISOString().split('T')[0],
     });
@@ -152,7 +158,7 @@ const Flow = () => {
     if (error) showError(error.message);
     else {
       showSuccess('New item created!');
-      setNewItem({ name: '', type: '' });
+      setNewItem({ name: '', type: '', notes: '', link: '' });
       setIsAddDialogOpen(false);
       fetchFlowData();
     }
@@ -286,6 +292,20 @@ const Flow = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Textarea
+                  placeholder="Description / Notes (optional)"
+                  value={newItem.notes}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, notes: e.target.value })
+                  }
+                />
+                <Input
+                  placeholder="Link (optional)"
+                  value={newItem.link}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, link: e.target.value })
+                  }
+                />
                 <Button type="submit" className="w-full">
                   Create
                 </Button>
@@ -356,7 +376,7 @@ const Flow = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <div className="text-xs text-muted-foreground flex gap-4 pt-2">
+                <div className="text-xs text-muted-foreground flex items-center gap-4 pt-2">
                   <span>
                     Started:{' '}
                     {item.start_date
@@ -369,6 +389,14 @@ const Flow = () => {
                       ? format(new Date(item.deadline_date), 'MMM d, yyyy')
                       : 'Not set'}
                   </span>
+                  {item.link && (
+                     <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                        <Button variant="outline" size="xs" className="h-6 px-2">
+                           <LinkIcon className="mr-1 h-3 w-3" />
+                           Link
+                        </Button>
+                     </a>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
