@@ -3,17 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardContent,
 } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -32,6 +31,9 @@ import {
   MoreVertical,
   FolderKanban,
   Plus,
+  List,
+  ListCollapse,
+  GitBranch,
 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +42,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import HorizonTreeView from './horizon/HorizonTreeView';
 
 // --- TYPES ---
 type LoomItemStub = {
@@ -75,12 +80,26 @@ const itemTypes = [
   'Misc',
 ];
 const priorities = ['High', 'Medium', 'Low'];
+type ViewMode = 'list' | 'tree' | 'compact';
 
 // --- HORIZON COMPONENT ---
 const Horizon = () => {
   const [items, setItems] = useState<HorizonItemNode[]>([]);
   const [availableProjects, setAvailableProjects] = useState<LoomItemStub[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedView = localStorage.getItem('horizonViewMode');
+    return savedView === 'list' ||
+      savedView === 'tree' ||
+      savedView === 'compact'
+      ? (savedView as ViewMode)
+      : 'list';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('horizonViewMode', viewMode);
+  }, [viewMode]);
 
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -231,13 +250,37 @@ const Horizon = () => {
     });
 
     if (error) {
-      showError(error.code === '23505' ? 'This project is already linked.' : error.message);
+      showError(
+        error.code === '23505'
+          ? 'This project is already linked.'
+          : error.message,
+      );
     } else {
       showSuccess('Project linked successfully.');
       setIsLinkDialogOpen(false);
       fetchItems();
     }
   };
+
+  const flattenTree = (nodes: HorizonItemNode[]): HorizonItem[] => {
+    const flatList: HorizonItem[] = [];
+    const traverse = (node: HorizonItemNode) => {
+      const { children, ...rest } = node;
+      flatList.push(rest);
+      children.forEach(traverse);
+    };
+    nodes.forEach(traverse);
+    return flatList;
+  };
+
+  const flattenedItems = flattenTree(items);
+
+  const viewIcons: Record<ViewMode, React.ElementType> = {
+    list: List,
+    tree: GitBranch,
+    compact: ListCollapse,
+  };
+  const CurrentViewIcon = viewIcons[viewMode];
 
   return (
     <div>
@@ -251,33 +294,82 @@ const Horizon = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => openAddDialog()}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Goal
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <CurrentViewIcon className="mr-2 h-4 w-4" />
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuRadioGroup
+                value={viewMode}
+                onValueChange={(v) => setViewMode(v as ViewMode)}
+              >
+                <DropdownMenuRadioItem value="list">
+                  Smart List
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="tree">Tree View</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="compact">
+                  Compact List
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => openAddDialog()}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Goal
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <p>Loading items...</p>
-      ) : items.length > 0 ? (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <HorizonGoal
-              key={item.id}
-              item={item}
-              level={0}
-              onAddSubGoal={openAddDialog}
-              onDelete={handleDeleteItem}
-              onLinkProject={openLinkDialog}
-            />
-          ))}
-        </div>
-      ) : (
+      ) : items.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-lg text-foreground/70">Your horizon is clear.</p>
           <p className="text-sm text-foreground/50">
             Add a long-term goal to get started.
           </p>
+        </div>
+      ) : (
+        <div>
+          {viewMode === 'list' && (
+            <div className="space-y-2">
+              {items.map((item) => (
+                <HorizonSmartListItem
+                  key={item.id}
+                  item={item}
+                  level={0}
+                  onAddSubGoal={openAddDialog}
+                  onDelete={handleDeleteItem}
+                  onLinkProject={openLinkDialog}
+                />
+              ))}
+            </div>
+          )}
+          {viewMode === 'tree' && <HorizonTreeView items={items} />}
+          {viewMode === 'compact' && (
+            <Card>
+              <CardContent className="p-4 space-y-1">
+                {flattenedItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2 rounded-md hover:bg-secondary flex justify-between items-center"
+                  >
+                    <p>{item.title}</p>
+                    <div className="flex items-center gap-2">
+                      {item.type && (
+                        <Badge variant="secondary">{item.type}</Badge>
+                      )}
+                      {item.priority && <Badge>{item.priority}</Badge>}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -293,10 +385,14 @@ const Horizon = () => {
             <Input
               placeholder="Title"
               value={newItem.title}
-              onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+              onChange={(e) =>
+                setNewItem({ ...newItem, title: e.target.value })
+              }
               required
             />
-            <Select onValueChange={(value) => setNewItem({ ...newItem, type: value })}>
+            <Select
+              onValueChange={(value) => setNewItem({ ...newItem, type: value })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a type" />
               </SelectTrigger>
@@ -308,7 +404,11 @@ const Horizon = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select onValueChange={(value) => setNewItem({ ...newItem, priority: value })}>
+            <Select
+              onValueChange={(value) =>
+                setNewItem({ ...newItem, priority: value })
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a priority" />
               </SelectTrigger>
@@ -323,7 +423,9 @@ const Horizon = () => {
             <Input
               placeholder="Link (optional)"
               value={newItem.link}
-              onChange={(e) => setNewItem({ ...newItem, link: e.target.value })}
+              onChange={(e) =>
+                setNewItem({ ...newItem, link: e.target.value })
+              }
             />
             <Button type="submit" className="w-full">
               Save Item
@@ -366,8 +468,8 @@ const Horizon = () => {
   );
 };
 
-// --- HORIZON GOAL COMPONENT ---
-interface HorizonGoalProps {
+// --- HORIZON SMART LIST ITEM COMPONENT ---
+interface HorizonSmartListItemProps {
   item: HorizonItemNode;
   level: number;
   onAddSubGoal: (parentId: string) => void;
@@ -375,13 +477,13 @@ interface HorizonGoalProps {
   onLinkProject: (item: HorizonItemNode) => void;
 }
 
-const HorizonGoal = ({
+const HorizonSmartListItem = ({
   item,
   level,
   onAddSubGoal,
   onDelete,
   onLinkProject,
-}: HorizonGoalProps) => {
+}: HorizonSmartListItemProps) => {
   return (
     <div className={cn(level > 0 && 'pl-6')}>
       <Card className="overflow-hidden">
@@ -413,7 +515,10 @@ const HorizonGoal = ({
               <DropdownMenuItem onClick={() => onLinkProject(item)}>
                 <LinkIcon className="mr-2 h-4 w-4" /> Link Project
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-500" onClick={() => onDelete(item.id)}>
+              <DropdownMenuItem
+                className="text-red-500"
+                onClick={() => onDelete(item.id)}
+              >
                 <Trash2 className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -421,15 +526,9 @@ const HorizonGoal = ({
         </div>
 
         {(item.linked_projects.length > 0 || item.children.length > 0) && (
-          <div className="bg-secondary/30 px-4 py-2 border-t">
-            {item.linked_projects.map((proj) => (
-              <div key={proj.id} className="flex items-center gap-2 text-sm py-1">
-                <FolderKanban className="h-4 w-4 text-primary" />
-                <span>{proj.name}</span>
-              </div>
-            ))}
+          <div className="bg-secondary/30 px-4 py-2 border-t space-y-2">
             {item.children.map((child) => (
-              <HorizonGoal
+              <HorizonSmartListItem
                 key={child.id}
                 item={child}
                 level={level + 1}
@@ -437,6 +536,18 @@ const HorizonGoal = ({
                 onDelete={onDelete}
                 onLinkProject={onLinkProject}
               />
+            ))}
+            {item.linked_projects.map((proj) => (
+              <div
+                key={proj.id}
+                className={cn(
+                  'flex items-center gap-2 text-sm py-1',
+                  level > 0 && 'pl-6',
+                )}
+              >
+                <FolderKanban className="h-4 w-4 text-primary" />
+                <span>{proj.name}</span>
+              </div>
             ))}
           </div>
         )}
