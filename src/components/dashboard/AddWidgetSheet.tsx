@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
   Clock,
   StickyNote,
-  CheckSquare,
   BookOpen,
   Telescope,
   Smile,
@@ -18,19 +17,19 @@ import {
 } from 'lucide-react';
 
 export const availableWidgets = [
-  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, w: 8, h: 2 },
-  { type: 'Clock', name: 'Clock', icon: Clock, w: 4, h: 2 },
-  { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, w: 6, h: 4 },
-  { type: 'Inbox', name: 'Task Inbox', icon: Inbox, w: 6, h: 4 },
-  { type: 'Notes', name: 'Quick Note', icon: StickyNote, w: 6, h: 4 },
-  { type: 'Journal', name: 'Journal Prompt', icon: BookOpen, w: 6, h: 3 },
-  { type: 'Goals', name: 'Goals Overview', icon: Telescope, w: 6, h: 3 },
+  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, w: 8, h: 2, mw: 4, mh: 2 },
+  { type: 'Clock', name: 'Clock', icon: Clock, w: 4, h: 2, mw: 2, mh: 2 },
+  { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, w: 6, h: 4, mw: 2, mh: 4 },
+  { type: 'Inbox', name: 'Task Inbox', icon: Inbox, w: 6, h: 4, mw: 2, mh: 4 },
+  { type: 'Notes', name: 'Quick Note', icon: StickyNote, w: 6, h: 4, mw: 4, mh: 4 },
+  { type: 'Journal', name: 'Journal Prompt', icon: BookOpen, w: 6, h: 3, mw: 4, mh: 3 },
+  { type: 'Goals', name: 'Goals Overview', icon: Telescope, w: 6, h: 3, mw: 4, mh: 3 },
 ];
 
 interface AddWidgetSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddWidget: (widgetType: string, w: number, h: number) => void;
+  onAddWidget: (widget: typeof availableWidgets[0]) => void;
 }
 
 const AddWidgetSheet = ({
@@ -54,7 +53,7 @@ const AddWidgetSheet = ({
               variant="outline"
               className="w-full justify-start h-14"
               onClick={() => {
-                onAddWidget(widget.type, widget.w, widget.h);
+                onAddWidget(widget);
                 onOpenChange(false);
               }}
             >

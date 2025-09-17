@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import DashboardOverview from '@/components/DashboardOverview';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil } from 'lucide-react';
-import AddWidgetSheet from '@/components/dashboard/AddWidgetSheet';
+import AddWidgetSheet, { availableWidgets } from '@/components/dashboard/AddWidgetSheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -17,8 +17,8 @@ const DashboardOverviewWrapper = () => {
   const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
   const isMobile = useIsMobile();
 
-  const handleAddWidget = (widgetType: string, w: number, h: number) => {
-    setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() });
+  const handleAddWidget = (widget: typeof availableWidgets[0]) => {
+    setAddWidgetTrigger({ ...widget, id: Date.now() });
   };
 
   const onWidgetAdded = () => {
