@@ -42,15 +42,13 @@ const DashboardOverviewWrapper = () => {
           <Plus className="mr-2 h-4 w-4" />
           Add Widget
         </Button>
-        {!isMobile && (
-          <Button
-            variant={isEditable ? 'default' : 'outline'}
-            onClick={() => setIsEditable(!isEditable)}
-          >
-            <Pencil className="mr-2 h-4 w-4" />
-            {isEditable ? 'Done Editing' : 'Edit Layout'}
-          </Button>
-        )}
+        <Button
+          variant={isEditable ? 'default' : 'outline'}
+          onClick={() => setIsEditable(!isEditable)}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          {isEditable ? 'Done Editing' : 'Edit Layout'}
+        </Button>
       </div>
       <div className="flex-grow">
         <DashboardOverview

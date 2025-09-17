@@ -5,7 +5,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { showError, showSuccess } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 // Import all widgets
 import WelcomeWidget from './dashboard/widgets/WelcomeWidget';
@@ -77,7 +76,6 @@ const DashboardOverview = ({
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [layout, setLayout] = useState<Layout[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useIsMobile();
   const layoutRef = useRef(layout);
   const hasUnsavedChanges = useRef(false);
 
@@ -251,31 +249,6 @@ const DashboardOverview = ({
 
   if (loading) {
     return <Skeleton className="h-[500px] w-full" />;
-  }
-
-  if (isMobile) {
-    return (
-      <div className="space-y-4 px-4">
-        {widgets.map(widget => {
-          const WidgetComponent = widgetMap[widget.widget_type];
-          return (
-            <div key={widget.id} className="relative group bg-card rounded-lg border border-border h-[300px]">
-              {isEditable && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 z-10 h-6 w-6"
-                  onClick={(e) => { e.stopPropagation(); handleRemoveWidget(widget.id); }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              {WidgetComponent ? <WidgetComponent firstName={firstName} onNavigate={onNavigate} /> : <div>Unknown Widget</div>}
-            </div>
-          );
-        })}
-      </div>
-    );
   }
 
   return (

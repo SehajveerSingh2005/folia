@@ -12,7 +12,7 @@ const ClockWidget = () => {
   return (
     <Card className="w-full h-full">
       <CardContent className="p-6 flex items-center justify-center h-full">
-        <div className="text-5xl font-mono font-medium text-center">
+        <div className="text-4xl sm:text-5xl font-mono font-medium text-center">
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </CardContent>
