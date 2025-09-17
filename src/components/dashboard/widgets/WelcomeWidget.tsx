@@ -17,10 +17,10 @@ const WelcomeWidget = ({ firstName }: WelcomeWidgetProps) => {
   return (
     <Card className="w-full h-full">
       <CardContent className="p-6 flex flex-col justify-center h-full">
-        <h2 className="text-2xl sm:text-3xl font-serif">
+        <h2 className="text-xl sm:text-3xl font-serif">
           {getGreeting()}, {firstName}.
         </h2>
-        <p className="text-base sm:text-lg text-foreground/70">
+        <p className="text-sm sm:text-lg text-foreground/70">
           {format(today, 'EEEE, MMMM d')}
         </p>
       </CardContent>
