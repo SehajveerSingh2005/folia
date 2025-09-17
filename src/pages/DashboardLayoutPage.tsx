@@ -11,6 +11,7 @@ const DashboardLayoutPage = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loomRefetch, setLoomRefetch] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +66,12 @@ const DashboardLayoutPage = () => {
     await supabase.auth.signOut();
   };
 
+  const handleTaskAdded = () => {
+    if (loomRefetch) {
+      loomRefetch();
+    }
+  };
+
   if (loading || !profile) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -77,8 +84,9 @@ const DashboardLayoutPage = () => {
     <DashboardLayout
       firstName={profile.first_name || 'User'}
       onLogout={handleLogout}
+      onTaskAdded={handleTaskAdded}
     >
-      <Outlet context={{ firstName: profile.first_name || 'User' }} />
+      <Outlet context={{ firstName: profile.first_name || 'User', setLoomRefetch }} />
     </DashboardLayout>
   );
 };

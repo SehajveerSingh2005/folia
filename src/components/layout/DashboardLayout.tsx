@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import Sidebar, { View } from './Sidebar';
 import GlobalSearch from '@/components/GlobalSearch';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileHeader from './MobileHeader';
+import BottomNavBar from './BottomNavBar';
 
 interface DashboardLayoutProps {
   firstName: string;
   onLogout: () => void;
   children: React.ReactNode;
+  onTaskAdded: () => void;
 }
 
 const capitalize = (s: string) => {
@@ -14,9 +18,9 @@ const capitalize = (s: string) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const DashboardLayout = ({ firstName, onLogout, children }: DashboardLayoutProps) => {
+const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: DashboardLayoutProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const getViewFromPath = (): View => {
     const path = location.pathname.split('/').pop() || '';
@@ -44,15 +48,34 @@ const DashboardLayout = ({ firstName, onLogout, children }: DashboardLayoutProps
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <Sidebar
-        activeView={activeView}
-        onLogout={onLogout}
-        firstName={firstName}
-        onSearch={() => setIsSearchOpen(true)}
-      />
-      <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
-        {children}
-      </main>
+      {isMobile ? (
+        <>
+          <MobileHeader 
+            activeView={activeView}
+            firstName={firstName}
+            onLogout={onLogout}
+          />
+          <main className="flex-grow p-4 pt-20 pb-24 overflow-auto flex flex-col">
+            {children}
+          </main>
+          <BottomNavBar 
+            activeView={activeView}
+            onTaskAdded={onTaskAdded}
+          />
+        </>
+      ) : (
+        <>
+          <Sidebar
+            activeView={activeView}
+            onLogout={onLogout}
+            firstName={firstName}
+            onSearch={() => setIsSearchOpen(true)}
+          />
+          <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
+            {children}
+          </main>
+        </>
+      )}
       <GlobalSearch
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}

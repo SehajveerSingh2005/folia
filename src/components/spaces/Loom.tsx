@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,8 +38,10 @@ const Loom = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
+  const outletContext = useOutletContext<{ setLoomRefetch: (fn: (() => void) | null) => void }>();
+  const setLoomRefetch = outletContext?.setLoomRefetch;
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
 
     const { data: tasks, error: tasksError } = await supabase
@@ -79,11 +82,22 @@ const Loom = () => {
     }
 
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
+
+  useEffect(() => {
+    if (setLoomRefetch) {
+      setLoomRefetch(() => fetchTasks);
+    }
+    return () => {
+      if (setLoomRefetch) {
+        setLoomRefetch(null);
+      }
+    };
+  }, [fetchTasks, setLoomRefetch]);
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
