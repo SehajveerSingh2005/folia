@@ -12,9 +12,10 @@ import {
   LogOut,
   Archive,
   User,
+  Book,
+  Telescope,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { View } from './Sidebar';
 
 interface MobileHeaderProps {
   firstName: string;
@@ -46,6 +47,18 @@ const MobileHeader = ({ firstName, onLogout }: MobileHeaderProps) => {
             </div>
           </SheetHeader>
           <nav className="mt-6 space-y-2">
+            <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
+              <Link to="/journal">
+                <Book className="mr-3 h-5 w-5" />
+                Journal
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
+              <Link to="/horizon">
+                <Telescope className="mr-3 h-5 w-5" />
+                Horizon
+              </Link>
+            </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
               <Link to="/archive">
                 <Archive className="mr-3 h-5 w-5" />

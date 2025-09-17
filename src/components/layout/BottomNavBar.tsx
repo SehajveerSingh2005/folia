@@ -12,11 +12,11 @@ import { Link } from 'react-router-dom';
 import { View } from './Sidebar';
 import AddTaskDialog from '../spaces/loom/AddTaskDialog';
 
-const navItems: { id: View; icon: React.ElementType; path: string }[] = [
-  { id: 'Overview', icon: LayoutGrid, path: '/dashboard' },
-  { id: 'Loom', icon: ClipboardList, path: '/loom' },
-  { id: 'Flow', icon: FolderKanban, path: '/flow' },
-  { id: 'Garden', icon: Sparkles, path: '/garden' },
+const navItems: { id: View; label: string; icon: React.ElementType; path: string }[] = [
+  { id: 'Overview', label: 'Home', icon: LayoutGrid, path: '/dashboard' },
+  { id: 'Loom', label: 'Loom', icon: ClipboardList, path: '/loom' },
+  { id: 'Flow', label: 'Flow', icon: FolderKanban, path: '/flow' },
+  { id: 'Garden', label: 'Garden', icon: Sparkles, path: '/garden' },
 ];
 
 interface BottomNavBarProps {
@@ -43,7 +43,7 @@ const BottomNavBar = ({ activeView, onTaskAdded }: BottomNavBarProps) => {
             >
               <Link to={item.path}>
                 <item.icon className="h-5 w-5" />
-                {item.id}
+                {item.label}
               </Link>
             </Button>
           ))}
@@ -70,7 +70,7 @@ const BottomNavBar = ({ activeView, onTaskAdded }: BottomNavBarProps) => {
             >
               <Link to={item.path}>
                 <item.icon className="h-5 w-5" />
-                {item.id}
+                {item.label}
               </Link>
             </Button>
           ))}
