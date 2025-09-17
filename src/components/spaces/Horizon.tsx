@@ -284,7 +284,7 @@ const Horizon = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Telescope className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
@@ -294,7 +294,7 @@ const Horizon = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">

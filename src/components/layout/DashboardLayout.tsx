@@ -51,7 +51,6 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
       {isMobile ? (
         <>
           <MobileHeader 
-            activeView={activeView}
             firstName={firstName}
             onLogout={onLogout}
           />

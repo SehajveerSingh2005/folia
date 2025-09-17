@@ -298,7 +298,7 @@ const Flow = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
           <FolderKanban className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
@@ -308,7 +308,7 @@ const Flow = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -346,7 +346,7 @@ const Flow = () => {
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                New Item
+                New
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -506,7 +506,7 @@ const Flow = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-4 pt-2">
+                  <div className="text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pt-2">
                     <span>
                       Started:{' '}
                       {item.start_date

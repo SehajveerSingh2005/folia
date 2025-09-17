@@ -188,7 +188,7 @@ const Loom = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-8 flex-shrink-0 pr-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 flex-shrink-0">
         <div className="flex items-center gap-4">
           <ClipboardList className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
@@ -198,7 +198,7 @@ const Loom = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button onClick={() => setIsAddDialogOpen(true)} className="w-full sm:w-auto">
           <PlusCircle className="mr-2 h-4 w-4" />
           New Task
         </Button>
@@ -207,7 +207,7 @@ const Loom = () => {
       {loading ? (
         <p>Loading tasks...</p>
       ) : (
-        <div className="flex-grow overflow-y-auto pr-4 space-y-6">
+        <div className="flex-grow overflow-y-auto pr-0 sm:pr-4 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="font-sans font-medium">Due Today</CardTitle>

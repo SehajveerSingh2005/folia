@@ -191,7 +191,7 @@ const Garden = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
         <div className="flex items-center gap-4">
           <Sparkles className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
@@ -203,7 +203,7 @@ const Garden = () => {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" />
               Plant Seed
             </Button>
@@ -246,7 +246,7 @@ const Garden = () => {
         </Dialog>
       </div>
 
-      <div className="flex gap-2 mb-8 border-b pb-4">
+      <div className="flex gap-2 mb-8 border-b pb-4 flex-wrap">
         <Button
           variant={!activeCategory ? 'default' : 'ghost'}
           onClick={() => setActiveCategory(null)}

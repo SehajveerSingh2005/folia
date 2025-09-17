@@ -17,17 +17,19 @@ import { Link } from 'react-router-dom';
 import { View } from './Sidebar';
 
 interface MobileHeaderProps {
-  activeView: View;
   firstName: string;
   onLogout: () => void;
 }
 
-const MobileHeader = ({ activeView, firstName, onLogout }: MobileHeaderProps) => {
+const MobileHeader = ({ firstName, onLogout }: MobileHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between h-16 px-4 bg-background/80 backdrop-blur-sm border-b">
-      <h1 className="text-xl font-serif font-medium">{activeView}</h1>
+      <Link to="/dashboard" className="flex items-center gap-2">
+        <img src="/logo.png" alt="Folia Logo" className="h-7 w-auto" />
+        <h1 className="text-xl font-serif font-medium">Folia</h1>
+      </Link>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon">
