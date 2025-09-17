@@ -22,7 +22,7 @@ import Archive from "./components/spaces/Archive";
 
 const queryClient = new QueryClient();
 
-const APP_VERSION = "1.2.0"; // Increment this version to trigger a settings reset for all users
+const APP_VERSION = "1.1.0"; // Increment this version to trigger a settings reset for all users
 
 const App = () => {
   useEffect(() => {
@@ -31,7 +31,6 @@ const App = () => {
       // Clear potentially outdated settings
       localStorage.removeItem('flowViewMode');
       localStorage.removeItem('flowSortMode');
-      localStorage.removeItem('horizonViewMode'); // Clear old horizon view mode
       
       // Clear all dashboard widget layouts
       Object.keys(localStorage).forEach(key => {
