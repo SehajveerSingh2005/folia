@@ -47,6 +47,8 @@ interface SidebarProps {
   onLogout: () => void;
   firstName: string;
   onSearch: () => void;
+  isMobile?: boolean;
+  onNavigate?: () => void; // Callback for mobile navigation to close sheet
 }
 
 const Sidebar = ({
@@ -54,16 +56,33 @@ const Sidebar = ({
   onLogout,
   firstName,
   onSearch,
+  isMobile = false,
+  onNavigate,
 }: SidebarProps) => {
   const navigate = useNavigate();
-  const [isCompact, setIsCompact] = useState(false);
+  const [isCompact, setIsCompact] = useState(isMobile); // Start compact on mobile
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    if (isMobile && onNavigate) {
+      onNavigate(); // Close the sheet on navigation
+    }
+  };
+
+  const handleSearchClick = () => {
+    onSearch();
+    if (isMobile && onNavigate) {
+      onNavigate(); // Close the sheet after opening search
+    }
+  };
 
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
           'flex-shrink-0 flex flex-col bg-secondary/40 p-4 border-r transition-all duration-300',
-          isCompact ? 'w-20' : 'w-64'
+          isCompact ? 'w-20' : 'w-64',
+          isMobile && 'h-full' // Ensure sidebar takes full height in mobile sheet
         )}
       >
         <div className={cn("mb-8", !isCompact && "px-3")}>
@@ -92,7 +111,7 @@ const Sidebar = ({
                   'w-full text-md font-normal px-3 mb-4 text-muted-foreground',
                   isCompact ? 'justify-center' : 'justify-start'
                 )}
-                onClick={onSearch}
+                onClick={handleSearchClick}
               >
                 <Search className={cn('h-5 w-5', !isCompact && 'mr-3')} />
                 {!isCompact && <span>Search...</span>}
@@ -116,7 +135,6 @@ const Sidebar = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      asChild
                       variant="ghost"
                       className={cn(
                         'w-full text-md font-normal px-3 py-6',
@@ -124,11 +142,10 @@ const Sidebar = ({
                         activeView === item.id &&
                           'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary'
                       )}
+                      onClick={() => handleNavigation(item.path)}
                     >
-                      <Link to={item.path}>
-                        <item.icon className={cn('h-5 w-5', !isCompact && 'mr-3')} />
-                        {!isCompact && item.label}
-                      </Link>
+                      <item.icon className={cn('h-5 w-5', !isCompact && 'mr-3')} />
+                      {!isCompact && item.label}
                     </Button>
                   </TooltipTrigger>
                   {isCompact && (
@@ -150,7 +167,7 @@ const Sidebar = ({
                   'w-full text-md font-normal px-3 py-6',
                   isCompact ? 'justify-center' : 'justify-start'
                 )}
-                onClick={() => navigate('/settings')}
+                onClick={() => handleNavigation('/settings')}
               >
                 <Settings className={cn('h-5 w-5', !isCompact && 'mr-3')} />
                 {!isCompact && 'Settings'}
@@ -183,34 +200,36 @@ const Sidebar = ({
             )}
           </Tooltip>
         </div>
-        <div className="border-t mt-2 pt-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  'w-full text-md font-normal px-3 py-6',
-                  isCompact ? 'justify-center' : 'justify-start'
-                )}
-                onClick={() => setIsCompact(!isCompact)}
-              >
-                {isCompact ? (
-                  <ChevronsRight className="h-5 w-5" />
-                ) : (
-                  <>
-                    <ChevronsLeft className="mr-3 h-5 w-5" />
-                    <span>Collapse</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            {isCompact && (
-              <TooltipContent side="right">
-                <p>Expand</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </div>
+        {!isMobile && ( // Only show collapse button on desktop
+          <div className="border-t mt-2 pt-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    'w-full text-md font-normal px-3 py-6',
+                    isCompact ? 'justify-center' : 'justify-start'
+                  )}
+                  onClick={() => setIsCompact(!isCompact)}
+                >
+                  {isCompact ? (
+                    <ChevronsRight className="h-5 w-5" />
+                  ) : (
+                    <>
+                      <ChevronsLeft className="mr-3 h-5 w-5" />
+                      <span>Collapse</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              {isCompact && (
+                <TooltipContent side="right">
+                  <p>Expand</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        )}
       </aside>
     </TooltipProvider>
   );

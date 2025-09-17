@@ -5,6 +5,8 @@ import DashboardOverview from '@/components/DashboardOverview';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil } from 'lucide-react';
 import AddWidgetSheet from '@/components/dashboard/AddWidgetSheet';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const DashboardOverviewWrapper = () => {
   const { firstName } = useOutletContext<{ firstName: string }>();
@@ -13,6 +15,7 @@ const DashboardOverviewWrapper = () => {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
   const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
+  const isMobile = useIsMobile();
 
   const handleAddWidget = (widgetType: string, w: number, h: number) => {
     setAddWidgetTrigger({ type: widgetType, w, h, id: Date.now() });
@@ -31,7 +34,10 @@ const DashboardOverviewWrapper = () => {
 
   return (
     <>
-      <div className="flex justify-end items-center mb-4 gap-2">
+      <div className={cn(
+        "flex justify-end items-center mb-4 gap-2",
+        isMobile && "px-4" // Add horizontal padding on mobile
+      )}>
         <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Widget

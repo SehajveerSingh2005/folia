@@ -14,16 +14,13 @@ import InboxWidget from './dashboard/widgets/InboxWidget';
 import NotesWidget from './dashboard/widgets/NotesWidget';
 import JournalWidget from './dashboard/widgets/JournalWidget';
 import GoalsWidget from './dashboard/widgets/GoalsWidget';
+import { availableWidgets } from './dashboard/AddWidgetSheet';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 type Widget = {
   id: string;
   widget_type: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
   user_id?: string;
 };
 
@@ -56,24 +53,24 @@ const widgetNavigationMap: { [key: string]: string } = {
   Goals: 'Horizon',
 };
 
-const defaultLayout: Omit<Widget, 'id' | 'user_id'>[] = [
-  { widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
-  { widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
-  { widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
-  { widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
-  { widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
-  { widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
-];
-
-// Default sizes for new widgets
-const defaultWidgetSizes: { [key: string]: { w: number, h: number } } = {
-  Welcome: { w: 8, h: 2 },
-  Clock: { w: 4, h: 2 },
-  DueToday: { w: 6, h: 4 },
-  Inbox: { w: 6, h: 4 },
-  Notes: { w: 6, h: 4 },
-  Journal: { w: 6, h: 4 },
-  Goals: { w: 6, h: 4 },
+// Default layouts for different breakpoints
+const defaultLayouts = {
+  lg: [
+    { i: 'welcome', x: 0, y: 0, w: 8, h: 2, static: false },
+    { i: 'clock', x: 8, y: 0, w: 4, h: 2, static: false },
+    { i: 'dueToday', x: 0, y: 2, w: 6, h: 4, static: false },
+    { i: 'inbox', x: 6, y: 2, w: 6, h: 4, static: false },
+    { i: 'journal', x: 0, y: 6, w: 6, h: 3, static: false },
+    { i: 'goals', x: 6, y: 6, w: 6, h: 3, static: false },
+  ],
+  sm: [
+    { i: 'welcome', x: 0, y: 0, w: 4, h: 2, static: false },
+    { i: 'clock', x: 0, y: 2, w: 4, h: 2, static: false },
+    { i: 'dueToday', x: 0, y: 4, w: 4, h: 4, static: false },
+    { i: 'inbox', x: 0, y: 8, w: 4, h: 4, static: false },
+    { i: 'journal', x: 0, y: 12, w: 4, h: 3, static: false },
+    { i: 'goals', x: 0, y: 15, w: 4, h: 3, static: false },
+  ],
 };
 
 const DashboardOverview = ({
@@ -85,69 +82,109 @@ const DashboardOverview = ({
   setSaveLayoutRef,
 }: DashboardOverviewProps) => {
   const [widgets, setWidgets] = useState<Widget[]>([]);
-  const [layout, setLayout] = useState<Layout[]>([]);
+  const [currentLayouts, setCurrentLayouts] = useState<{ lg: Layout[]; sm: Layout[] }>({ lg: [], sm: [] });
   const [loading, setLoading] = useState(true);
-  const layoutRef = useRef(layout);
+  const layoutRef = useRef(currentLayouts);
   const hasUnsavedChanges = useRef(false);
 
   // Update ref when layout changes
   useEffect(() => {
-    layoutRef.current = layout;
-    if (layout.length > 0) {
+    layoutRef.current = currentLayouts;
+    if (currentLayouts.lg.length > 0 || currentLayouts.sm.length > 0) {
       hasUnsavedChanges.current = true;
     }
-  }, [layout]);
+  }, [currentLayouts]);
 
-  // Load widgets from database
-  const loadWidgets = async () => {
+  // Load widgets and layouts from database
+  const loadDashboardData = async () => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('widgets')
-      .select('*')
-      .eq('user_id', user.id);
-
-    if (error) {
-      showError('Could not load your dashboard layout.');
-      console.error(error);
+    if (!user) {
       setLoading(false);
       return;
     }
 
-    if (data && data.length > 0) {
-      setWidgets(data);
-      const formattedLayout = data.map(w => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h }));
-      setLayout(formattedLayout);
-      // Save to localStorage for faster loading next time
-      localStorage.setItem(`dashboardWidgets_${user.id}`, JSON.stringify(data));
-    } else {
-      // Create default widgets
-      const newWidgets = defaultLayout.map((item) => ({ 
-        ...item, 
-        user_id: user.id 
+    const { data: userWidgets, error: widgetsError } = await supabase
+      .from('widgets')
+      .select('id, widget_type');
+
+    if (widgetsError) {
+      showError('Could not load your dashboard widgets.');
+      console.error(widgetsError);
+      setLoading(false);
+      return;
+    }
+
+    const { data: userLayouts, error: layoutsError } = await supabase
+      .from('user_dashboard_layouts')
+      .select('layouts')
+      .eq('user_id', user.id)
+      .single();
+
+    if (layoutsError && layoutsError.code !== 'PGRST116') { // PGRST116 means no rows found
+      showError('Could not load your dashboard layout.');
+      console.error(layoutsError);
+      setLoading(false);
+      return;
+    }
+
+    let initialWidgets: Widget[] = [];
+    let initialLayouts = { lg: [], sm: [] };
+
+    if (userWidgets && userWidgets.length > 0) {
+      initialWidgets = userWidgets;
+    }
+
+    if (userLayouts && userLayouts.layouts) {
+      initialLayouts = userLayouts.layouts as { lg: Layout[]; sm: Layout[] };
+    }
+
+    // If no widgets or layouts, create defaults
+    if (initialWidgets.length === 0 || initialLayouts.lg.length === 0) {
+      const defaultWidgetTypes = defaultLayouts.lg.map(item => item.i);
+      const newDefaultWidgets = defaultWidgetTypes.map(type => ({
+        widget_type: type,
+        user_id: user.id,
       }));
-      
-      const { data: insertedWidgets, error: insertError } = await supabase
+
+      const { data: insertedWidgets, error: insertWidgetsError } = await supabase
         .from('widgets')
-        .insert(newWidgets)
-        .select();
-      
-      if (insertError) {
-        showError('Could not create a default layout.');
+        .insert(newDefaultWidgets)
+        .select('id, widget_type');
+
+      if (insertWidgetsError) {
+        showError('Could not create default widgets.');
+        console.error(insertWidgetsError);
       } else if (insertedWidgets) {
-        setWidgets(insertedWidgets);
-        const formattedLayout = insertedWidgets.map(w => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h }));
-        setLayout(formattedLayout);
-        // Save to localStorage
-        localStorage.setItem(`dashboardWidgets_${user.id}`, JSON.stringify(insertedWidgets));
+        initialWidgets = insertedWidgets;
+        // Map default layouts to new widget IDs
+        const mapDefaultLayoutToNewIds = (layout: Layout[], newWidgets: Widget[]) => {
+          return layout.map(item => {
+            const correspondingWidget = newWidgets.find(w => w.widget_type === item.i);
+            return { ...item, i: correspondingWidget ? correspondingWidget.id : item.i };
+          });
+        };
+        initialLayouts.lg = mapDefaultLayoutToNewIds(defaultLayouts.lg, insertedWidgets);
+        initialLayouts.sm = mapDefaultLayoutToNewIds(defaultLayouts.sm, insertedWidgets);
+
+        const { error: insertLayoutError } = await supabase
+          .from('user_dashboard_layouts')
+          .upsert({ user_id: user.id, layouts: initialLayouts }, { onConflict: 'user_id' });
+
+        if (insertLayoutError) {
+          showError('Could not save default layout.');
+          console.error(insertLayoutError);
+        }
       }
     }
+
+    setWidgets(initialWidgets);
+    setCurrentLayouts(initialLayouts);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadWidgets();
+    loadDashboardData();
   }, []);
 
   useEffect(() => {
@@ -161,107 +198,89 @@ const DashboardOverview = ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Use default sizes if not provided
-    const widgetWidth = w || defaultWidgetSizes[widgetType]?.w || 4;
-    const widgetHeight = h || defaultWidgetSizes[widgetType]?.h || 4;
-
-    // Find the best position for the new widget
-    let maxY = 0;
-    if (layout.length > 0) {
-      maxY = Math.max(...layout.map(item => item.y + item.h));
-    }
-
-    const newWidget = {
-      user_id: user.id,
-      widget_type: widgetType,
-      x: 0,
-      y: maxY,
-      w: widgetWidth,
-      h: widgetHeight,
-    };
-
-    const { data, error } = await supabase
+    const { data: newWidget, error: insertWidgetError } = await supabase
       .from('widgets')
-      .insert(newWidget)
-      .select()
+      .insert({ widget_type: widgetType, user_id: user.id })
+      .select('id, widget_type')
       .single();
 
-    if (error) {
+    if (insertWidgetError) {
       showError('Failed to add widget.');
-      console.error(error);
-    } else if (data) {
-      const updatedWidgets = [...widgets, data];
+      console.error(insertWidgetError);
+      return;
+    }
+
+    if (newWidget) {
+      const updatedWidgets = [...widgets, newWidget];
       setWidgets(updatedWidgets);
-      const formattedLayout = updatedWidgets.map(w => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h }));
-      setLayout(formattedLayout);
-      // Update localStorage
-      localStorage.setItem(`dashboardWidgets_${user.id}`, JSON.stringify(updatedWidgets));
+
+      const widgetConfig = availableWidgets.find(aw => aw.type === widgetType);
+      const defaultW = widgetConfig?.w || 4;
+      const defaultH = widgetConfig?.h || 4;
+
+      // Find the best position for the new widget in both layouts
+      const newLayouts = { ...currentLayouts };
+
+      // For LG layout
+      let maxY_lg = 0;
+      if (newLayouts.lg.length > 0) {
+        maxY_lg = Math.max(...newLayouts.lg.map(item => item.y + item.h));
+      }
+      newLayouts.lg = [...newLayouts.lg, { i: newWidget.id, x: 0, y: maxY_lg, w: defaultW, h: defaultH, static: false }];
+
+      // For SM layout (mobile)
+      let maxY_sm = 0;
+      if (newLayouts.sm.length > 0) {
+        maxY_sm = Math.max(...newLayouts.sm.map(item => item.y + item.h));
+      }
+      newLayouts.sm = [...newLayouts.sm, { i: newWidget.id, x: 0, y: maxY_sm, w: 4, h: defaultH, static: false }]; // Mobile widgets typically take full width
+
+      setCurrentLayouts(newLayouts);
       showSuccess('Widget added!');
     }
   };
 
   const handleRemoveWidget = useCallback(async (widgetId: string) => {
-    const { error } = await supabase.from('widgets').delete().eq('id', widgetId);
-    if (error) {
+    const { error: deleteWidgetError } = await supabase.from('widgets').delete().eq('id', widgetId);
+    if (deleteWidgetError) {
       showError('Failed to remove widget.');
-    } else {
-      const updatedWidgets = widgets.filter(w => w.id !== widgetId);
-      setWidgets(updatedWidgets);
-      const formattedLayout = updatedWidgets.map(w => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h }));
-      setLayout(formattedLayout);
-      // Update localStorage
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        localStorage.setItem(`dashboardWidgets_${user.id}`, JSON.stringify(updatedWidgets));
-      }
-      showSuccess('Widget removed.');
-    }
-  }, [widgets]);
-
-  const handleLayoutChange = useCallback(async (newLayout: Layout[]) => {
-    setLayout(newLayout);
-    
-    // Update widgets in state immediately for UI responsiveness
-    const updatedWidgets = widgets.map(widget => {
-      const layoutItem = newLayout.find(item => item.i === widget.id);
-      if (layoutItem) {
-        return {
-          ...widget,
-          x: layoutItem.x,
-          y: layoutItem.y,
-          w: layoutItem.w,
-          h: layoutItem.h
-        };
-      }
-      return widget;
-    });
-    setWidgets(updatedWidgets);
-    
-    // Update localStorage immediately
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      localStorage.setItem(`dashboardWidgets_${user.id}`, JSON.stringify(updatedWidgets));
-    }
-  }, [widgets]);
-
-  // Save layout to database
-  const saveLayoutToDatabase = useCallback(async () => {
-    if (!hasUnsavedChanges.current || layoutRef.current.length === 0) {
+      console.error(deleteWidgetError);
       return;
     }
 
-    const updates = layoutRef.current.map(item => {
-      return supabase
-        .from('widgets')
-        .update({ x: item.x, y: item.y, w: item.w, h: item.h })
-        .eq('id', item.i);
-    });
+    const updatedWidgets = widgets.filter(w => w.id !== widgetId);
+    setWidgets(updatedWidgets);
 
-    try {
-      await Promise.all(updates);
-      hasUnsavedChanges.current = false;
-    } catch (error) {
+    const newLayouts = {
+      lg: currentLayouts.lg.filter(item => item.i !== widgetId),
+      sm: currentLayouts.sm.filter(item => item.i !== widgetId),
+    };
+    setCurrentLayouts(newLayouts);
+    showSuccess('Widget removed.');
+  }, [widgets, currentLayouts]);
+
+  const handleLayoutChange = useCallback(async (layout: Layout[], allLayouts: { lg: Layout[]; sm: Layout[] }) => {
+    setCurrentLayouts(allLayouts);
+    hasUnsavedChanges.current = true;
+  }, []);
+
+  // Save layout to database
+  const saveLayoutToDatabase = useCallback(async () => {
+    if (!hasUnsavedChanges.current || (layoutRef.current.lg.length === 0 && layoutRef.current.sm.length === 0)) {
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('user_dashboard_layouts')
+      .upsert({ user_id: user.id, layouts: layoutRef.current }, { onConflict: 'user_id' });
+
+    if (error) {
       console.error('Failed to save layout to database', error);
+    } else {
+      hasUnsavedChanges.current = false;
     }
   }, []);
 
@@ -279,21 +298,18 @@ const DashboardOverview = ({
 
   // Save to database periodically and when component unmounts
   useEffect(() => {
-    // Save to database every 5 seconds if there are changes
     const interval = setInterval(() => {
       if (hasUnsavedChanges.current) {
         saveLayoutToDatabase();
       }
     }, 5000);
 
-    // Save when isEditable changes to false (editing is done)
     if (!isEditable && hasUnsavedChanges.current) {
       saveLayoutToDatabase();
     }
 
     return () => {
       clearInterval(interval);
-      // Save on unmount
       if (hasUnsavedChanges.current) {
         saveLayoutToDatabase();
       }
@@ -321,9 +337,9 @@ const DashboardOverview = ({
   return (
     <ResponsiveGridLayout
       className="layout"
-      layouts={{ lg: layout }}
+      layouts={currentLayouts}
       breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-      cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+      cols={{ lg: 12, md: 10, sm: 4, xs: 4, xxs: 2 }}
       rowHeight={100}
       onLayoutChange={handleLayoutChange}
       isDraggable={isEditable}
@@ -337,6 +353,7 @@ const DashboardOverview = ({
         return (
           <div 
             key={widget.id} 
+            data-grid={{ i: widget.id, x: 0, y: Infinity, w: 1, h: 1 }} // Placeholder for new widgets
             className="relative group bg-card rounded-lg border border-border"
             onClick={(e) => handleWidgetClick(e, widget.widget_type)}
           >

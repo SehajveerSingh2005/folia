@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar, { View } from './Sidebar';
 import GlobalSearch from '@/components/GlobalSearch';
+import MobileHeader from './MobileHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardLayoutProps {
   firstName: string;
@@ -17,6 +19,7 @@ const capitalize = (s: string) => {
 const DashboardLayout = ({ firstName, onLogout, children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const getViewFromPath = (): View => {
     const path = location.pathname.split('/').pop() || '';
@@ -44,12 +47,21 @@ const DashboardLayout = ({ firstName, onLogout, children }: DashboardLayoutProps
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <Sidebar
-        activeView={activeView}
-        onLogout={onLogout}
-        firstName={firstName}
-        onSearch={() => setIsSearchOpen(true)}
-      />
+      {isMobile ? (
+        <MobileHeader
+          firstName={firstName}
+          onLogout={onLogout}
+          activeView={activeView}
+          onSearch={() => setIsSearchOpen(true)}
+        />
+      ) : (
+        <Sidebar
+          activeView={activeView}
+          onLogout={onLogout}
+          firstName={firstName}
+          onSearch={() => setIsSearchOpen(true)}
+        />
+      )}
       <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
         {children}
       </main>
