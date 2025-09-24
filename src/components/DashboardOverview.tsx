@@ -18,11 +18,8 @@ import GoalsWidget from './dashboard/widgets/GoalsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-type Widget = {
-  id: string;
-  widget_type: string;
-  user_id: string;
-};
+type LayoutItem = Layout & { widget_type: string };
+type CustomLayouts = { [breakpoint: string]: LayoutItem[] };
 
 interface DashboardOverviewProps {
   firstName: string;
@@ -51,32 +48,23 @@ const widgetNavigationMap: { [key: string]: string } = {
   Goals: 'Horizon',
 };
 
-const defaultLayoutPlaceholders = {
+const defaultLayouts: CustomLayouts = {
   lg: [
-    { i: 'welcome', x: 0, y: 0, w: 8, h: 2 },
-    { i: 'clock', x: 8, y: 0, w: 4, h: 2 },
-    { i: 'duetoday', x: 0, y: 2, w: 6, h: 4 },
-    { i: 'inbox', x: 6, y: 2, w: 6, h: 4 },
-    { i: 'journal', x: 0, y: 6, w: 6, h: 3 },
-    { i: 'goals', x: 6, y: 6, w: 6, h: 3 },
+    { i: uuidv4(), widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
+    { i: uuidv4(), widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
+    { i: uuidv4(), widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
+    { i: uuidv4(), widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
+    { i: uuidv4(), widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
+    { i: uuidv4(), widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
   ],
   xs: [
-    { i: 'welcome', x: 0, y: 0, w: 4, h: 2 },
-    { i: 'clock', x: 0, y: 2, w: 2, h: 2 },
-    { i: 'duetoday', x: 2, y: 2, w: 2, h: 4 },
-    { i: 'inbox', x: 0, y: 4, w: 2, h: 4 },
-    { i: 'journal', x: 0, y: 8, w: 4, h: 3 },
-    { i: 'goals', x: 0, y: 11, w: 4, h: 3 },
+    { i: uuidv4(), widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
+    { i: uuidv4(), widget_type: 'Clock', x: 0, y: 2, w: 2, h: 2 },
+    { i: uuidv4(), widget_type: 'DueToday', x: 2, y: 2, w: 2, h: 4 },
+    { i: uuidv4(), widget_type: 'Inbox', x: 0, y: 4, w: 2, h: 4 },
+    { i: uuidv4(), widget_type: 'Journal', x: 0, y: 8, w: 4, h: 3 },
+    { i: uuidv4(), widget_type: 'Goals', x: 0, y: 11, w: 4, h: 3 },
   ],
-};
-
-const defaultWidgetTypes: { [key: string]: string } = {
-  welcome: 'Welcome',
-  clock: 'Clock',
-  duetoday: 'DueToday',
-  inbox: 'Inbox',
-  journal: 'Journal',
-  goals: 'Goals',
 };
 
 const DashboardOverview = ({
@@ -87,8 +75,7 @@ const DashboardOverview = ({
   onWidgetAdded,
   setSaveLayoutRef,
 }: DashboardOverviewProps) => {
-  const [widgets, setWidgets] = useState<Widget[]>([]);
-  const [layouts, setLayouts] = useState<Layouts>({});
+  const [layouts, setLayouts] = useState<CustomLayouts>({});
   const [loading, setLoading] = useState(true);
   const layoutsRef = useRef(layouts);
   const hasUnsavedChanges = useRef(false);
@@ -101,33 +88,12 @@ const DashboardOverview = ({
   }, [layouts]);
 
   const createDefaultLayout = async (user_id: string) => {
-    // Clear any existing widgets to start fresh
-    await supabase.from('widgets').delete().eq('user_id', user_id);
-
-    const newWidgets = Object.entries(defaultWidgetTypes).map(([key, type]) => ({
-      placeholderId: key,
-      id: uuidv4(),
-      widget_type: type,
-      user_id,
-    }));
-
-    const idMap = new Map(newWidgets.map(w => [w.placeholderId, w.id]));
-
-    const finalLayouts: Layouts = {
-      lg: defaultLayoutPlaceholders.lg.map(l => ({ ...l, i: idMap.get(l.i)! })),
-      xs: defaultLayoutPlaceholders.xs.map(l => ({ ...l, i: idMap.get(l.i)! })),
-    };
-
-    const { error: insertWidgetsError } = await supabase.from('widgets').insert(
-      newWidgets.map(({ id, user_id, widget_type }) => ({ id, user_id, widget_type }))
-    );
-    const { error: insertLayoutError } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: finalLayouts });
-
-    if (insertWidgetsError || insertLayoutError) {
+    const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: defaultLayouts });
+    if (error) {
       showError('Could not create default layout.');
-      return { widgets: [], layouts: {} };
+      return {};
     }
-    return { widgets: newWidgets, layouts: finalLayouts };
+    return defaultLayouts;
   };
 
   const loadLayouts = async () => {
@@ -141,24 +107,19 @@ const DashboardOverview = ({
       .eq('user_id', user.id)
       .single();
 
-    const { data: widgetData, error: widgetError } = await supabase
-      .from('widgets')
-      .select('id, widget_type, user_id')
-      .eq('user_id', user.id);
-
-    if ((layoutError && layoutError.code !== 'PGRST116') || widgetError) {
+    if (layoutError && layoutError.code !== 'PGRST116') {
       showError('Could not load dashboard.');
       setLoading(false);
       return;
     }
 
-    if (layoutData && layoutData.layouts && Object.keys(layoutData.layouts).length > 0) {
-      setLayouts(layoutData.layouts as Layouts);
-      setWidgets(widgetData || []);
+    const isLayoutValid = layoutData && layoutData.layouts && (layoutData.layouts as CustomLayouts).lg?.every(item => item.widget_type);
+
+    if (isLayoutValid) {
+      setLayouts(layoutData.layouts as CustomLayouts);
     } else {
-      const { widgets, layouts } = await createDefaultLayout(user.id);
-      setWidgets(widgets);
-      setLayouts(layouts);
+      const newLayouts = await createDefaultLayout(user.id);
+      setLayouts(newLayouts);
     }
     setLoading(false);
   };
@@ -174,55 +135,49 @@ const DashboardOverview = ({
     }
   }, [addWidgetTrigger]);
 
-  const addNewWidget = async (widgetType: string, w: number, h: number, mw: number, mh: number) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const newWidget = { id: uuidv4(), user_id: user.id, widget_type: widgetType };
-    const { error } = await supabase.from('widgets').insert(newWidget);
-
-    if (error) {
-      showError('Failed to add widget.');
-    } else {
-      setWidgets([...widgets, newWidget]);
-      const newLayouts = { ...layouts };
-      for (const breakpoint in newLayouts) {
-        let maxY = 0;
-        if (newLayouts[breakpoint].length > 0) {
-          maxY = Math.max(...newLayouts[breakpoint].map(item => item.y + item.h));
-        }
-        const isMobile = breakpoint === 'xs';
-        newLayouts[breakpoint].push({
-          i: newWidget.id,
-          x: 0,
-          y: maxY,
-          w: isMobile ? mw : w,
-          h: isMobile ? mh : h,
-        });
+  const addNewWidget = (widgetType: string, w: number, h: number, mw: number, mh: number) => {
+    const newWidgetId = uuidv4();
+    const newLayouts = { ...layouts };
+    
+    for (const breakpoint in newLayouts) {
+      let maxY = 0;
+      if (newLayouts[breakpoint].length > 0) {
+        maxY = Math.max(...newLayouts[breakpoint].map(item => item.y + item.h));
       }
-      setLayouts(newLayouts);
-      showSuccess('Widget added!');
+      const isMobile = breakpoint === 'xs';
+      newLayouts[breakpoint].push({
+        i: newWidgetId,
+        widget_type: widgetType,
+        x: 0,
+        y: maxY,
+        w: isMobile ? mw : w,
+        h: isMobile ? mh : h,
+      });
     }
+    setLayouts(newLayouts);
+    showSuccess('Widget added!');
   };
 
-  const handleRemoveWidget = useCallback(async (widgetId: string) => {
-    const { error } = await supabase.from('widgets').delete().eq('id', widgetId);
-    if (error) {
-      showError('Failed to remove widget.');
-    } else {
-      setWidgets(widgets.filter(w => w.id !== widgetId));
-      const newLayouts = { ...layouts };
-      for (const breakpoint in newLayouts) {
-        newLayouts[breakpoint] = newLayouts[breakpoint].filter(l => l.i !== widgetId);
-      }
-      setLayouts(newLayouts);
-      showSuccess('Widget removed.');
+  const handleRemoveWidget = useCallback((widgetId: string) => {
+    const newLayouts = { ...layouts };
+    for (const breakpoint in newLayouts) {
+      newLayouts[breakpoint] = newLayouts[breakpoint].filter(l => l.i !== widgetId);
     }
-  }, [widgets, layouts]);
+    setLayouts(newLayouts);
+    showSuccess('Widget removed.');
+  }, [layouts]);
 
   const handleLayoutChange = useCallback((_layout: Layout[], newLayouts: Layouts) => {
-    setLayouts(newLayouts);
-  }, []);
+    // The library doesn't preserve extra properties, so we need to merge them back in.
+    const updatedLayouts: CustomLayouts = {};
+    for (const breakpoint in newLayouts) {
+      updatedLayouts[breakpoint] = newLayouts[breakpoint].map(newItem => {
+        const oldItem = Object.values(layouts).flat().find(item => item.i === newItem.i);
+        return { ...newItem, widget_type: oldItem?.widget_type || '' };
+      });
+    }
+    setLayouts(updatedLayouts);
+  }, [layouts]);
 
   const saveLayoutToDatabase = useCallback(async () => {
     if (!hasUnsavedChanges.current || Object.keys(layoutsRef.current).length === 0) return;
@@ -258,24 +213,20 @@ const DashboardOverview = ({
     };
   }, [isEditable, saveLayoutToDatabase]);
 
-  const handleWidgetClick = (e: React.MouseEvent, widgetId: string) => {
+  const handleWidgetClick = (e: React.MouseEvent, widgetType: string) => {
     if (isEditable) return;
     const target = e.target as HTMLElement;
     if (target.closest('button, input, textarea, label, [role="checkbox"]')) return;
-    const widgetType = widgets.find(w => w.id === widgetId)?.widget_type;
-    if (widgetType) {
-      const space = widgetNavigationMap[widgetType];
-      if (space) onNavigate(space);
-    }
+    const space = widgetNavigationMap[widgetType];
+    if (space) onNavigate(space);
   };
 
   if (loading) {
     return <Skeleton className="h-[500px] w-full" />;
   }
 
-  const widgetTypeMap = new Map(widgets.map(w => [w.id, w.widget_type]));
-  const allWidgetIds = new Set(Object.values(layouts).flat().map(l => l.i));
-  const widgetsToRender = Array.from(allWidgetIds);
+  const allLayoutItems = Object.values(layouts).flat();
+  const uniqueLayoutItems = Array.from(new Map(allLayoutItems.map(item => [item.i, item])).values());
 
   return (
     <ResponsiveGridLayout
@@ -291,21 +242,20 @@ const DashboardOverview = ({
       preventCollision={false}
       isBounded={true}
     >
-      {widgetsToRender.map(widgetId => {
-        const widgetType = widgetTypeMap.get(widgetId);
-        const WidgetComponent = widgetType ? widgetMap[widgetType] : null;
+      {uniqueLayoutItems.map(item => {
+        const WidgetComponent = item.widget_type ? widgetMap[item.widget_type] : null;
         return (
           <div 
-            key={widgetId} 
+            key={item.i} 
             className="relative group bg-card rounded-lg border border-border"
-            onClick={(e) => handleWidgetClick(e, widgetId)}
+            onClick={(e) => handleWidgetClick(e, item.widget_type)}
           >
             {isEditable && (
               <Button
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 z-10 h-6 w-6"
-                onClick={(e) => { e.stopPropagation(); handleRemoveWidget(widgetId); }}
+                onClick={(e) => { e.stopPropagation(); handleRemoveWidget(item.i); }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
               >

@@ -22,7 +22,7 @@ import Archive from "./components/spaces/Archive";
 
 const queryClient = new QueryClient();
 
-const APP_VERSION = "1.2.2"; // Increment this version to trigger a settings reset for all users
+const APP_VERSION = "1.3.0"; // Increment this version to trigger a settings reset for all users
 
 const App = () => {
   useEffect(() => {
