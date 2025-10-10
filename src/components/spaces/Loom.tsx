@@ -91,18 +91,23 @@ const Loom = () => {
       overdue: [],
       today: [],
       upcoming: [],
-      noDate: [],
+      inbox: [],
+      completedToday: [],
     };
 
     const today = startOfToday();
     allTasks.forEach(task => {
+      if (task.is_done) {
+        groups.completedToday.push(task);
+        return;
+      }
       if (task.due_date) {
         const dueDate = parseISO(task.due_date);
         if (isPast(dueDate) && !isToday(dueDate)) groups.overdue.push(task);
         else if (isToday(dueDate)) groups.today.push(task);
         else if (isFuture(dueDate)) groups.upcoming.push(task);
       } else {
-        groups.noDate.push(task);
+        groups.inbox.push(task);
       }
     });
 
@@ -113,19 +118,27 @@ const Loom = () => {
 
   const handleToggleTask = async (taskId: string, isDone: boolean) => {
     const newStatus = !isDone;
-    setAllTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+    const completed_at = newStatus ? new Date().toISOString() : null;
+
+    const originalTasks = [...allTasks];
+    const updatedTasks = originalTasks.map(task => 
+        task.id === taskId 
+            ? { ...task, is_done: newStatus, completed_at } 
+            : task
+    );
+    setAllTasks(updatedTasks);
 
     const { error } = await supabase
       .from('ledger_items')
       .update({
         is_done: newStatus,
-        completed_at: newStatus ? new Date().toISOString() : null,
+        completed_at: completed_at,
       })
       .eq('id', taskId);
 
     if (error) {
       showError(error.message);
-      fetchLoomData(); 
+      setAllTasks(originalTasks);
     }
   };
 
@@ -141,7 +154,7 @@ const Loom = () => {
   };
 
   const renderTaskItem = (task: LedgerItem) => {
-    const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
+    const isOverdue = !task.is_done && task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
     const projectName = task.loom_item_id ? projectsMap.get(task.loom_item_id) : null;
 
     return (
@@ -173,7 +186,7 @@ const Loom = () => {
         <div className="flex items-center gap-2 ml-auto">
           {task.notes && <StickyNote className="h-4 w-4 text-muted-foreground" />}
           {getPriorityBadge(task.priority)}
-          {task.due_date && (
+          {task.due_date && !task.is_done && (
             <div className={cn("hidden sm:flex items-center text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
               {isOverdue && <AlertCircle className="h-3 w-3 mr-1" />}
               <Calendar className="h-3 w-3 mr-1" />
@@ -186,15 +199,20 @@ const Loom = () => {
     );
   };
 
-  const renderTaskGroup = (title: string, tasks: LedgerItem[]) => {
+  const renderTaskGroup = (title: string, tasks: LedgerItem[], isScrollable = false) => {
     if (tasks.length === 0) return null;
     return (
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader>
           <CardTitle className="font-sans font-medium">{title}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1">
-          {tasks.map(renderTaskItem)}
+        <CardContent className="flex-grow overflow-hidden relative">
+          <div className={cn("space-y-1", isScrollable && "max-h-80 overflow-y-auto pr-2")}>
+            {tasks.map(renderTaskItem)}
+          </div>
+          {isScrollable && tasks.length > 5 && (
+             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+          )}
         </CardContent>
       </Card>
     );
@@ -222,10 +240,11 @@ const Loom = () => {
         <p>Loading tasks...</p>
       ) : (
         <div className="flex-grow overflow-y-auto pr-0 sm:pr-4 space-y-6">
-          {renderTaskGroup('Overdue', taskGroups.overdue)}
+          {renderTaskGroup('Overdue', taskGroups.overdue, true)}
           {renderTaskGroup('Due Today', taskGroups.today)}
           {renderTaskGroup('Upcoming', taskGroups.upcoming)}
-          {renderTaskGroup('No Due Date', taskGroups.noDate)}
+          {renderTaskGroup('Inbox', taskGroups.inbox, true)}
+          {renderTaskGroup('Completed Today', taskGroups.completedToday)}
           {allTasks.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">All clear!</p>
