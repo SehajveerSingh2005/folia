@@ -62,7 +62,7 @@ const AddTaskDialog = ({
     defaultValues: {
       content: '',
       priority: null,
-      due_date: new Date(),
+      due_date: null,
       loom_item_id: null,
     },
   });
@@ -72,7 +72,7 @@ const AddTaskDialog = ({
       form.reset({
         content: '',
         priority: null,
-        due_date: new Date(),
+        due_date: null,
         loom_item_id: null,
       });
       const fetchLoomItems = async () => {
@@ -168,9 +168,15 @@ const AddTaskDialog = ({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
                     />
+                     <Button
+                        variant="ghost"
+                        className="w-full rounded-t-none"
+                        onClick={() => field.onChange(null)}
+                      >
+                        Clear Date
+                      </Button>
                   </PopoverContent>
                 </Popover>
               )}
