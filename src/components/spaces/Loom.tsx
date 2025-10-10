@@ -92,15 +92,10 @@ const Loom = () => {
       today: [],
       upcoming: [],
       inbox: [],
-      completedToday: [],
     };
 
     const today = startOfToday();
     allTasks.forEach(task => {
-      if (task.is_done) {
-        groups.completedToday.push(task);
-        return;
-      }
       if (task.due_date) {
         const dueDate = parseISO(task.due_date);
         if (isPast(dueDate) && !isToday(dueDate)) groups.overdue.push(task);
@@ -219,8 +214,8 @@ const Loom = () => {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 flex-shrink-0">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
           <ClipboardList className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
@@ -239,12 +234,11 @@ const Loom = () => {
       {loading ? (
         <p>Loading tasks...</p>
       ) : (
-        <div className="flex-grow overflow-y-auto pr-0 sm:pr-4 space-y-6">
+        <div className="space-y-6">
           {renderTaskGroup('Overdue', taskGroups.overdue, true)}
           {renderTaskGroup('Due Today', taskGroups.today)}
           {renderTaskGroup('Upcoming', taskGroups.upcoming)}
           {renderTaskGroup('Inbox', taskGroups.inbox, true)}
-          {renderTaskGroup('Completed Today', taskGroups.completedToday)}
           {allTasks.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">All clear!</p>
