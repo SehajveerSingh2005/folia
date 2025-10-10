@@ -7,6 +7,7 @@ import { Plus, Pencil } from 'lucide-react';
 import AddWidgetSheet, { availableWidgets } from '@/components/dashboard/AddWidgetSheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { showSuccess } from '@/utils/toast';
 
 const DashboardOverviewWrapper = () => {
   const { firstName } = useOutletContext<{ firstName: string }>();
@@ -25,8 +26,26 @@ const DashboardOverviewWrapper = () => {
     setAddWidgetTrigger(null);
   };
 
+  const handleToggleEdit = async () => {
+    if (isEditable) {
+      if (saveLayoutRef.current) {
+        try {
+          await saveLayoutRef.current();
+          showSuccess("Layout saved successfully!");
+          setIsEditable(false);
+        } catch (error) {
+          console.error("Failed to save layout:", error);
+        }
+      } else {
+        setIsEditable(false);
+      }
+    } else {
+      setIsEditable(true);
+    }
+  };
+
   const handleNavigate = (view: string) => {
-    if (saveLayoutRef.current) {
+    if (isEditable && saveLayoutRef.current) {
       saveLayoutRef.current();
     }
     navigate(`/${view.toLowerCase()}`);
@@ -44,10 +63,10 @@ const DashboardOverviewWrapper = () => {
         </Button>
         <Button
           variant={isEditable ? 'default' : 'outline'}
-          onClick={() => setIsEditable(!isEditable)}
+          onClick={handleToggleEdit}
         >
           <Pencil className="mr-2 h-4 w-4" />
-          {isEditable ? 'Done Editing' : 'Edit Layout'}
+          {isEditable ? 'Save Layout' : 'Edit Layout'}
         </Button>
       </div>
       <div className="flex-grow">

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,23 +48,32 @@ const widgetNavigationMap: { [key: string]: string } = {
   Goals: 'Horizon',
 };
 
-const defaultLayouts: CustomLayouts = {
-  lg: [
-    { i: uuidv4(), widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
-    { i: uuidv4(), widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
-    { i: uuidv4(), widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
-    { i: uuidv4(), widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
-    { i: uuidv4(), widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
-    { i: uuidv4(), widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
-  ],
-  xs: [
-    { i: uuidv4(), widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
-    { i: uuidv4(), widget_type: 'Clock', x: 0, y: 2, w: 2, h: 2 },
-    { i: uuidv4(), widget_type: 'DueToday', x: 2, y: 2, w: 2, h: 4 },
-    { i: uuidv4(), widget_type: 'Inbox', x: 0, y: 4, w: 2, h: 4 },
-    { i: uuidv4(), widget_type: 'Journal', x: 0, y: 8, w: 4, h: 3 },
-    { i: uuidv4(), widget_type: 'Goals', x: 0, y: 11, w: 4, h: 3 },
-  ],
+const generateDefaultLayouts = (): CustomLayouts => {
+  const welcomeId = uuidv4();
+  const clockId = uuidv4();
+  const dueTodayId = uuidv4();
+  const inboxId = uuidv4();
+  const journalId = uuidv4();
+  const goalsId = uuidv4();
+
+  return {
+    lg: [
+      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
+      { i: clockId, widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
+      { i: journalId, widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
+      { i: goalsId, widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
+    ],
+    xs: [
+      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
+      { i: clockId, widget_type: 'Clock', x: 0, y: 2, w: 2, h: 2 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 2, y: 2, w: 2, h: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 0, y: 4, w: 2, h: 4 },
+      { i: journalId, widget_type: 'Journal', x: 0, y: 8, w: 4, h: 3 },
+      { i: goalsId, widget_type: 'Goals', x: 0, y: 11, w: 4, h: 3 },
+    ],
+  };
 };
 
 const DashboardOverview = ({
@@ -78,22 +87,19 @@ const DashboardOverview = ({
   const [layouts, setLayouts] = useState<CustomLayouts>({});
   const [loading, setLoading] = useState(true);
   const layoutsRef = useRef(layouts);
-  const hasUnsavedChanges = useRef(false);
 
   useEffect(() => {
     layoutsRef.current = layouts;
-    if (Object.keys(layouts).length > 0) {
-      hasUnsavedChanges.current = true;
-    }
   }, [layouts]);
 
   const createDefaultLayout = async (user_id: string) => {
-    const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: defaultLayouts });
+    const newDefaultLayouts = generateDefaultLayouts();
+    const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: newDefaultLayouts });
     if (error) {
       showError('Could not create default layout.');
       return {};
     }
-    return defaultLayouts;
+    return newDefaultLayouts;
   };
 
   const loadLayouts = async () => {
@@ -113,7 +119,13 @@ const DashboardOverview = ({
       return;
     }
 
-    const isLayoutValid = layoutData && layoutData.layouts && (layoutData.layouts as CustomLayouts).lg?.every(item => item.widget_type);
+    const isLayoutValid = layoutData &&
+      typeof layoutData.layouts === 'object' &&
+      layoutData.layouts !== null &&
+      Object.values(layoutData.layouts as CustomLayouts).length > 0 &&
+      Object.values(layoutData.layouts as CustomLayouts).every(bp =>
+        Array.isArray(bp) && bp.every(item => item.widget_type && typeof item.widget_type === 'string')
+      );
 
     if (isLayoutValid) {
       setLayouts(layoutData.layouts as CustomLayouts);
@@ -155,7 +167,6 @@ const DashboardOverview = ({
       });
     }
     setLayouts(newLayouts);
-    showSuccess('Widget added!');
   };
 
   const handleRemoveWidget = useCallback((widgetId: string) => {
@@ -164,15 +175,16 @@ const DashboardOverview = ({
       newLayouts[breakpoint] = newLayouts[breakpoint].filter(l => l.i !== widgetId);
     }
     setLayouts(newLayouts);
-    showSuccess('Widget removed.');
   }, [layouts]);
 
   const handleLayoutChange = useCallback((_layout: Layout[], newLayouts: Layouts) => {
-    // The library doesn't preserve extra properties, so we need to merge them back in.
+    const currentLayoutItems = Object.values(layouts).flat();
+    const itemsMap = new Map(currentLayoutItems.map(item => [item.i, item]));
+
     const updatedLayouts: CustomLayouts = {};
     for (const breakpoint in newLayouts) {
       updatedLayouts[breakpoint] = newLayouts[breakpoint].map(newItem => {
-        const oldItem = Object.values(layouts).flat().find(item => item.i === newItem.i);
+        const oldItem = itemsMap.get(newItem.i);
         return { ...newItem, widget_type: oldItem?.widget_type || '' };
       });
     }
@@ -180,38 +192,21 @@ const DashboardOverview = ({
   }, [layouts]);
 
   const saveLayoutToDatabase = useCallback(async () => {
-    if (!hasUnsavedChanges.current || Object.keys(layoutsRef.current).length === 0) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id: user.id, layouts: layoutsRef.current });
-    if (!error) {
-      hasUnsavedChanges.current = false;
-    } else {
+    if (error) {
       showError('Could not save layout changes.');
+      throw new Error(error.message);
     }
   }, []);
 
-  const saveCurrentLayout = useCallback(async () => {
-    await saveLayoutToDatabase();
-  }, [saveLayoutToDatabase]);
-
   useEffect(() => {
-    if (setSaveLayoutRef) setSaveLayoutRef.current = saveCurrentLayout;
-  }, [saveCurrentLayout, setSaveLayoutRef]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (hasUnsavedChanges.current) saveLayoutToDatabase();
-    }, 5000);
-
-    if (!isEditable && hasUnsavedChanges.current) saveLayoutToDatabase();
-
-    return () => {
-      clearInterval(interval);
-      if (hasUnsavedChanges.current) saveLayoutToDatabase();
-    };
-  }, [isEditable, saveLayoutToDatabase]);
+    if (setSaveLayoutRef) {
+      setSaveLayoutRef.current = saveLayoutToDatabase;
+    }
+  }, [saveLayoutToDatabase, setSaveLayoutRef]);
 
   const handleWidgetClick = (e: React.MouseEvent, widgetType: string) => {
     if (isEditable) return;
