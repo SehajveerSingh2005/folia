@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,53 +24,54 @@ type LoomItem = {
   type: string | null;
 };
 
+const fetchCompletedItems = async (): Promise<LoomItem[]> => {
+  const { data, error } = await supabase
+    .from('loom_items')
+    .select('id, name, type')
+    .eq('status', 'Completed')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
 const Archive = () => {
-  const [completedItems, setCompletedItems] = useState<LoomItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: completedItems, isLoading, error } = useQuery<LoomItem[]>({
+    queryKey: ['archived_items'],
+    queryFn: fetchCompletedItems,
+  });
 
-  const fetchCompletedItems = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('loom_items')
-      .select('id, name, type')
-      .eq('status', 'Completed')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      showError('Could not fetch archived items.');
-      console.error(error);
-    } else if (data) {
-      setCompletedItems(data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchCompletedItems();
-  }, []);
-
-  const handleUnarchive = async (itemId: string) => {
-    const { error } = await supabase
-      .from('loom_items')
-      .update({ status: 'Active' })
-      .eq('id', itemId);
-
-    if (error) {
-      showError(error.message);
-    } else {
+  const unarchiveMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase
+        .from('loom_items')
+        .update({ status: 'Active' })
+        .eq('id', itemId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
       showSuccess('Item moved back to Flow.');
-      fetchCompletedItems();
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ['archived_items'] });
+      queryClient.invalidateQueries({ queryKey: ['flow_data'] });
+    },
+    onError: (err: Error) => showError(err.message),
+  });
 
-  const handleDelete = async (itemId: string) => {
-    const { error } = await supabase.from('loom_items').delete().eq('id', itemId);
-    if (error) showError(error.message);
-    else {
+  const deleteMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase.from('loom_items').delete().eq('id', itemId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
       showSuccess('Item permanently deleted.');
-      fetchCompletedItems();
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ['archived_items'] });
+    },
+    onError: (err: Error) => showError(err.message),
+  });
+
+  if (error) {
+    showError('Could not fetch archived items.');
+  }
 
   return (
     <div>
@@ -83,11 +84,11 @@ const Archive = () => {
           </p>
         </div>
       </div>
-      {loading ? (
+      {isLoading ? (
         <ArchiveSkeleton />
       ) : (
         <div className="space-y-4">
-          {completedItems.map((item) => (
+          {completedItems && completedItems.map((item) => (
             <Card key={item.id}>
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
@@ -103,13 +104,13 @@ const Archive = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleUnarchive(item.id)}>
+                    <DropdownMenuItem onClick={() => unarchiveMutation.mutate(item.id)}>
                       <FolderKanban className="mr-2 h-4 w-4" />
                       Move to Active
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-red-500"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => deleteMutation.mutate(item.id)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete Permanently
@@ -119,7 +120,7 @@ const Archive = () => {
               </CardHeader>
             </Card>
           ))}
-          {completedItems.length === 0 && (
+          {completedItems && completedItems.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">Your archive is empty.</p>
               <p className="text-sm text-foreground/50">Completed items from Flow will appear here.</p>
