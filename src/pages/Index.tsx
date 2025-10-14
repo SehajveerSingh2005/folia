@@ -5,6 +5,7 @@ import {
   Book,
   Telescope,
   ArrowRight,
+  Check,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -40,12 +41,10 @@ const Index = () => {
 
       {/* Hero Section */}
       <main className="relative flex-grow flex items-center justify-center pt-24 sm:pt-32 overflow-hidden">
-        {/* Abstract Shapes */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-secondary rounded-full filter blur-3xl opacity-40"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full filter blur-3xl opacity-50"></div>
         </div>
-
         <div className="text-center max-w-2xl mx-auto px-4 py-16 z-10">
           <ScrollFadeIn>
             <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
@@ -82,41 +81,39 @@ const Index = () => {
               </h2>
             </ScrollFadeIn>
             <ScrollFadeIn delay={200}>
-              <p className="text-lg text-foreground/70 mb-12">
+              <p className="text-lg text-foreground/70 mb-16 md:mb-24">
                 We create dedicated spaces for every part of your life, so you can
                 focus on what matters.
               </p>
             </ScrollFadeIn>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <ScrollFadeIn delay={300}>
-              <FeatureCard
-                icon={<FolderKanban className="h-8 w-8 text-primary" />}
-                title="Flow"
-                description="Manage active projects, courses, and tasks. See your progress at a glance."
-              />
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={400}>
-              <FeatureCard
-                icon={<Sparkles className="h-8 w-8 text-primary" />}
-                title="Garden"
-                description="Cultivate raw ideas and quick notes. Watch connections grow between them."
-              />
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={500}>
-              <FeatureCard
-                icon={<Book className="h-8 w-8 text-primary" />}
-                title="Journal"
-                description="Reflect daily with guided entries for gratitude, thoughts, and free writing."
-              />
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={600}>
-              <FeatureCard
-                icon={<Telescope className="h-8 w-8 text-primary" />}
-                title="Horizon"
-                description="Set your sights on the future. Plan long-term goals and track your wishlist."
-              />
-            </ScrollFadeIn>
+          <div className="space-y-16 md:space-y-24">
+            <FeatureShowcase
+              icon={<FolderKanban className="h-8 w-8 text-primary" />}
+              title="Flow"
+              description="Bring your projects to life. Flow is where your active endeavors live, from launching a new website to learning a new skill. Break down big goals into manageable tasks and track your progress from start to finish."
+              visual={<FlowVisual />}
+            />
+            <FeatureShowcase
+              icon={<Sparkles className="h-8 w-8 text-primary" />}
+              title="Garden"
+              description="A space for ideas to grow. Your Garden is a pressure-free zone to plant seeds of thought, quick notes, and random sparks of inspiration. Connect ideas and watch them blossom into full-fledged projects when they're ready."
+              visual={<GardenVisual />}
+              reverse
+            />
+            <FeatureShowcase
+              icon={<Book className="h-8 w-8 text-primary" />}
+              title="Journal"
+              description="A private space for daily reflection. Chronicle your days, track your mood, and import completed tasks to see a clear picture of your progress. Your journal is a quiet corner to understand your journey."
+              visual={<JournalVisual />}
+            />
+            <FeatureShowcase
+              icon={<Telescope className="h-8 w-8 text-primary" />}
+              title="Horizon"
+              description="Plan for the future. Horizon is your space for long-term goals, big ideas, and wishlists. Whether it's a book you want to read or a skill you want to master, Horizon keeps your aspirations in sight."
+              visual={<HorizonVisual />}
+              reverse
+            />
           </div>
         </div>
       </section>
@@ -197,20 +194,31 @@ const Index = () => {
   );
 };
 
-const FeatureCard = ({
+const FeatureShowcase = ({
   icon,
   title,
   description,
+  visual,
+  reverse = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  visual: React.ReactNode;
+  reverse?: boolean;
 }) => (
-  <div className="bg-background p-6 rounded-lg shadow-sm text-left h-full">
-    <div className="mb-4">{icon}</div>
-    <h3 className="text-xl font-sans font-medium mb-2">{title}</h3>
-    <p className="text-foreground/70">{description}</p>
-  </div>
+  <ScrollFadeIn>
+    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+      <div className={`md:w-1/2 ${reverse ? 'md:order-last' : ''}`}>
+        <div className="mb-4 inline-block">{icon}</div>
+        <h3 className="text-2xl md:text-3xl font-sans font-medium mb-4">{title}</h3>
+        <p className="text-foreground/70 text-lg">{description}</p>
+      </div>
+      <div className="md:w-1/2 w-full">
+        {visual}
+      </div>
+    </div>
+  </ScrollFadeIn>
 );
 
 const StepCard = ({
@@ -224,12 +232,59 @@ const StepCard = ({
 }) => (
   <div className="text-left md:text-center">
     <div className="flex items-center md:justify-center mb-4">
-      <div className="flex items-center md:justify-center h-12 w-12 rounded-full bg-secondary text-primary font-bold text-xl">
+      <div className="flex items-center justify-center h-12 w-12 rounded-full bg-secondary text-primary font-bold text-xl">
         {number}
       </div>
     </div>
     <h3 className="text-xl font-sans font-medium mb-2">{title}</h3>
     <p className="text-foreground/70">{description}</p>
+  </div>
+);
+
+// --- Stylized Visuals ---
+
+const FlowVisual = () => (
+  <div className="bg-background p-6 rounded-lg shadow-lg border border-border">
+    <div className="flex justify-between items-center mb-4">
+      <h4 className="font-sans font-medium">Website Redesign</h4>
+      <div className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">Project</div>
+    </div>
+    <div className="space-y-3">
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded bg-primary flex items-center justify-center"><Check className="h-3 w-3 text-primary-foreground"/></div><p className="text-sm text-muted-foreground line-through">Finalize design mockups</p></div>
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded border-2 border-primary"></div><p className="text-sm">Develop landing page</p></div>
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded border border-border"></div><p className="text-sm text-muted-foreground">Setup analytics</p></div>
+    </div>
+  </div>
+);
+
+const GardenVisual = () => (
+  <div className="relative h-64">
+    <div className="absolute top-4 left-8 w-48 bg-background p-4 rounded-lg shadow-lg border border-border transform -rotate-6">
+      <p className="text-sm">"What if we used a neural network for idea generation?"</p>
+      <div className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground mt-2 inline-block">Project Idea</div>
+    </div>
+    <div className="absolute bottom-8 right-4 w-56 bg-background p-4 rounded-lg shadow-lg border border-border transform rotate-3">
+      <p className="text-sm">"The unexamined life is not worth living." - Socrates</p>
+      <div className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground mt-2 inline-block">Writing</div>
+    </div>
+  </div>
+);
+
+const JournalVisual = () => (
+  <div className="bg-background p-6 rounded-lg shadow-lg border border-border">
+    <div className="flex justify-between items-center mb-4">
+      <h4 className="font-sans font-medium">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</h4>
+      <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Good</div>
+    </div>
+    <p className="text-sm text-muted-foreground italic">"Today was productive. I managed to finish the design mockups and felt a real sense of accomplishment..."</p>
+  </div>
+);
+
+const HorizonVisual = () => (
+  <div className="bg-background p-6 rounded-lg shadow-lg border border-border space-y-3">
+    <div className="bg-secondary/50 p-3 rounded-md"><p className="text-sm font-medium">Learn Rust</p></div>
+    <div className="bg-secondary/50 p-3 rounded-md ml-4"><p className="text-sm">Read "The Rust Programming Language"</p></div>
+    <div className="bg-secondary/50 p-3 rounded-md"><p className="text-sm font-medium">Launch a SaaS product</p></div>
   </div>
 );
 
