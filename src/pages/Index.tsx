@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ScrollFadeIn from "@/components/ScrollFadeIn";
+import HeroVisual from "@/components/HeroVisual";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,12 +41,8 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="relative flex-grow flex items-center justify-center pt-24 sm:pt-32 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-secondary rounded-full filter blur-3xl opacity-40"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full filter blur-3xl opacity-50"></div>
-        </div>
-        <div className="text-center max-w-2xl mx-auto px-4 py-16 z-10">
+      <main className="flex-grow flex flex-col items-center justify-center pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden">
+        <div className="text-center max-w-3xl mx-auto px-4 z-10">
           <ScrollFadeIn>
             <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
               A home for your thoughts, projects, and days.
@@ -53,7 +50,8 @@ const Index = () => {
           </ScrollFadeIn>
           <ScrollFadeIn delay={200}>
             <p className="text-lg md:text-xl text-foreground/80 mb-10">
-              No setup. No stress. Folia is a second brain that grows with you.
+              Folia provides the structure, so you can focus on what matters. A
+              second brain that's organized from day one.
             </p>
           </ScrollFadeIn>
           <ScrollFadeIn delay={400}>
@@ -68,6 +66,9 @@ const Index = () => {
               </Link>
             </Button>
           </ScrollFadeIn>
+        </div>
+        <div className="w-full px-4 mt-16 sm:mt-24">
+          <HeroVisual />
         </div>
       </main>
 
