@@ -1,45 +1,119 @@
-import { FolderKanban, LayoutGrid, Sparkles } from 'lucide-react';
-import ScrollFadeIn from './ScrollFadeIn';
+import { useEffect, useState } from 'react';
+import { FolderKanban, Sparkles, Check, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const HeroVisual = () => {
+  const [phase, setPhase] = useState(0);
+  const [typedText, setTypedText] = useState('');
+  const fullText = 'Launch new website';
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase(1), 500), // Start typing
+      setTimeout(() => setPhase(2), 3000), // Start transform
+      setTimeout(() => setPhase(3), 3500), // Show final elements
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  useEffect(() => {
+    if (phase === 1) {
+      let i = 0;
+      const interval = setInterval(() => {
+        setTypedText(fullText.slice(0, i + 1));
+        i++;
+        if (i >= fullText.length) {
+          clearInterval(interval);
+        }
+      }, 80);
+      return () => clearInterval(interval);
+    }
+  }, [phase]);
+
+  const isVisible = (p: number) => phase >= p;
+
   return (
-    <ScrollFadeIn delay={600}>
-      <div className="relative w-full max-w-2xl mx-auto">
-        <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg shadow-2xl p-4 sm:p-6">
-          <div className="flex items-center gap-1.5 mb-4">
-            <div className="h-3 w-3 rounded-full bg-red-400/80"></div>
-            <div className="h-3 w-3 rounded-full bg-yellow-400/80"></div>
-            <div className="h-3 w-3 rounded-full bg-green-400/80"></div>
+    <div className="relative w-full max-w-2xl mx-auto transition-all duration-500 ease-out">
+      <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg shadow-2xl p-4 sm:p-6 min-h-[280px] sm:min-h-[320px] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-1.5 mb-4 flex-shrink-0">
+          <div className="h-3 w-3 rounded-full bg-red-400/80"></div>
+          <div className="h-3 w-3 rounded-full bg-yellow-400/80"></div>
+          <div className="h-3 w-3 rounded-full bg-green-400/80"></div>
+        </div>
+
+        {/* Animated Content */}
+        <div className="relative flex-grow">
+          {/* Phase 1: Input Box */}
+          <div
+            className={cn(
+              'absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out',
+              isVisible(2) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+            )}
+          >
+            <div className="flex items-center w-full max-w-sm p-3 rounded-md bg-secondary/50 border">
+              <Plus className="h-5 w-5 text-primary mr-2" />
+              <p className="text-sm sm:text-base text-foreground/80">
+                {typedText}
+                <span
+                  className={cn(
+                    'inline-block w-0.5 h-5 bg-primary ml-0.5 transition-opacity duration-500',
+                    phase === 1 && typedText.length < fullText.length
+                      ? 'animate-[pulse_1s_ease-in-out_infinite]'
+                      : 'opacity-0'
+                  )}
+                ></span>
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <ScrollFadeIn delay={800}>
-              <div className="col-span-2 bg-secondary/50 p-3 sm:p-4 rounded-md h-24 sm:h-32 flex flex-col justify-between">
-                <div>
-                  <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-                <p className="text-sm sm:text-base font-medium text-left">Dashboard</p>
+
+          {/* Phase 2 & 3: Organized Cards */}
+          <div className="absolute inset-0">
+            {/* Flow Project */}
+            <div
+              className={cn(
+                'absolute top-4 left-4 w-3/4 max-w-[300px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
+                isVisible(2)
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 -translate-y-4'
+              )}
+              style={{ transitionDelay: '100ms' }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <FolderKanban className="h-5 w-5 text-primary" />
+                <h4 className="font-sans font-medium text-sm sm:text-base">Flow</h4>
               </div>
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={1000}>
-              <div className="col-span-1 bg-secondary/50 p-3 sm:p-4 rounded-md h-24 sm:h-32 flex flex-col justify-between">
-                <div>
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <div className="bg-secondary/50 p-2 rounded-md">
+                <p className="text-sm font-medium">{fullText}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="h-4 w-4 rounded border-2 border-primary"></div>
+                  <p className="text-xs text-muted-foreground">Design mockups</p>
                 </div>
-                <p className="text-sm sm:text-base font-medium text-left">Garden</p>
               </div>
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={1200}>
-              <div className="col-span-3 bg-secondary/50 p-3 sm:p-4 rounded-md h-20 sm:h-24 flex flex-col justify-between">
-                <div>
-                  <FolderKanban className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-                <p className="text-sm sm:text-base font-medium text-left">Flow</p>
+            </div>
+
+            {/* Garden Note */}
+            <div
+              className={cn(
+                'absolute bottom-4 right-4 w-1/2 max-w-[200px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
+                isVisible(3)
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-4'
+              )}
+              style={{ transitionDelay: '300ms' }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h4 className="font-sans font-medium text-sm sm:text-base">Garden</h4>
               </div>
-            </ScrollFadeIn>
+              <p className="text-xs italic text-muted-foreground">
+                "Competitor analysis for new website..."
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </ScrollFadeIn>
+    </div>
   );
 };
 
