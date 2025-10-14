@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import DashboardSkeleton from '@/components/layout/DashboardSkeleton';
 
 type Profile = {
   first_name: string | null;
@@ -73,11 +74,7 @@ const DashboardLayoutPage = () => {
   };
 
   if (loading || !profile) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
