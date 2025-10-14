@@ -9,6 +9,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import ScrollFadeIn from "@/components/ScrollFadeIn";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -46,22 +47,28 @@ const Index = () => {
         </div>
 
         <div className="text-center max-w-2xl mx-auto px-4 py-16 z-10">
-          <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
-            A home for your thoughts, projects, and days.
-          </h1>
-          <p className="text-lg md:text-xl text-foreground/80 mb-10">
-            No setup. No stress. Folia is a second brain that grows with you.
-          </p>
-          <Button
-            asChild
-            size="lg"
-            className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
-          >
-            <Link to="/login">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+          <ScrollFadeIn>
+            <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
+              A home for your thoughts, projects, and days.
+            </h1>
+          </ScrollFadeIn>
+          <ScrollFadeIn delay={200}>
+            <p className="text-lg md:text-xl text-foreground/80 mb-10">
+              No setup. No stress. Folia is a second brain that grows with you.
+            </p>
+          </ScrollFadeIn>
+          <ScrollFadeIn delay={400}>
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
+            >
+              <Link to="/login">
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </ScrollFadeIn>
         </div>
       </main>
 
@@ -69,35 +76,47 @@ const Index = () => {
       <section id="features" className="py-16 sm:py-24 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4">
-              Your thoughts, perfectly organized.
-            </h2>
-            <p className="text-lg text-foreground/70 mb-12">
-              We create dedicated spaces for every part of your life, so you can
-              focus on what matters.
-            </p>
+            <ScrollFadeIn>
+              <h2 className="text-3xl md:text-4xl font-serif mb-4">
+                Your thoughts, perfectly organized.
+              </h2>
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={200}>
+              <p className="text-lg text-foreground/70 mb-12">
+                We create dedicated spaces for every part of your life, so you can
+                focus on what matters.
+              </p>
+            </ScrollFadeIn>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <FeatureCard
-              icon={<FolderKanban className="h-8 w-8 text-primary" />}
-              title="Flow"
-              description="Manage active projects, courses, and tasks. See your progress at a glance."
-            />
-            <FeatureCard
-              icon={<Sparkles className="h-8 w-8 text-primary" />}
-              title="Garden"
-              description="Cultivate raw ideas and quick notes. Watch connections grow between them."
-            />
-            <FeatureCard
-              icon={<Book className="h-8 w-8 text-primary" />}
-              title="Journal"
-              description="Reflect daily with guided entries for gratitude, thoughts, and free writing."
-            />
-            <FeatureCard
-              icon={<Telescope className="h-8 w-8 text-primary" />}
-              title="Horizon"
-              description="Set your sights on the future. Plan long-term goals and track your wishlist."
-            />
+            <ScrollFadeIn delay={300}>
+              <FeatureCard
+                icon={<FolderKanban className="h-8 w-8 text-primary" />}
+                title="Flow"
+                description="Manage active projects, courses, and tasks. See your progress at a glance."
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={400}>
+              <FeatureCard
+                icon={<Sparkles className="h-8 w-8 text-primary" />}
+                title="Garden"
+                description="Cultivate raw ideas and quick notes. Watch connections grow between them."
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={500}>
+              <FeatureCard
+                icon={<Book className="h-8 w-8 text-primary" />}
+                title="Journal"
+                description="Reflect daily with guided entries for gratitude, thoughts, and free writing."
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={600}>
+              <FeatureCard
+                icon={<Telescope className="h-8 w-8 text-primary" />}
+                title="Horizon"
+                description="Set your sights on the future. Plan long-term goals and track your wishlist."
+              />
+            </ScrollFadeIn>
           </div>
         </div>
       </section>
@@ -105,29 +124,39 @@ const Index = () => {
       {/* How It Works Section */}
       <section id="how-it-works" className="py-16 sm:py-24">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-serif mb-4">
-            Effortless setup, instant clarity.
-          </h2>
-          <p className="text-lg text-foreground/70 mb-16 max-w-2xl mx-auto">
-            Forget the blank page. We personalize your space in three simple
-            steps.
-          </p>
+          <ScrollFadeIn>
+            <h2 className="text-3xl md:text-4xl font-serif mb-4">
+              Effortless setup, instant clarity.
+            </h2>
+          </ScrollFadeIn>
+          <ScrollFadeIn delay={200}>
+            <p className="text-lg text-foreground/70 mb-16 max-w-2xl mx-auto">
+              Forget the blank page. We personalize your space in three simple
+              steps.
+            </p>
+          </ScrollFadeIn>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <StepCard
-              number="1"
-              title="Answer a few questions"
-              description="Tell us how you like to think and work. It's quick, fun, and insightful."
-            />
-            <StepCard
-              number="2"
-              title="We build your space"
-              description="Based on your answers, we generate the perfect layouts and spaces for you."
-            />
-            <StepCard
-              number="3"
-              title="Start thinking freely"
-              description="Your Folia space is ready. Dive in and capture your first thought without friction."
-            />
+            <ScrollFadeIn delay={300}>
+              <StepCard
+                number="1"
+                title="Answer a few questions"
+                description="Tell us how you like to think and work. It's quick, fun, and insightful."
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={400}>
+              <StepCard
+                number="2"
+                title="We build your space"
+                description="Based on your answers, we generate the perfect layouts and spaces for you."
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={500}>
+              <StepCard
+                number="3"
+                title="Start thinking freely"
+                description="Your Folia space is ready. Dive in and capture your first thought without friction."
+              />
+            </ScrollFadeIn>
           </div>
         </div>
       </section>
@@ -138,24 +167,30 @@ const Index = () => {
         className="py-16 sm:py-24 bg-primary text-primary-foreground"
       >
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-serif mb-6">
-            Ready to find your focus?
-          </h2>
-          <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto">
-            Start building your calm, organized digital home today. It's free to
-            get started.
-          </p>
-          <Button
-            asChild
-            size="lg"
-            variant="secondary"
-            className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
-          >
-            <Link to="/login">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+          <ScrollFadeIn>
+            <h2 className="text-4xl md:text-5xl font-serif mb-6">
+              Ready to find your focus?
+            </h2>
+          </ScrollFadeIn>
+          <ScrollFadeIn delay={200}>
+            <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto">
+              Start building your calm, organized digital home today. It's free to
+              get started.
+            </p>
+          </ScrollFadeIn>
+          <ScrollFadeIn delay={400}>
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+              className="rounded-full px-8 py-6 text-lg font-medium shadow-sm hover:shadow-md transition-shadow"
+            >
+              <Link to="/login">
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </ScrollFadeIn>
         </div>
       </section>
     </div>
@@ -171,7 +206,7 @@ const FeatureCard = ({
   title: string;
   description: string;
 }) => (
-  <div className="bg-background p-6 rounded-lg shadow-sm text-left">
+  <div className="bg-background p-6 rounded-lg shadow-sm text-left h-full">
     <div className="mb-4">{icon}</div>
     <h3 className="text-xl font-sans font-medium mb-2">{title}</h3>
     <p className="text-foreground/70">{description}</p>
