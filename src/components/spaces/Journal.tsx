@@ -18,7 +18,7 @@ import { format, parseISO } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AutoGrowTextarea } from '@/components/ui/auto-grow-textarea';
-import { Skeleton } from '@/components/ui/skeleton';
+import JournalSkeleton from '../skeletons/JournalSkeleton';
 
 type ChronicleEntry = {
   id?: string;
@@ -139,6 +139,10 @@ const Journal = () => {
     }
   };
 
+  if (loading) {
+    return <JournalSkeleton />;
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
       <div className="lg:col-span-2">
@@ -196,12 +200,7 @@ const Journal = () => {
             </div>
           </CardHeader>
           <CardContent className="flex-grow">
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-            ) : entry ? (
+            {entry ? (
               isEditing ? (
                 <div className="space-y-4 h-full flex flex-col">
                   <AutoGrowTextarea

@@ -59,6 +59,7 @@ import { format } from 'date-fns';
 import EditLoomItemDialog from './flow/EditLoomItemDialog';
 import EditTaskDialog from './loom/EditTaskDialog';
 import { cn } from '@/lib/utils';
+import FlowSkeleton from '../skeletons/FlowSkeleton';
 
 type LedgerItem = {
   id: string;
@@ -402,7 +403,7 @@ const Flow = () => {
       </div>
 
       {loading ? (
-        <p>Loading...</p>
+        <FlowSkeleton />
       ) : sortedItems.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-lg text-foreground/70">Your flow is clear!</p>

@@ -31,6 +31,7 @@ import {
 import { Sparkles, Trash2, PlusCircle, ArrowUpCircle, MoreVertical, Pencil } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Badge } from '@/components/ui/badge';
+import GardenSkeleton from '../skeletons/GardenSkeleton';
 
 type GardenItem = {
   id: string;
@@ -265,7 +266,7 @@ const Garden = () => {
       </div>
 
       {loading ? (
-        <p>Loading notes...</p>
+        <GardenSkeleton />
       ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => (

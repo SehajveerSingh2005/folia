@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
+import ArchiveSkeleton from '../skeletons/ArchiveSkeleton';
 
 type LoomItem = {
   id: string;
@@ -83,7 +84,7 @@ const Archive = () => {
         </div>
       </div>
       {loading ? (
-        <p>Loading archive...</p>
+        <ArchiveSkeleton />
       ) : (
         <div className="space-y-4">
           {completedItems.map((item) => (

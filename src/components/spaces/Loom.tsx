@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import EditTaskDialog from './loom/EditTaskDialog';
 import AddTaskDialog from './loom/AddTaskDialog';
 import { cn } from '@/lib/utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import LoomSkeleton from '../skeletons/LoomSkeleton';
 
 type LedgerItem = {
   id: string;
@@ -28,62 +30,82 @@ type Project = {
   name: string;
 };
 
+const fetchTasks = async () => {
+  const { data, error } = await supabase
+    .from('ledger_items')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.filter(task => 
+    !task.is_done || 
+    (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
+  );
+};
+
+const fetchProjects = async () => {
+  const { data, error } = await supabase
+    .from('loom_items')
+    .select('id, name')
+    .neq('status', 'Completed');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const Loom = () => {
-  const [allTasks, setAllTasks] = useState<LedgerItem[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
   const outletContext = useOutletContext<{ setLoomRefetch: (fn: (() => void) | null) => void }>();
   const setLoomRefetch = outletContext?.setLoomRefetch;
+  const queryClient = useQueryClient();
 
-  const fetchLoomData = useCallback(async () => {
-    setLoading(true);
+  const { data: allTasks, isLoading: isLoadingTasks, error: tasksError } = useQuery<LedgerItem[]>({
+    queryKey: ['loom_tasks'],
+    queryFn: fetchTasks,
+  });
 
-    const { data: tasks, error: tasksError } = await supabase
-      .from('ledger_items')
-      .select('*')
-      .order('created_at', { ascending: true });
-
-    if (tasksError) {
-      showError('Could not fetch tasks.');
-      setLoading(false);
-      return;
-    }
-
-    const { data: projectData, error: projectsError } = await supabase
-      .from('loom_items')
-      .select('id, name')
-      .neq('status', 'Completed');
-
-    if (projectsError) showError('Could not fetch projects.');
-
-    setAllTasks(tasks.filter(task => 
-      !task.is_done || 
-      (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
-    ));
-    setProjects(projectData || []);
-    setLoading(false);
-  }, []);
+  const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useQuery<Project[]>({
+    queryKey: ['loom_projects'],
+    queryFn: fetchProjects,
+  });
 
   useEffect(() => {
-    fetchLoomData();
-  }, [fetchLoomData]);
+    if (tasksError) showError('Could not fetch tasks.');
+    if (projectsError) showError('Could not fetch projects.');
+  }, [tasksError, projectsError]);
 
   useEffect(() => {
     if (setLoomRefetch) {
-      setLoomRefetch(() => fetchLoomData);
+      const refetch = () => queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+      setLoomRefetch(() => refetch);
     }
     return () => {
       if (setLoomRefetch) {
         setLoomRefetch(null);
       }
     };
-  }, [fetchLoomData, setLoomRefetch]);
+  }, [setLoomRefetch, queryClient]);
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: async ({ taskId, isDone }: { taskId: string; isDone: boolean }) => {
+      const newStatus = !isDone;
+      const completed_at = newStatus ? new Date().toISOString() : null;
+      const { error } = await supabase
+        .from('ledger_items')
+        .update({ is_done: newStatus, completed_at })
+        .eq('id', taskId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+    },
+    onError: (error) => {
+      showError(error.message);
+    },
+  });
 
   const projectsMap = useMemo(() => 
-    new Map(projects.map(p => [p.id, p.name])), 
+    new Map((projects || []).map(p => [p.id, p.name])), 
   [projects]);
 
   const taskGroups = useMemo(() => {
@@ -93,6 +115,7 @@ const Loom = () => {
       upcoming: [],
       inbox: [],
     };
+    if (!allTasks) return groups;
 
     const today = startOfToday();
     allTasks.forEach(task => {
@@ -110,32 +133,6 @@ const Loom = () => {
 
     return groups;
   }, [allTasks]);
-
-  const handleToggleTask = async (taskId: string, isDone: boolean) => {
-    const newStatus = !isDone;
-    const completed_at = newStatus ? new Date().toISOString() : null;
-
-    const originalTasks = [...allTasks];
-    const updatedTasks = originalTasks.map(task => 
-        task.id === taskId 
-            ? { ...task, is_done: newStatus, completed_at } 
-            : task
-    );
-    setAllTasks(updatedTasks);
-
-    const { error } = await supabase
-      .from('ledger_items')
-      .update({
-        is_done: newStatus,
-        completed_at: completed_at,
-      })
-      .eq('id', taskId);
-
-    if (error) {
-      showError(error.message);
-      setAllTasks(originalTasks);
-    }
-  };
 
   const openEditDialog = (task: LedgerItem) => {
     setSelectedTask(task);
@@ -161,7 +158,7 @@ const Loom = () => {
         <Checkbox
           id={task.id}
           checked={task.is_done}
-          onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
+          onCheckedChange={() => toggleTaskMutation.mutate({ taskId: task.id, isDone: task.is_done })}
           onClick={(e) => e.stopPropagation()}
         />
         <div className="flex-grow flex flex-col">
@@ -231,15 +228,15 @@ const Loom = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <p>Loading tasks...</p>
+      {isLoadingTasks || isLoadingProjects ? (
+        <LoomSkeleton />
       ) : (
         <div className="space-y-6">
           {renderTaskGroup('Overdue', taskGroups.overdue, true)}
           {renderTaskGroup('Due Today', taskGroups.today)}
           {renderTaskGroup('Upcoming', taskGroups.upcoming)}
           {renderTaskGroup('Inbox', taskGroups.inbox, true)}
-          {allTasks.length === 0 && (
+          {allTasks && allTasks.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">All clear!</p>
               <p className="text-sm text-foreground/50">
@@ -253,14 +250,14 @@ const Loom = () => {
       <AddTaskDialog
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onTaskAdded={fetchLoomData}
+        onTaskAdded={() => queryClient.invalidateQueries({ queryKey: ['loom_tasks'] })}
       />
       {selectedTask && (
         <EditTaskDialog
           isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           task={selectedTask}
-          onTaskUpdated={fetchLoomData}
+          onTaskUpdated={() => queryClient.invalidateQueries({ queryKey: ['loom_tasks'] })}
         />
       )}
     </div>

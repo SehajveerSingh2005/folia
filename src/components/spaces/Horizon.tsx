@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import HorizonTreeView from './horizon/HorizonTreeView';
+import HorizonSkeleton from '../skeletons/HorizonSkeleton';
 
 // --- TYPES ---
 type LoomItemStub = {
@@ -325,7 +326,7 @@ const Horizon = () => {
       </div>
 
       {loading ? (
-        <p>Loading items...</p>
+        <HorizonSkeleton />
       ) : items.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-lg text-foreground/70">Your horizon is clear.</p>
