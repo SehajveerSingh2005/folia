@@ -22,7 +22,7 @@
     --secondary: 140 15% 95%; /* very light, muted green */
     --secondary-foreground: 140 25% 30%;
 
-    --muted: 140 15% 95%;
+    --muted: 140 15% 92%; /* Increased contrast for shimmer */
     --muted-foreground: 140 10% 45%;
 
     --accent: 140 15% 95%;

@@ -7,7 +7,7 @@ function Skeleton({
   return (
     <div
       className={cn(
-        "animate-shimmer rounded-md bg-gradient-to-r from-secondary via-background to-secondary bg-[length:200%_100%]",
+        "animate-shimmer rounded-md bg-gradient-to-r from-muted via-background to-muted bg-[length:200%_100%]",
         className
       )}
       {...props}
