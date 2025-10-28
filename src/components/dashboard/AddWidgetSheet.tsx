@@ -84,14 +84,14 @@ const FlowPreview = () => (
 
 // --- Widget Definitions ---
 export const availableWidgets = [
-  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, description: 'A personalized greeting for your day.', w: 3, h: 4, minW: 3, minH: 4, mw: 3, mh: 4, preview: <WelcomePreview /> },
-  { type: 'Clock', name: 'Clock', icon: Clock, description: 'A simple, elegant digital clock.', w: 3, h: 4, minW: 3, minH: 4, mw: 3, mh: 4, preview: <ClockPreview /> },
-  { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, description: 'See all tasks that are due today.', w: 3, h: 5, minW: 3, minH: 4, mw: 3, mh: 5, preview: <DueTodayPreview /> },
-  { type: 'Inbox', name: 'Task Inbox', icon: Inbox, description: 'Quickly add and manage your inbox tasks.', w: 3, h: 6, minW: 3, minH: 6, mw: 3, mh: 6, preview: <InboxPreview /> },
-  { type: 'Notes', name: 'Quick Note', icon: StickyNote, description: 'Jot down a quick thought for your Garden.', w: 3, h: 5, minW: 3, minH: 5, mw: 3, mh: 5, preview: <NotesPreview /> },
-  { type: 'Journal', name: 'Journal', icon: BookOpen, description: 'A prompt for your daily journal entry.', w: 3, h: 6, minW: 3, minH: 6, mw: 3, mh: 6, preview: <JournalPreview /> },
-  { type: 'Goals', name: 'Goals Overview', icon: Telescope, description: 'A glimpse of your long-term Horizon goals.', w: 3, h: 6, minW: 3, minH: 6, mw: 3, mh: 6, preview: <GoalsPreview /> },
-  { type: 'Flow', name: 'Active Projects', icon: FolderKanban, description: 'Track the progress of your active projects.', w: 3, h: 6, minW: 3, minH: 6, mw: 3, mh: 6, preview: <FlowPreview /> },
+  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, description: 'A personalized greeting for your day.', w: 8, h: 2, minW: 6, minH: 2, mw: 4, mh: 2, preview: <WelcomePreview /> },
+  { type: 'Clock', name: 'Clock', icon: Clock, description: 'A simple, elegant digital clock.', w: 4, h: 2, minW: 3, minH: 2, mw: 4, mh: 2, preview: <ClockPreview /> },
+  { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, description: 'See all tasks that are due today.', w: 6, h: 6, minW: 4, minH: 5, mw: 2, mh: 6, preview: <DueTodayPreview /> },
+  { type: 'Inbox', name: 'Task Inbox', icon: Inbox, description: 'Quickly add and manage your inbox tasks.', w: 6, h: 6, minW: 4, minH: 5, mw: 2, mh: 6, preview: <InboxPreview /> },
+  { type: 'Notes', name: 'Quick Note', icon: StickyNote, description: 'Jot down a quick thought for your Garden.', w: 6, h: 5, minW: 4, minH: 4, mw: 4, mh: 5, preview: <NotesPreview /> },
+  { type: 'Journal', name: 'Journal', icon: BookOpen, description: 'A prompt for your daily journal entry.', w: 6, h: 5, minW: 4, minH: 4, mw: 4, mh: 5, preview: <JournalPreview /> },
+  { type: 'Goals', name: 'Goals Overview', icon: Telescope, description: 'A glimpse of your long-term Horizon goals.', w: 6, h: 5, minW: 4, minH: 4, mw: 4, mh: 5, preview: <GoalsPreview /> },
+  { type: 'Flow', name: 'Active Projects', icon: FolderKanban, description: 'Track the progress of your active projects.', w: 6, h: 5, minW: 4, minH: 4, mw: 4, mh: 5, preview: <FlowPreview /> },
 ];
 
 interface AddWidgetSheetProps {
