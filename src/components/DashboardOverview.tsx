@@ -52,29 +52,33 @@ const widgetNavigationMap: { [key: string]: string } = {
 };
 
 const generateDefaultLayouts = (): CustomLayouts => {
+  // Generate unique IDs for each widget instance
   const welcomeId = uuidv4();
   const clockId = uuidv4();
-  const dueTodayId = uuidv4();
   const inboxId = uuidv4();
-  const journalId = uuidv4();
   const flowId = uuidv4();
+  const dueTodayId = uuidv4();
+  const notesId = uuidv4();
+  const goalsId = uuidv4();
 
   return {
     lg: [
       { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2, minW: 6, minH: 2 },
       { i: clockId, widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 6, minW: 4, minH: 4 },
-      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 6, minW: 4, minH: 4 },
-      { i: journalId, widget_type: 'Journal', x: 0, y: 8, w: 6, h: 5, minW: 4, minH: 4 },
-      { i: flowId, widget_type: 'Flow', x: 6, y: 8, w: 6, h: 5, minW: 4, minH: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 0, y: 2, w: 6, h: 6, minW: 4, minH: 5 },
+      { i: flowId, widget_type: 'Flow', x: 6, y: 2, w: 6, h: 6, minW: 4, minH: 5 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 8, w: 4, h: 5, minW: 3, minH: 5 },
+      { i: notesId, widget_type: 'Notes', x: 4, y: 8, w: 4, h: 5, minW: 3, minH: 5 },
+      { i: goalsId, widget_type: 'Goals', x: 8, y: 8, w: 4, h: 5, minW: 3, minH: 5 },
     ],
     xs: [
       { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
       { i: clockId, widget_type: 'Clock', x: 0, y: 2, w: 4, h: 2, minW: 4, minH: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 4, w: 4, h: 6, minW: 2, minH: 5 },
-      { i: inboxId, widget_type: 'Inbox', x: 0, y: 10, w: 4, h: 6, minW: 2, minH: 5 },
-      { i: journalId, widget_type: 'Journal', x: 0, y: 16, w: 4, h: 5, minW: 4, minH: 4 },
-      { i: flowId, widget_type: 'Flow', x: 0, y: 21, w: 4, h: 5, minW: 4, minH: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 0, y: 4, w: 4, h: 6, minW: 2, minH: 5 },
+      { i: flowId, widget_type: 'Flow', x: 0, y: 10, w: 4, h: 5, minW: 4, minH: 5 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 15, w: 4, h: 6, minW: 2, minH: 5 },
+      { i: notesId, widget_type: 'Notes', x: 0, y: 21, w: 4, h: 5, minW: 4, minH: 5 },
+      { i: goalsId, widget_type: 'Goals', x: 0, y: 26, w: 4, h: 5, minW: 4, minH: 5 },
     ],
   };
 };
