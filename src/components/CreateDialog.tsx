@@ -136,7 +136,7 @@ const CreateDialog = ({
     onOpenChange(false);
   };
 
-  const contentWrapperClass = "pt-4 min-h-[350px] flex flex-col";
+  const contentWrapperClass = "pt-4 min-h-[360px]";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -149,7 +149,7 @@ const CreateDialog = ({
             <TabsTrigger value="plan">Make a Plan</TabsTrigger>
           </TabsList>
           <TabsContent value="task" className={contentWrapperClass}>
-            <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 flex flex-col flex-grow">
+            <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 flex flex-col h-full">
               <Input {...taskForm.register('content')} placeholder="Task content" />
               <Controller control={taskForm.control} name="loom_item_id" render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Link to project (optional)" /></SelectTrigger><SelectContent>{loomItems.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>
@@ -162,18 +162,16 @@ const CreateDialog = ({
                   <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger><SelectContent>{priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
                 )} />
               </div>
-              <div className="flex-grow" />
-              <Button type="submit" className="w-full" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}</Button>
+              <Button type="submit" className="w-full mt-auto" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}</Button>
             </form>
           </TabsContent>
           <TabsContent value="flow" className={contentWrapperClass}>
-            <form onSubmit={flowForm.handleSubmit(onFlowSubmit)} className="space-y-4 flex flex-col flex-grow">
+            <form onSubmit={flowForm.handleSubmit(onFlowSubmit)} className="space-y-4 flex flex-col h-full">
               <Input {...flowForm.register('name')} placeholder="Name (e.g., Launch new website)" />
               <Select onValueChange={(value) => flowForm.setValue('type', value)}><SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger><SelectContent>{loomItemTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
-              <Textarea {...flowForm.register('notes')} placeholder="Description / Notes (optional)" />
+              <Textarea {...flowForm.register('notes')} placeholder="Description / Notes (optional)" rows={4} />
               <Input {...flowForm.register('link')} placeholder="Link (optional)" />
-              <div className="flex-grow" />
-              <Button type="submit" className="w-full" disabled={flowForm.formState.isSubmitting}>{flowForm.formState.isSubmitting ? 'Creating...' : 'Create Item'}</Button>
+              <Button type="submit" className="w-full mt-auto" disabled={flowForm.formState.isSubmitting}>{flowForm.formState.isSubmitting ? 'Creating...' : 'Create Item'}</Button>
             </form>
           </TabsContent>
           <TabsContent value="plan" className={contentWrapperClass}>
