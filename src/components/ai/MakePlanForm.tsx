@@ -43,15 +43,15 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+    <form onSubmit={handleSubmit} className="pt-4 flex flex-col h-full">
       <Textarea
         placeholder="e.g., Learn to play the guitar in 3 months"
         value={goal}
         onChange={(e) => setGoal(e.target.value)}
-        rows={4}
+        className="flex-grow text-base"
         disabled={isLoading}
       />
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full mt-4" disabled={isLoading}>
         {isLoading ? (
           'Generating...'
         ) : (
