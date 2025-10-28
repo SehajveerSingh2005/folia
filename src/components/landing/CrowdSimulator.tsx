@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import { createNoise2D } from 'simplex-noise';
+import { gsap } from 'gsap';
 
 const CrowdSimulator: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -10,144 +9,193 @@ const CrowdSimulator: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    const config = {
+      src: 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/175711/open-peeps-sheet.png',
+      rows: 15,
+      cols: 7,
+    };
+
+    // UTILS
+    const randomRange = (min: number, max: number) => min + Math.random() * (max - min);
+    const randomIndex = (array: any[]) => randomRange(0, array.length) | 0;
+    const removeFromArray = (array: any[], i: number) => array.splice(i, 1)[0];
+    const removeItemFromArray = (array: any[], item: any) => removeFromArray(array, array.indexOf(item));
+    const removeRandomFromArray = (array: any[]) => removeFromArray(array, randomIndex(array));
+    const getRandomFromArray = (array: any[]) => array[randomIndex(array) | 0];
+
     const canvas = canvasRef.current;
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setClearColor(0x000000, 0);
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-    camera.position.set(0, 0, 20);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const noise2D = createNoise2D();
-    const PARTICLE_COUNT = 1000;
-    const GROUP_COUNT = 5;
-    let mouse = new THREE.Vector2(0, 0);
+    const stage = {
+      width: 0,
+      height: 0,
+    };
 
-    class Particle {
-      pos: THREE.Vector3;
-      vel: THREE.Vector3;
-      acc: THREE.Vector3;
-      color: THREE.Color;
-      maxSpeed: number;
-      maxForce: number;
-      theta: number;
-      group: number;
+    const allPeeps: Peep[] = [];
+    const availablePeeps: Peep[] = [];
+    const crowd: Peep[] = [];
 
-      constructor(group: number, groupColor: THREE.Color) {
-        this.pos = new THREE.Vector3(Math.random() * 20 - 10, Math.random() * 20 - 10, 0);
-        this.vel = new THREE.Vector3();
-        this.acc = new THREE.Vector3();
-        this.color = groupColor;
-        this.maxSpeed = 0.1;
-        this.maxForce = 0.2;
-        this.theta = 0;
-        this.group = group;
+    class Peep {
+      image: HTMLImageElement;
+      rect: number[];
+      width: number;
+      height: number;
+      drawArgs: [HTMLImageElement, number, number, number, number, number, number, number, number];
+      x = 0;
+      y = 0;
+      anchorY = 0;
+      scaleX = 1;
+      walk: gsap.core.Timeline | null = null;
+
+      constructor({ image, rect }: { image: HTMLImageElement; rect: number[] }) {
+        this.image = image;
+        this.rect = rect;
+        this.width = rect[2];
+        this.height = rect[3];
+        this.drawArgs = [this.image, ...rect, 0, 0, this.width, this.height] as [HTMLImageElement, number, number, number, number, number, number, number, number];
       }
 
-      update() {
-        this.vel.add(this.acc);
-        this.vel.clampLength(0, this.maxSpeed);
-        this.pos.add(this.vel);
-        this.acc.multiplyScalar(0);
-      }
-
-      applyForce(force: THREE.Vector3) {
-        this.acc.add(force);
-      }
-
-      flow(field: (x: number, y: number) => number) {
-        const angle = field(this.pos.x * 0.1, this.pos.y * 0.1);
-        const force = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0);
-        force.multiplyScalar(0.005);
-        this.applyForce(force);
-      }
-
-      seek(target: THREE.Vector3) {
-        const desired = new THREE.Vector3().subVectors(target, this.pos);
-        desired.normalize();
-        desired.multiplyScalar(this.maxSpeed);
-        const steer = new THREE.Vector3().subVectors(desired, this.vel);
-        steer.clampLength(0, this.maxForce);
-        this.applyForce(steer);
+      render(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scaleX, 1);
+        ctx.drawImage(...this.drawArgs);
+        ctx.restore();
       }
     }
 
-    const particles: Particle[] = [];
-    const groupColors = [
-      new THREE.Color(0x7dd3fc), // sky-300
-      new THREE.Color(0x67e8f9), // cyan-300
-      new THREE.Color(0x5eead4), // teal-300
-      new THREE.Color(0x6ee7b7), // emerald-300
-      new THREE.Color(0x86efac), // green-300
-    ];
+    // TWEEN FACTORIES
+    const resetPeep = ({ stage, peep }: { stage: { width: number; height: number }; peep: Peep }) => {
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const offsetY = 100 - 250 * gsap.parseEase('power2.in')(Math.random());
+      const startY = stage.height - peep.height + offsetY;
+      let startX;
+      let endX;
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const groupIndex = Math.floor(i / (PARTICLE_COUNT / GROUP_COUNT));
-      particles.push(new Particle(groupIndex, groupColors[groupIndex]));
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(PARTICLE_COUNT * 3);
-    const colors = new Float32Array(PARTICLE_COUNT * 3);
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({ size: 0.05, vertexColors: true });
-    const points = new THREE.Points(geometry, material);
-    scene.add(points);
-
-    const onResize = () => {
-      const parent = renderer.domElement.parentElement;
-      if (parent) {
-        const width = parent.clientWidth;
-        const height = parent.clientHeight;
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
+      if (direction === 1) {
+        startX = -peep.width;
+        endX = stage.width;
+        peep.scaleX = 1;
+      } else {
+        startX = stage.width + peep.width;
+        endX = 0;
+        peep.scaleX = -1;
       }
+
+      peep.x = startX;
+      peep.y = startY;
+      peep.anchorY = startY;
+
+      return { startX, startY, endX };
     };
-    window.addEventListener('resize', onResize);
-    onResize();
 
-    const onMouseMove = (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      
-      mouse.x = (x / rect.width) * 2 - 1;
-      mouse.y = -(y / rect.height) * 2 + 1;
+    const normalWalk = ({ peep, props }: { peep: Peep; props: any }) => {
+      const { startY, endX } = props;
+      const xDuration = 10;
+      const yDuration = 0.25;
+
+      const tl = gsap.timeline();
+      tl.timeScale(randomRange(0.5, 1.5));
+      tl.to(peep, { duration: xDuration, x: endX, ease: 'none' }, 0);
+      tl.to(peep, { duration: yDuration, repeat: xDuration / yDuration, yoyo: true, y: startY - 10 }, 0);
+
+      return tl;
     };
-    window.addEventListener('mousemove', onMouseMove);
 
-    let animationFrameId: number;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
+    const walks = [normalWalk];
 
-      const target = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
-      
-      particles.forEach((p, i) => {
-        p.flow((x, y) => noise2D(x, y) * 10);
-        p.seek(target);
-        p.update();
-
-        positions[i * 3] = p.pos.x;
-        positions[i * 3 + 1] = p.pos.y;
-        positions[i * 3 + 2] = p.pos.z;
-        p.color.toArray(colors, i * 3);
+    function addPeepToCrowd() {
+      const peep = removeRandomFromArray(availablePeeps);
+      const walk = getRandomFromArray(walks)({
+        peep,
+        props: resetPeep({ peep, stage }),
+      }).eventCallback('onComplete', () => {
+        removePeepFromCrowd(peep);
+        addPeepToCrowd();
       });
 
-      geometry.attributes.position.needsUpdate = true;
-      geometry.attributes.color.needsUpdate = true;
-      renderer.render(scene, camera);
+      peep.walk = walk;
+      crowd.push(peep);
+      crowd.sort((a, b) => a.anchorY - b.anchorY);
+
+      return peep;
+    }
+
+    function removePeepFromCrowd(peep: Peep) {
+      removeItemFromArray(crowd, peep);
+      availablePeeps.push(peep);
+    }
+
+    function initCrowd() {
+      while (availablePeeps.length) {
+        addPeepToCrowd().walk?.progress(Math.random());
+      }
+    }
+
+    function resize() {
+      const parent = canvas.parentElement;
+      if (parent) {
+        stage.width = parent.clientWidth;
+        stage.height = parent.clientHeight;
+        canvas.width = stage.width * devicePixelRatio;
+        canvas.height = stage.height * devicePixelRatio;
+      }
+
+      crowd.forEach((peep) => {
+        peep.walk?.kill();
+      });
+
+      crowd.length = 0;
+      availablePeeps.length = 0;
+      availablePeeps.push(...allPeeps);
+
+      initCrowd();
+    }
+
+    function render() {
+      if (canvas) {
+        canvas.width = canvas.width;
+        ctx.save();
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        crowd.forEach((peep) => {
+          peep.render(ctx);
+        });
+
+        ctx.restore();
+      }
+    }
+
+    function createPeeps() {
+      const { rows, cols } = config;
+      const { naturalWidth: width, naturalHeight: height } = img;
+      const total = rows * cols;
+      const rectWidth = width / rows;
+      const rectHeight = height / cols;
+
+      for (let i = 0; i < total; i++) {
+        allPeeps.push(new Peep({
+          image: img,
+          rect: [(i % rows) * rectWidth, (i / rows | 0) * rectHeight, rectWidth, rectHeight],
+        }));
+      }
+    }
+
+    const img = document.createElement('img');
+    img.onload = () => {
+      createPeeps();
+      resize();
+      gsap.ticker.add(render);
     };
-    animate();
+    img.src = config.src;
+
+    window.addEventListener('resize', resize);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('mousemove', onMouseMove);
-      renderer.dispose();
-      geometry.dispose();
-      material.dispose();
+      window.removeEventListener('resize', resize);
+      gsap.ticker.remove(render);
+      crowd.forEach((peep) => peep.walk?.kill());
     };
   }, []);
 
