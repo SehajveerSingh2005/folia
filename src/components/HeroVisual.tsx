@@ -34,7 +34,7 @@ const HeroVisual = () => {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto transition-all duration-500 ease-out">
-      <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg shadow-2xl p-4 sm:p-6 min-h-[280px] sm:min-h-[320px] flex flex-col">
+      <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/70 rounded-lg shadow-lg p-4 sm:p-6 min-h-[280px] flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-1.5 mb-4 flex-shrink-0">
           <div className="h-3 w-3 rounded-full bg-red-400/80"></div>
@@ -72,7 +72,7 @@ const HeroVisual = () => {
             {/* Flow Project */}
             <div
               className={cn(
-                'absolute top-4 left-4 w-3/4 max-w-[300px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
+                'absolute top-2 sm:top-4 left-2 sm:left-4 w-4/5 sm:w-3/4 max-w-[300px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
                 isVisible(2)
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 -translate-y-4'
@@ -95,7 +95,7 @@ const HeroVisual = () => {
             {/* Garden Note */}
             <div
               className={cn(
-                'absolute bottom-4 right-4 w-1/2 max-w-[200px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
+                'absolute bottom-2 sm:bottom-4 right-2 sm:right-4 w-1/2 max-w-[200px] bg-background p-3 rounded-lg shadow-md border transition-all duration-500 ease-out',
                 isVisible(3)
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-4'
