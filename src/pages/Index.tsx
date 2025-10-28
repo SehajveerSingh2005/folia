@@ -67,7 +67,7 @@ const Index = () => {
             </Button>
           </ScrollFadeIn>
         </div>
-        <div className="w-full px-4 mt-12 sm:mt-20">
+        <div className="w-full px-4 mt-16 sm:mt-24">
           <HeroVisual />
         </div>
       </main>

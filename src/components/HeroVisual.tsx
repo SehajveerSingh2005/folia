@@ -34,7 +34,7 @@ const HeroVisual = () => {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto transition-all duration-500 ease-out">
-      <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/70 rounded-lg shadow-lg p-4 sm:p-6 min-h-[280px] flex flex-col">
+      <div className="relative z-10 bg-card/80 backdrop-blur-sm border border-border/70 rounded-lg shadow-lg p-4 sm:p-6 aspect-video flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-1.5 mb-4 flex-shrink-0">
           <div className="h-3 w-3 rounded-full bg-red-400/80"></div>
