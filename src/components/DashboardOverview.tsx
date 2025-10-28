@@ -152,19 +152,15 @@ const DashboardOverview = ({
 
   const addNewWidget = (widget: NonNullable<DashboardOverviewProps['addWidgetTrigger']>) => {
     const newWidgetId = uuidv4();
-    const newLayouts = { ...layouts };
+    const newLayouts = JSON.parse(JSON.stringify(layouts));
     
     for (const breakpoint in newLayouts) {
-      let maxY = 0;
-      if (newLayouts[breakpoint].length > 0) {
-        maxY = Math.max(...newLayouts[breakpoint].map(item => item.y + item.h));
-      }
       const isMobile = breakpoint === 'xs';
       newLayouts[breakpoint].push({
         i: newWidgetId,
         widget_type: widget.type,
         x: 0,
-        y: maxY,
+        y: Infinity, // Let the grid library place it at the bottom
         w: isMobile ? widget.mw : widget.w,
         h: isMobile ? widget.mh : widget.h,
         minW: isMobile ? widget.mw : widget.minW,
