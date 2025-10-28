@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface MakePlanFormProps {
   onPlanCreated: () => void;
@@ -23,6 +24,7 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
   const [goal, setGoal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('plan-generator', {
+      const { data, error } = await supabase.functions.invoke('plan-generator', {
         body: { goal },
       });
 
@@ -41,9 +43,18 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
         throw new Error(error.message);
       }
 
-      showSuccess('Your plan has been created in Flow!');
+      showSuccess('Your plan has been created!');
       queryClient.invalidateQueries({ queryKey: ['flow_data'] });
+      queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['horizon_data'] });
+      
       onPlanCreated();
+
+      if (data.projectId) {
+        navigate('/flow');
+      } else {
+        navigate('/loom');
+      }
     } catch (error: any) {
       showError(error.message || 'Failed to create plan. Please try again.');
     } finally {
@@ -65,6 +76,7 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
             size="sm"
             className="text-xs h-7"
             onClick={() => setGoal(preset)}
+            disabled={isLoading}
           >
             {preset}
           </Button>
@@ -79,7 +91,10 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
       />
       <Button type="submit" className="w-full mt-4" disabled={isLoading}>
         {isLoading ? (
-          'Generating...'
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Generating...
+          </>
         ) : (
           <>
             <Wand2 className="mr-2 h-4 w-4" />

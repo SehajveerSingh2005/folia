@@ -39,6 +39,8 @@ serve(async (req) => {
       })
     }
 
+    const currentDate = new Date().toISOString().split('T')[0];
+
     const prompt = `You are an expert project and goal planner for an application called Folia. Your task is to analyze a user's goal and determine the best way to structure it within Folia's system, then break it down into actionable steps.
 
 Folia has three main components for planning:
@@ -52,6 +54,9 @@ Based on the user's goal, you must first decide on a \`plan_type\`. There are th
 -   \`new_goal_with_project\`: Use for ambitious, long-term goals that involve learning, significant effort, or multiple stages. This creates a high-level Horizon goal and a first-step Flow project to get started. Example: "Become a proficient web developer".
 
 User's Goal: "${goal}"
+Current Date: "${currentDate}"
+
+Based on the user's goal and the current date, you must generate a plan. If the goal includes a timeframe (e.g., "in 2 months", "by next week"), calculate the project deadline and task due dates accordingly. If no timeframe is given, use reasonable estimates. All dates must be in YYYY-MM-DD format.
 
 Your response MUST be a single, valid JSON object. Do not include any text or markdown formatting before or after the JSON object.
 
@@ -61,8 +66,8 @@ The JSON object structure depends on the \`plan_type\` you choose:
 {
   "plan_type": "inbox_tasks",
   "tasks": [
-    { "title": "Task 1...", "notes": "...", "priority": "Medium" },
-    { "title": "Task 2...", "notes": "...", "priority": "Low" }
+    { "title": "Task 1...", "notes": "...", "priority": "Medium", "due_date": "YYYY-MM-DD" },
+    { "title": "Task 2...", "notes": "...", "priority": "Low", "due_date": "YYYY-MM-DD" }
   ]
 }
 
@@ -71,11 +76,12 @@ The JSON object structure depends on the \`plan_type\` you choose:
   "plan_type": "new_project",
   "project": {
     "name": "A concise name for the project.",
-    "type": "Project"
+    "type": "Project",
+    "deadline_date": "YYYY-MM-DD"
   },
   "tasks": [
-    { "title": "Task 1...", "notes": "...", "priority": "High" },
-    { "title": "Task 2...", "notes": "...", "priority": "Medium" }
+    { "title": "Task 1...", "notes": "...", "priority": "High", "due_date": "YYYY-MM-DD" },
+    { "title": "Task 2...", "notes": "...", "priority": "Medium", "due_date": "YYYY-MM-DD" }
   ]
 }
 
@@ -88,11 +94,12 @@ The JSON object structure depends on the \`plan_type\` you choose:
   },
   "project": {
     "name": "The first project to start working towards the goal.",
-    "type": "Project"
+    "type": "Project",
+    "deadline_date": "YYYY-MM-DD"
   },
   "tasks": [
-    { "title": "Task 1 for the first project...", "notes": "...", "priority": "High" },
-    { "title": "Task 2 for the first project...", "notes": "...", "priority": "Medium" }
+    { "title": "Task 1 for the first project...", "notes": "...", "priority": "High", "due_date": "YYYY-MM-DD" },
+    { "title": "Task 2 for the first project...", "notes": "...", "priority": "Medium", "due_date": "YYYY-MM-DD" }
   ]
 }
 
@@ -128,12 +135,15 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    let projectId = null;
+
     switch (plan.plan_type) {
       case 'inbox_tasks': {
         const tasksToInsert = plan.tasks.map((task: any) => ({
           content: task.title,
           notes: task.notes,
           priority: task.priority,
+          due_date: task.due_date,
           loom_item_id: null,
           user_id: user.id,
           type: 'Task',
@@ -146,14 +156,22 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
       case 'new_project': {
         const { data: newProject, error: projectError } = await supabaseAdmin
           .from('loom_items')
-          .insert({ name: plan.project.name, type: plan.project.type, user_id: user.id, status: 'Active' })
+          .insert({ 
+            name: plan.project.name, 
+            type: plan.project.type, 
+            deadline_date: plan.project.deadline_date,
+            user_id: user.id, 
+            status: 'Active' 
+          })
           .select().single();
         if (projectError) throw projectError;
+        projectId = newProject.id;
 
         const tasksToInsert = plan.tasks.map((task: any) => ({
           content: task.title,
           notes: task.notes,
           priority: task.priority,
+          due_date: task.due_date,
           loom_item_id: newProject.id,
           user_id: user.id,
           type: 'Task',
@@ -172,9 +190,16 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
 
         const { data: newProject, error: projectError } = await supabaseAdmin
           .from('loom_items')
-          .insert({ name: plan.project.name, type: plan.project.type, user_id: user.id, status: 'Active' })
+          .insert({ 
+            name: plan.project.name, 
+            type: plan.project.type, 
+            deadline_date: plan.project.deadline_date,
+            user_id: user.id, 
+            status: 'Active' 
+          })
           .select().single();
         if (projectError) throw projectError;
+        projectId = newProject.id;
 
         const { error: linkError } = await supabaseAdmin
           .from('horizon_flow_links')
@@ -185,6 +210,7 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
           content: task.title,
           notes: task.notes,
           priority: task.priority,
+          due_date: task.due_date,
           loom_item_id: newProject.id,
           user_id: user.id,
           type: 'Task',
@@ -198,7 +224,7 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
         throw new Error(`Unknown plan type: ${plan.plan_type}`);
     }
 
-    return new Response(JSON.stringify({ message: 'Plan created successfully!' }), {
+    return new Response(JSON.stringify({ message: 'Plan created successfully!', projectId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
