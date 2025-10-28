@@ -63,18 +63,18 @@ const generateDefaultLayouts = (): CustomLayouts => {
     lg: [
       { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2, minW: 6, minH: 2 },
       { i: clockId, widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 6, minW: 4, minH: 5 },
-      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 6, minW: 4, minH: 5 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 6, minW: 4, minH: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 6, minW: 4, minH: 4 },
       { i: journalId, widget_type: 'Journal', x: 0, y: 8, w: 6, h: 5, minW: 4, minH: 4 },
       { i: flowId, widget_type: 'Flow', x: 6, y: 8, w: 6, h: 5, minW: 4, minH: 4 },
     ],
     xs: [
       { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
       { i: clockId, widget_type: 'Clock', x: 0, y: 2, w: 4, h: 2, minW: 4, minH: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 4, w: 4, h: 6, minW: 2, minH: 6 },
-      { i: inboxId, widget_type: 'Inbox', x: 0, y: 10, w: 4, h: 6, minW: 2, minH: 6 },
-      { i: journalId, widget_type: 'Journal', x: 0, y: 16, w: 4, h: 5, minW: 4, minH: 5 },
-      { i: flowId, widget_type: 'Flow', x: 0, y: 21, w: 4, h: 5, minW: 4, minH: 5 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 4, w: 4, h: 6, minW: 2, minH: 5 },
+      { i: inboxId, widget_type: 'Inbox', x: 0, y: 10, w: 4, h: 6, minW: 2, minH: 5 },
+      { i: journalId, widget_type: 'Journal', x: 0, y: 16, w: 4, h: 5, minW: 4, minH: 4 },
+      { i: flowId, widget_type: 'Flow', x: 0, y: 21, w: 4, h: 5, minW: 4, minH: 4 },
     ],
   };
 };
