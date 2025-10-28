@@ -10,6 +10,15 @@ interface MakePlanFormProps {
   onPlanCreated: () => void;
 }
 
+const planPresets = [
+  'Learn a new programming language',
+  'Start a side project',
+  'Write a blog post series',
+  'Train for a 5k run',
+  'Read 12 books this year',
+  'Organize my digital files',
+];
+
 const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
   const [goal, setGoal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +53,23 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="pt-4 flex flex-col h-full">
+      <p className="text-sm text-muted-foreground mb-2">
+        Start with a preset or write your own goal below.
+      </p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {planPresets.map((preset) => (
+          <Button
+            key={preset}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => setGoal(preset)}
+          >
+            {preset}
+          </Button>
+        ))}
+      </div>
       <Textarea
         placeholder="e.g., Learn to play the guitar in 3 months"
         value={goal}
