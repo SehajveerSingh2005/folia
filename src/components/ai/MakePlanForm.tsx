@@ -61,7 +61,7 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
           <Button
             key={preset}
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             className="text-xs h-7"
             onClick={() => setGoal(preset)}
