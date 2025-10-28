@@ -57,10 +57,12 @@ const DashboardOverviewWrapper = () => {
         "flex justify-end items-center mb-4 gap-2",
         isMobile && "px-4"
       )}>
-        <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Widget
-        </Button>
+        {isEditable && (
+          <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Widget
+          </Button>
+        )}
         <Button
           variant={isEditable ? 'default' : 'outline'}
           onClick={handleToggleEdit}
