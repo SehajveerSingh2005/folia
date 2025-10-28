@@ -39,25 +39,64 @@ serve(async (req) => {
       })
     }
 
-    const prompt = `You are an expert project planner. Your task is to take a user's goal and break it down into a project with a list of actionable tasks.
+    const prompt = `You are an expert project and goal planner for an application called Folia. Your task is to analyze a user's goal and determine the best way to structure it within Folia's system, then break it down into actionable steps.
+
+Folia has three main components for planning:
+1.  **Inbox Tasks:** Simple, standalone tasks that don't belong to a larger project.
+2.  **Flow Items:** These are projects, courses, books, etc. They are larger endeavors that have their own dedicated list of tasks.
+3.  **Horizon Items:** These are long-term goals, aspirations, or areas of focus. They are high-level and can be linked to one or more Flow projects.
+
+Based on the user's goal, you must first decide on a \`plan_type\`. There are three possibilities:
+-   \`inbox_tasks\`: Use for simple, short-term goals that can be accomplished with a few tasks and don't need a dedicated project. Example: "Organize my desktop files".
+-   \`new_project\`: Use for medium-sized goals that clearly represent a single project. Example: "Build a personal portfolio website".
+-   \`new_goal_with_project\`: Use for ambitious, long-term goals that involve learning, significant effort, or multiple stages. This creates a high-level Horizon goal and a first-step Flow project to get started. Example: "Become a proficient web developer".
 
 User's Goal: "${goal}"
 
-Your response MUST be a valid JSON object. Do not include any text or markdown formatting before or after the JSON object.
+Your response MUST be a single, valid JSON object. Do not include any text or markdown formatting before or after the JSON object.
 
-The JSON object should have the following structure:
+The JSON object structure depends on the \`plan_type\` you choose:
+
+**If \`plan_type\` is \`inbox_tasks\`:**
 {
-  "project_name": "A concise and inspiring name for the project related to the goal.",
+  "plan_type": "inbox_tasks",
   "tasks": [
-    {
-      "title": "A clear, actionable task title.",
-      "notes": "A brief, 1-2 sentence description of why this task is important or what it entails.",
-      "priority": "Either 'High', 'Medium', or 'Low', based on the task's importance to the overall goal."
-    }
+    { "title": "Task 1...", "notes": "...", "priority": "Medium" },
+    { "title": "Task 2...", "notes": "...", "priority": "Low" }
   ]
 }
 
-Generate a plan with at least 5 tasks. Ensure the tasks are logical steps towards achieving the goal.`
+**If \`plan_type\` is \`new_project\`:**
+{
+  "plan_type": "new_project",
+  "project": {
+    "name": "A concise name for the project.",
+    "type": "Project"
+  },
+  "tasks": [
+    { "title": "Task 1...", "notes": "...", "priority": "High" },
+    { "title": "Task 2...", "notes": "...", "priority": "Medium" }
+  ]
+}
+
+**If \`plan_type\` is \`new_goal_with_project\`:**
+{
+  "plan_type": "new_goal_with_project",
+  "horizon_item": {
+    "title": "The long-term goal.",
+    "type": "Skill"
+  },
+  "project": {
+    "name": "The first project to start working towards the goal.",
+    "type": "Project"
+  },
+  "tasks": [
+    { "title": "Task 1 for the first project...", "notes": "...", "priority": "High" },
+    { "title": "Task 2 for the first project...", "notes": "...", "priority": "Medium" }
+  ]
+}
+
+Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`horizon_item\` and \`project\`, choose an appropriate \`type\` from this list: ['Project', 'Book', 'Course', 'Writing', 'Open Source', 'Habit', 'Skill', 'Field', 'Hobby', 'Misc'].`
 
     const aiResponse = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
@@ -89,33 +128,75 @@ Generate a plan with at least 5 tasks. Ensure the tasks are logical steps toward
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { data: newProject, error: projectError } = await supabaseAdmin
-      .from('loom_items')
-      .insert({
-        name: plan.project_name,
-        user_id: user.id,
-        type: 'Project',
-        status: 'Active',
-      })
-      .select()
-      .single()
+    switch (plan.plan_type) {
+      case 'inbox_tasks': {
+        const tasksToInsert = plan.tasks.map((task: any) => ({
+          content: task.title,
+          notes: task.notes,
+          priority: task.priority,
+          loom_item_id: null,
+          user_id: user.id,
+          type: 'Task',
+        }));
+        const { error: tasksError } = await supabaseAdmin.from('ledger_items').insert(tasksToInsert);
+        if (tasksError) throw tasksError;
+        break;
+      }
 
-    if (projectError) throw projectError
+      case 'new_project': {
+        const { data: newProject, error: projectError } = await supabaseAdmin
+          .from('loom_items')
+          .insert({ name: plan.project.name, type: plan.project.type, user_id: user.id, status: 'Active' })
+          .select().single();
+        if (projectError) throw projectError;
 
-    const tasksToInsert = plan.tasks.map((task: any) => ({
-      content: task.title,
-      notes: task.notes,
-      priority: task.priority,
-      loom_item_id: newProject.id,
-      user_id: user.id,
-      type: 'Task',
-    }))
+        const tasksToInsert = plan.tasks.map((task: any) => ({
+          content: task.title,
+          notes: task.notes,
+          priority: task.priority,
+          loom_item_id: newProject.id,
+          user_id: user.id,
+          type: 'Task',
+        }));
+        const { error: tasksError } = await supabaseAdmin.from('ledger_items').insert(tasksToInsert);
+        if (tasksError) throw tasksError;
+        break;
+      }
 
-    const { error: tasksError } = await supabaseAdmin
-      .from('ledger_items')
-      .insert(tasksToInsert)
+      case 'new_goal_with_project': {
+        const { data: newHorizonItem, error: horizonError } = await supabaseAdmin
+          .from('horizon_items')
+          .insert({ title: plan.horizon_item.title, type: plan.horizon_item.type, user_id: user.id })
+          .select().single();
+        if (horizonError) throw horizonError;
 
-    if (tasksError) throw tasksError
+        const { data: newProject, error: projectError } = await supabaseAdmin
+          .from('loom_items')
+          .insert({ name: plan.project.name, type: plan.project.type, user_id: user.id, status: 'Active' })
+          .select().single();
+        if (projectError) throw projectError;
+
+        const { error: linkError } = await supabaseAdmin
+          .from('horizon_flow_links')
+          .insert({ horizon_item_id: newHorizonItem.id, loom_item_id: newProject.id, user_id: user.id });
+        if (linkError) throw linkError;
+
+        const tasksToInsert = plan.tasks.map((task: any) => ({
+          content: task.title,
+          notes: task.notes,
+          priority: task.priority,
+          loom_item_id: newProject.id,
+          user_id: user.id,
+          type: 'Task',
+        }));
+        const { error: tasksError } = await supabaseAdmin.from('ledger_items').insert(tasksToInsert);
+        if (tasksError) throw tasksError;
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown plan type: ${plan.plan_type}`);
+    }
 
     return new Response(JSON.stringify({ message: 'Plan created successfully!' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

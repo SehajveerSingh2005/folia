@@ -71,6 +71,7 @@ const DashboardLayoutPage = () => {
   const handleItemCreated = () => {
     queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
     queryClient.invalidateQueries({ queryKey: ['flow_data'] });
+    queryClient.invalidateQueries({ queryKey: ['horizon_data'] });
   };
 
   if (loading || !profile) {
