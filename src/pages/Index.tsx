@@ -6,12 +6,16 @@ import {
   Telescope,
   ArrowRight,
   Check,
+  Wand2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ScrollFadeIn from "@/components/ScrollFadeIn";
 import HeroVisual from "@/components/HeroVisual";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import CrowdSimulator from "@/components/landing/CrowdSimulator";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -41,7 +45,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col items-center justify-center pt-28 sm:pt-32 pb-16 sm:pb-24 overflow-hidden">
+      <main className="flex-grow flex flex-col items-center justify-center pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden">
         <div className="text-center max-w-3xl mx-auto px-4 z-10">
           <ScrollFadeIn>
             <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
@@ -88,75 +92,67 @@ const Index = () => {
               </p>
             </ScrollFadeIn>
           </div>
-          <div className="space-y-16 md:space-y-24">
-            <FeatureShowcase
-              icon={<FolderKanban className="h-8 w-8 text-primary" />}
-              title="Flow"
-              description="Bring your projects to life. Flow is where your active endeavors live, from launching a new website to learning a new skill. Break down big goals into manageable tasks and track your progress from start to finish."
-              visual={<FlowVisual />}
-            />
-            <FeatureShowcase
-              icon={<Sparkles className="h-8 w-8 text-primary" />}
-              title="Garden"
-              description="A space for ideas to grow. Your Garden is a pressure-free zone to plant seeds of thought, quick notes, and random sparks of inspiration. Connect ideas and watch them blossom into full-fledged projects when they're ready."
-              visual={<GardenVisual />}
-              reverse
-            />
-            <FeatureShowcase
-              icon={<Book className="h-8 w-8 text-primary" />}
-              title="Journal"
-              description="A private space for daily reflection. Chronicle your days, track your mood, and import completed tasks to see a clear picture of your progress. Your journal is a quiet corner to understand your journey."
-              visual={<JournalVisual />}
-            />
-            <FeatureShowcase
-              icon={<Telescope className="h-8 w-8 text-primary" />}
-              title="Horizon"
-              description="Plan for the future. Horizon is your space for long-term goals, big ideas, and wishlists. Whether it's a book you want to read or a skill you want to master, Horizon keeps your aspirations in sight."
-              visual={<HorizonVisual />}
-              reverse
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ScrollFadeIn className="lg:col-span-2">
+              <FeatureCard
+                icon={<Wand2 className="h-8 w-8 text-primary" />}
+                title="Make a Plan with AI"
+                description="Describe a goal, and our AI planner will generate a complete project in your Flow, broken down into actionable tasks with smart deadlines."
+                visual={<AIPlannerVisual />}
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={200}>
+              <FeatureCard
+                icon={<FolderKanban className="h-8 w-8 text-primary" />}
+                title="Flow"
+                description="Bring your projects to life. Flow is where your active endeavors live, from launching a new website to learning a new skill."
+                visual={<FlowVisual />}
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={300}>
+              <FeatureCard
+                icon={<Sparkles className="h-8 w-8 text-primary" />}
+                title="Garden"
+                description="A space for ideas to grow. Your Garden is a pressure-free zone to plant seeds of thought, quick notes, and random sparks of inspiration."
+                visual={<GardenVisual />}
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={200}>
+              <FeatureCard
+                icon={<Book className="h-8 w-8 text-primary" />}
+                title="Journal"
+                description="A private space for daily reflection. Chronicle your days, track your mood, and import completed tasks to see a clear picture of your progress."
+                visual={<JournalVisual />}
+              />
+            </ScrollFadeIn>
+            <ScrollFadeIn delay={300}>
+              <FeatureCard
+                icon={<Telescope className="h-8 w-8 text-primary" />}
+                title="Horizon"
+                description="Plan for the future. Horizon is your space for long-term goals, big ideas, and wishlists."
+                visual={<HorizonVisual />}
+              />
+            </ScrollFadeIn>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 sm:py-24">
-        <div className="container mx-auto px-4 text-center">
+      {/* Crowd Sim Section */}
+      <section className="relative h-[50vh] min-h-[400px] flex items-center justify-center overflow-hidden">
+        <CrowdSimulator />
+        <div className="container mx-auto px-4 text-center z-10">
           <ScrollFadeIn>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4">
-              Effortless setup, instant clarity.
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">
+              Join a community of focused individuals.
             </h2>
           </ScrollFadeIn>
           <ScrollFadeIn delay={200}>
-            <p className="text-lg text-foreground/70 mb-16 max-w-2xl mx-auto">
-              Forget the blank page. We personalize your space in three simple
-              steps.
+            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto">
+              Folia is more than just a tool; it's a system for clarity. See how thousands are organizing their lives and achieving their goals.
             </p>
           </ScrollFadeIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <ScrollFadeIn delay={300}>
-              <StepCard
-                number="1"
-                title="Answer a few questions"
-                description="Tell us how you like to think and work. It's quick, fun, and insightful."
-              />
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={400}>
-              <StepCard
-                number="2"
-                title="We build your space"
-                description="Based on your answers, we generate the perfect layouts and spaces for you."
-              />
-            </ScrollFadeIn>
-            <ScrollFadeIn delay={500}>
-              <StepCard
-                number="3"
-                title="Start thinking freely"
-                description="Your Folia space is ready. Dive in and capture your first thought without friction."
-              />
-            </ScrollFadeIn>
-          </div>
         </div>
+        <div className="absolute inset-0 bg-black/50"></div>
       </section>
 
       {/* Final CTA Section */}
@@ -195,57 +191,50 @@ const Index = () => {
   );
 };
 
-const FeatureShowcase = ({
+const FeatureCard = ({
   icon,
   title,
   description,
   visual,
-  reverse = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   visual: React.ReactNode;
-  reverse?: boolean;
 }) => (
-  <ScrollFadeIn>
-    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-      <div className={`md:w-1/2 ${reverse ? 'md:order-last' : ''}`}>
-        <div className="mb-4 inline-block">{icon}</div>
-        <h3 className="text-2xl md:text-3xl font-sans font-medium mb-4">{title}</h3>
-        <p className="text-foreground/70 text-lg">{description}</p>
-      </div>
-      <div className="md:w-1/2 w-full">
-        {visual}
-      </div>
-    </div>
-  </ScrollFadeIn>
-);
-
-const StepCard = ({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) => (
-  <div className="text-left md:text-center">
-    <div className="flex items-center md:justify-center mb-4">
-      <div className="flex items-center justify-center h-12 w-12 rounded-full bg-secondary text-primary font-bold text-xl">
-        {number}
-      </div>
-    </div>
-    <h3 className="text-xl font-sans font-medium mb-2">{title}</h3>
-    <p className="text-foreground/70">{description}</p>
-  </div>
+  <Card className="h-full flex flex-col overflow-hidden">
+    <CardHeader>
+      <div className="mb-4 inline-block">{icon}</div>
+      <CardTitle className="text-2xl md:text-3xl font-sans font-medium">{title}</CardTitle>
+      <p className="text-foreground/70 text-lg pt-2">{description}</p>
+    </CardHeader>
+    <CardContent className="flex-grow flex items-center justify-center mt-4 bg-secondary/30 p-6 rounded-b-lg">
+      {visual}
+    </CardContent>
+  </Card>
 );
 
 // --- Stylized Visuals ---
 
+const AIPlannerVisual = () => (
+  <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg border border-border">
+    <Textarea placeholder="Plan a two-week trip to Italy, focusing on history and food..." className="mb-4" />
+    <Button className="w-full">
+      <Wand2 className="mr-2 h-4 w-4" />
+      Generate Plan
+    </Button>
+    <div className="border-t my-4"></div>
+    <div className="space-y-3">
+      <h4 className="font-sans font-medium text-sm">Generated Project: Italian Adventure</h4>
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded border border-border"></div><p className="text-sm text-muted-foreground">Book flights to Rome</p></div>
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded border border-border"></div><p className="text-sm text-muted-foreground">Reserve Colosseum tickets</p></div>
+      <div className="flex items-center gap-3"><div className="h-5 w-5 rounded border border-border"></div><p className="text-sm text-muted-foreground">Find cooking class in Florence</p></div>
+    </div>
+  </div>
+);
+
 const FlowVisual = () => (
-  <div className="bg-background p-6 rounded-lg shadow-lg border border-border">
+  <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg border border-border">
     <div className="flex justify-between items-center mb-4">
       <h4 className="font-sans font-medium">Website Redesign</h4>
       <div className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">Project</div>
@@ -259,12 +248,12 @@ const FlowVisual = () => (
 );
 
 const GardenVisual = () => (
-  <div className="relative h-64">
-    <div className="absolute top-4 left-8 w-48 bg-background p-4 rounded-lg shadow-lg border border-border transform -rotate-6">
+  <div className="relative h-48 w-full max-w-md">
+    <div className="absolute top-0 left-0 w-48 bg-background p-4 rounded-lg shadow-lg border border-border transform -rotate-6">
       <p className="text-sm">"What if we used a neural network for idea generation?"</p>
       <div className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground mt-2 inline-block">Project Idea</div>
     </div>
-    <div className="absolute bottom-8 right-4 w-56 bg-background p-4 rounded-lg shadow-lg border border-border transform rotate-3">
+    <div className="absolute bottom-0 right-0 w-56 bg-background p-4 rounded-lg shadow-lg border border-border transform rotate-3">
       <p className="text-sm">"The unexamined life is not worth living." - Socrates</p>
       <div className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground mt-2 inline-block">Writing</div>
     </div>
@@ -272,7 +261,7 @@ const GardenVisual = () => (
 );
 
 const JournalVisual = () => (
-  <div className="bg-background p-6 rounded-lg shadow-lg border border-border">
+  <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg border border-border">
     <div className="flex justify-between items-center mb-4">
       <h4 className="font-sans font-medium">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</h4>
       <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Good</div>
@@ -282,7 +271,7 @@ const JournalVisual = () => (
 );
 
 const HorizonVisual = () => (
-  <div className="bg-background p-6 rounded-lg shadow-lg border border-border space-y-3">
+  <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg border border-border space-y-3">
     <div className="bg-secondary/50 p-3 rounded-md"><p className="text-sm font-medium">Learn Rust</p></div>
     <div className="bg-secondary/50 p-3 rounded-md ml-4"><p className="text-sm">Read "The Rust Programming Language"</p></div>
     <div className="bg-secondary/50 p-3 rounded-md"><p className="text-sm font-medium">Launch a SaaS product</p></div>
