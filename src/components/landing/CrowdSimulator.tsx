@@ -14,7 +14,7 @@ const CrowdSimulator: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setClearColor(0x000000, 0);
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     camera.position.set(0, 0, 20);
 
     const noise2D = createNoise2D();
@@ -95,24 +95,31 @@ const CrowdSimulator: React.FC = () => {
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    const onWindowResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
+    const onResize = () => {
+      const parent = renderer.domElement.parentElement;
+      if (parent) {
+        const width = parent.clientWidth;
+        const height = parent.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
     };
-    window.addEventListener('resize', onWindowResize);
-    onWindowResize();
+    window.addEventListener('resize', onResize);
+    onResize();
 
     const onMouseMove = (event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      mouse.x = (x / rect.width) * 2 - 1;
+      mouse.y = -(y / rect.height) * 2 + 1;
     };
     window.addEventListener('mousemove', onMouseMove);
 
     let animationFrameId: number;
-    const animate = (time: number) => {
+    const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
       const target = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
@@ -132,11 +139,11 @@ const CrowdSimulator: React.FC = () => {
       geometry.attributes.color.needsUpdate = true;
       renderer.render(scene, camera);
     };
-    animate(0);
+    animate();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', onMouseMove);
       renderer.dispose();
       geometry.dispose();

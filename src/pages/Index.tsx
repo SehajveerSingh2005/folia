@@ -45,7 +45,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col items-center justify-center pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden">
+      <main className="flex-grow flex flex-col items-center justify-center pt-28 sm:pt-32 pb-12 sm:pb-20 overflow-hidden">
         <div className="text-center max-w-3xl mx-auto px-4 z-10">
           <ScrollFadeIn>
             <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
