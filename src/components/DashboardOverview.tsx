@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout';
+import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { showError } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import InboxWidget from './dashboard/widgets/InboxWidget';
 import NotesWidget from './dashboard/widgets/NotesWidget';
 import JournalWidget from './dashboard/widgets/JournalWidget';
 import GoalsWidget from './dashboard/widgets/GoalsWidget';
+import FlowWidget from './dashboard/widgets/FlowWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -25,7 +26,7 @@ interface DashboardOverviewProps {
   firstName: string;
   onNavigate: (space: string) => void;
   isEditable: boolean;
-  addWidgetTrigger: { type: string; w: number; h: number; mw: number; mh: number } | null;
+  addWidgetTrigger: { type: string; w: number; h: number; minW: number; minH: number; mw: number; mh: number; } | null;
   onWidgetAdded: () => void;
   setSaveLayoutRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
@@ -38,6 +39,7 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
   Notes: NotesWidget,
   Journal: JournalWidget,
   Goals: GoalsWidget,
+  Flow: FlowWidget,
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
@@ -46,6 +48,7 @@ const widgetNavigationMap: { [key: string]: string } = {
   Notes: 'Garden',
   Journal: 'Journal',
   Goals: 'Horizon',
+  Flow: 'Flow',
 };
 
 const generateDefaultLayouts = (): CustomLayouts => {
@@ -54,24 +57,24 @@ const generateDefaultLayouts = (): CustomLayouts => {
   const dueTodayId = uuidv4();
   const inboxId = uuidv4();
   const journalId = uuidv4();
-  const goalsId = uuidv4();
+  const flowId = uuidv4();
 
   return {
     lg: [
-      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2 },
-      { i: clockId, widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4 },
-      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4 },
-      { i: journalId, widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3 },
-      { i: goalsId, widget_type: 'Goals', x: 6, y: 6, w: 6, h: 3 },
+      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 8, h: 2, minW: 6, minH: 2 },
+      { i: clockId, widget_type: 'Clock', x: 8, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 2, w: 6, h: 4, minW: 4, minH: 3 },
+      { i: inboxId, widget_type: 'Inbox', x: 6, y: 2, w: 6, h: 4, minW: 4, minH: 4 },
+      { i: journalId, widget_type: 'Journal', x: 0, y: 6, w: 6, h: 3, minW: 4, minH: 3 },
+      { i: flowId, widget_type: 'Flow', x: 6, y: 6, w: 6, h: 3, minW: 4, minH: 3 },
     ],
     xs: [
-      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2 },
-      { i: clockId, widget_type: 'Clock', x: 0, y: 2, w: 2, h: 2 },
-      { i: dueTodayId, widget_type: 'DueToday', x: 2, y: 2, w: 2, h: 4 },
-      { i: inboxId, widget_type: 'Inbox', x: 0, y: 4, w: 2, h: 4 },
-      { i: journalId, widget_type: 'Journal', x: 0, y: 8, w: 4, h: 3 },
-      { i: goalsId, widget_type: 'Goals', x: 0, y: 11, w: 4, h: 3 },
+      { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: clockId, widget_type: 'Clock', x: 0, y: 2, w: 2, h: 2, minW: 2, minH: 2 },
+      { i: dueTodayId, widget_type: 'DueToday', x: 2, y: 2, w: 2, h: 4, minW: 2, minH: 4 },
+      { i: inboxId, widget_type: 'Inbox', x: 0, y: 4, w: 2, h: 4, minW: 2, minH: 4 },
+      { i: journalId, widget_type: 'Journal', x: 0, y: 8, w: 4, h: 3, minW: 4, minH: 3 },
+      { i: flowId, widget_type: 'Flow', x: 0, y: 11, w: 4, h: 3, minW: 4, minH: 3 },
     ],
   };
 };
@@ -142,12 +145,12 @@ const DashboardOverview = ({
 
   useEffect(() => {
     if (addWidgetTrigger) {
-      addNewWidget(addWidgetTrigger.type, addWidgetTrigger.w, addWidgetTrigger.h, addWidgetTrigger.mw, addWidgetTrigger.mh);
+      addNewWidget(addWidgetTrigger);
       onWidgetAdded();
     }
   }, [addWidgetTrigger]);
 
-  const addNewWidget = (widgetType: string, w: number, h: number, mw: number, mh: number) => {
+  const addNewWidget = (widget: NonNullable<DashboardOverviewProps['addWidgetTrigger']>) => {
     const newWidgetId = uuidv4();
     const newLayouts = { ...layouts };
     
@@ -159,11 +162,13 @@ const DashboardOverview = ({
       const isMobile = breakpoint === 'xs';
       newLayouts[breakpoint].push({
         i: newWidgetId,
-        widget_type: widgetType,
+        widget_type: widget.type,
         x: 0,
         y: maxY,
-        w: isMobile ? mw : w,
-        h: isMobile ? mh : h,
+        w: isMobile ? widget.mw : widget.w,
+        h: isMobile ? widget.mh : widget.h,
+        minW: isMobile ? widget.mw : widget.minW,
+        minH: isMobile ? widget.mh : widget.minH,
       });
     }
     setLayouts(newLayouts);
@@ -177,7 +182,7 @@ const DashboardOverview = ({
     setLayouts(newLayouts);
   }, [layouts]);
 
-  const handleLayoutChange = useCallback((_layout: Layout[], newLayouts: Layouts) => {
+  const handleLayoutChange = useCallback((_layout: Layout[], newLayouts: { [breakpoint: string]: Layout[] }) => {
     const currentLayoutItems = Object.values(layouts).flat();
     const itemsMap = new Map(currentLayoutItems.map(item => [item.i, item]));
 
@@ -211,7 +216,7 @@ const DashboardOverview = ({
   const handleWidgetClick = (e: React.MouseEvent, widgetType: string) => {
     if (isEditable) return;
     const target = e.target as HTMLElement;
-    if (target.closest('button, input, textarea, label, [role="checkbox"]')) return;
+    if (target.closest('button, input, textarea, label, [role="checkbox"], a')) return;
     const space = widgetNavigationMap[widgetType];
     if (space) onNavigate(space);
   };
@@ -229,7 +234,7 @@ const DashboardOverview = ({
       layouts={layouts}
       breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
       cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-      rowHeight={100}
+      rowHeight={30}
       onLayoutChange={handleLayoutChange}
       isDraggable={isEditable}
       isResizable={isEditable}
