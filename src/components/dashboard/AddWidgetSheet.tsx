@@ -84,7 +84,7 @@ const FlowPreview = () => (
 
 // --- Widget Definitions ---
 export const availableWidgets = [
-  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, description: 'A personalized greeting for your day.', w: 8, h: 2, minW: 6, minH: 2, mw: 4, mh: 2, preview: <WelcomePreview /> },
+  { type: 'Welcome', name: 'Welcome Greeting', icon: Smile, description: 'A personalized greeting for your day.', w: 16, h: 4, minW: 16, minH: 4, mw: 16, mh: 4, preview: <WelcomePreview /> },
   { type: 'Clock', name: 'Clock', icon: Clock, description: 'A simple, elegant digital clock.', w: 4, h: 2, minW: 3, minH: 2, mw: 4, mh: 2, preview: <ClockPreview /> },
   { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, description: 'See all tasks that are due today.', w: 6, h: 5, minW: 4, minH: 4, mw: 2, mh: 5, preview: <DueTodayPreview /> },
   { type: 'Inbox', name: 'Task Inbox', icon: Inbox, description: 'Quickly add and manage your inbox tasks.', w: 6, h: 5, minW: 4, minH: 4, mw: 2, mh: 5, preview: <InboxPreview /> },
