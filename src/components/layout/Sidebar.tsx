@@ -9,6 +9,7 @@ import {
   Archive,
   ClipboardList,
   Search,
+  PlusCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ interface SidebarProps {
   onLogout: () => void;
   firstName: string;
   onSearch: () => void;
+  onOpenCreateDialog: () => void;
 }
 
 const Sidebar = ({
@@ -45,6 +47,7 @@ const Sidebar = ({
   onLogout,
   firstName,
   onSearch,
+  onOpenCreateDialog,
 }: SidebarProps) => {
   const navigate = useNavigate();
 
@@ -64,6 +67,13 @@ const Sidebar = ({
         </div>
       </div>
       <nav className="flex-grow">
+        <Button
+          className="w-full text-md font-normal px-3 mb-2 justify-start"
+          onClick={onOpenCreateDialog}
+        >
+          <PlusCircle className="h-5 w-5 mr-3" />
+          <span>Create</span>
+        </Button>
         <Button
           variant="outline"
           className="w-full text-md font-normal px-3 mb-4 justify-start text-muted-foreground"

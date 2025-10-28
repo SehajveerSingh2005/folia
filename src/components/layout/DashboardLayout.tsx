@@ -5,6 +5,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileHeader from './MobileHeader';
 import BottomNavBar from './BottomNavBar';
+import CreateDialog from '@/components/CreateDialog';
 
 interface DashboardLayoutProps {
   firstName: string;
@@ -30,6 +31,7 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
 
   const [activeView, setActiveView] = useState<View>(getViewFromPath());
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   useEffect(() => {
     setActiveView(getViewFromPath());
@@ -59,7 +61,7 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
           </main>
           <BottomNavBar 
             activeView={activeView}
-            onTaskAdded={onTaskAdded}
+            onOpenCreateDialog={() => setIsCreateOpen(true)}
           />
         </>
       ) : (
@@ -69,6 +71,7 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
             onLogout={onLogout}
             firstName={firstName}
             onSearch={() => setIsSearchOpen(true)}
+            onOpenCreateDialog={() => setIsCreateOpen(true)}
           />
           <main className="flex-grow p-8 sm:p-12 overflow-auto flex flex-col">
             {children}
@@ -78,6 +81,11 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
       <GlobalSearch
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
+      />
+      <CreateDialog
+        isOpen={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onTaskAdded={onTaskAdded}
       />
     </div>
   );
