@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,6 +49,7 @@ const taskSchema = z.object({
   priority: z.string().nullable(),
   due_date: z.date().nullable(),
   loom_item_id: z.string().nullable(),
+  notes: z.string().nullable(),
 });
 
 const flowItemSchema = z.object({
@@ -77,7 +79,7 @@ const CreateDialog = ({
   
   const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { content: '', priority: null, due_date: null, loom_item_id: null },
+    defaultValues: { content: '', priority: null, due_date: null, loom_item_id: null, notes: '' },
   });
 
   const flowForm = useForm<z.infer<typeof flowItemSchema>>({
@@ -136,7 +138,7 @@ const CreateDialog = ({
     onOpenChange(false);
   };
 
-  const contentWrapperClass = "pt-4 min-h-[360px]";
+  const contentWrapperClass = "pt-4 min-h-[420px] data-[state=active]:animate-in data-[state=active]:fade-in-0";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -162,7 +164,9 @@ const CreateDialog = ({
                   <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger><SelectContent>{priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
                 )} />
               </div>
-              <Button type="submit" className="w-full mt-auto" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}</Button>
+              <Textarea {...taskForm.register('notes')} placeholder="Notes (optional)" rows={3} />
+              <div className="flex-grow" />
+              <Button type="submit" className="w-full" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}</Button>
             </form>
           </TabsContent>
           <TabsContent value="flow" className={contentWrapperClass}>
@@ -171,11 +175,19 @@ const CreateDialog = ({
               <Select onValueChange={(value) => flowForm.setValue('type', value)}><SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger><SelectContent>{loomItemTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
               <Textarea {...flowForm.register('notes')} placeholder="Description / Notes (optional)" rows={4} />
               <Input {...flowForm.register('link')} placeholder="Link (optional)" />
-              <Button type="submit" className="w-full mt-auto" disabled={flowForm.formState.isSubmitting}>{flowForm.formState.isSubmitting ? 'Creating...' : 'Create Item'}</Button>
+              <div className="flex-grow" />
+              <Button type="submit" className="w-full" disabled={flowForm.formState.isSubmitting}>{flowForm.formState.isSubmitting ? 'Creating...' : 'Create Item'}</Button>
             </form>
           </TabsContent>
           <TabsContent value="plan" className={contentWrapperClass}>
-            <MakePlanForm onPlanCreated={handlePlanCreated} />
+            <div className="flex flex-col h-full">
+              <DialogDescription>
+                Describe your goal, and the AI will generate a new project in your Flow with a list of actionable tasks to get you started.
+              </DialogDescription>
+              <div className="flex-grow">
+                <MakePlanForm onPlanCreated={handlePlanCreated} />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
