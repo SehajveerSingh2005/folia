@@ -11,21 +11,6 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Accordion,
   AccordionContent,
@@ -86,16 +71,6 @@ type LoomItem = {
   tasks: LedgerItem[];
 };
 
-const loomItemTypes = [
-  'Project',
-  'Book',
-  'Course',
-  'Writing',
-  'Open Source',
-  'Habit',
-  'Misc',
-];
-
 type ViewMode = 'list' | 'compact' | 'grid';
 type SortMode = 'newest' | 'oldest' | 'deadline' | 'name';
 
@@ -125,12 +100,10 @@ const fetchFlowData = async (): Promise<LoomItem[]> => {
 // Component
 const Flow = () => {
   const queryClient = useQueryClient();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LoomItem | null>(null);
   const [isTaskEditDialogOpen, setIsTaskEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
-  const [newItem, setNewItem] = useState({ name: '', type: '', notes: '', link: '' });
   const [newTaskContent, setNewTaskContent] = useState<{ [key: string]: string }>({});
   
   const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem('flowViewMode') as ViewMode) || 'list');
@@ -165,24 +138,6 @@ const Flow = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['flow_data'] }),
     onError: (err: Error) => showError(err.message),
   };
-
-  const addLoomItemMutation = useMutation({
-    mutationFn: async (itemData: typeof newItem) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error } = await supabase.from('loom_items').insert({
-        ...itemData, user_id: user.id, start_date: new Date().toISOString().split('T')[0]
-      });
-      if (error) throw error;
-    },
-    ...mutationOptions,
-    onSuccess: () => {
-      showSuccess('New item created!');
-      setNewItem({ name: '', type: '', notes: '', link: '' });
-      setIsAddDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['flow_data'] });
-    }
-  });
 
   const addTaskMutation = useMutation({
     mutationFn: async ({ loomId, content }: { loomId: string, content: string }) => {
@@ -268,22 +223,6 @@ const Flow = () => {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild><Button><PlusCircle className="mr-2 h-4 w-4" />New</Button></DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Create New Item</DialogTitle></DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); addLoomItemMutation.mutate(newItem); }} className="space-y-4">
-                <Input placeholder="Name (e.g., Launch new website)" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} required />
-                <Select onValueChange={(value) => setNewItem({ ...newItem, type: value })}>
-                  <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
-                  <SelectContent>{loomItemTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
-                </Select>
-                <Textarea placeholder="Description / Notes (optional)" value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
-                <Input placeholder="Link (optional)" value={newItem.link} onChange={(e) => setNewItem({ ...newItem, link: e.target.value })} />
-                <Button type="submit" className="w-full" disabled={addLoomItemMutation.isPending}>Create</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 

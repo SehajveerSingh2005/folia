@@ -1,15 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban } from 'lucide-react';
+import { ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { format, isToday, isPast, parseISO, startOfToday, isFuture } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import EditTaskDialog from './loom/EditTaskDialog';
-import AddTaskDialog from './loom/AddTaskDialog';
 import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LoomSkeleton from '../skeletons/LoomSkeleton';
@@ -53,10 +50,7 @@ const fetchProjects = async () => {
 
 const Loom = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
-  const outletContext = useOutletContext<{ setLoomRefetch: (fn: (() => void) | null) => void }>();
-  const setLoomRefetch = outletContext?.setLoomRefetch;
   const queryClient = useQueryClient();
 
   const { data: allTasks, isLoading: isLoadingTasks, error: tasksError } = useQuery<LedgerItem[]>({
@@ -73,18 +67,6 @@ const Loom = () => {
     if (tasksError) showError('Could not fetch tasks.');
     if (projectsError) showError('Could not fetch projects.');
   }, [tasksError, projectsError]);
-
-  useEffect(() => {
-    if (setLoomRefetch) {
-      const refetch = () => queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
-      setLoomRefetch(() => refetch);
-    }
-    return () => {
-      if (setLoomRefetch) {
-        setLoomRefetch(null);
-      }
-    };
-  }, [setLoomRefetch, queryClient]);
 
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ taskId, isDone }: { taskId: string; isDone: boolean }) => {
@@ -222,10 +204,6 @@ const Loom = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="w-full sm:w-auto">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
       </div>
 
       {isLoadingTasks || isLoadingProjects ? (
@@ -247,11 +225,6 @@ const Loom = () => {
         </div>
       )}
 
-      <AddTaskDialog
-        isOpen={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onTaskAdded={() => queryClient.invalidateQueries({ queryKey: ['loom_tasks'] })}
-      />
       {selectedTask && (
         <EditTaskDialog
           isOpen={isEditDialogOpen}

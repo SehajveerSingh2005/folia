@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardSkeleton from '@/components/layout/DashboardSkeleton';
+import { useQueryClient } from '@tanstack/react-query';
 
 type Profile = {
   first_name: string | null;
@@ -10,9 +11,9 @@ type Profile = {
 
 const DashboardLayoutPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loomRefetch, setLoomRefetch] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,10 +68,9 @@ const DashboardLayoutPage = () => {
     await supabase.auth.signOut();
   };
 
-  const handleTaskAdded = () => {
-    if (loomRefetch) {
-      loomRefetch();
-    }
+  const handleItemCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['flow_data'] });
   };
 
   if (loading || !profile) {
@@ -81,9 +81,9 @@ const DashboardLayoutPage = () => {
     <DashboardLayout
       firstName={profile.first_name || 'User'}
       onLogout={handleLogout}
-      onTaskAdded={handleTaskAdded}
+      onItemCreated={handleItemCreated}
     >
-      <Outlet context={{ firstName: profile.first_name || 'User', setLoomRefetch }} />
+      <Outlet context={{ firstName: profile.first_name || 'User' }} />
     </DashboardLayout>
   );
 };

@@ -11,7 +11,7 @@ interface DashboardLayoutProps {
   firstName: string;
   onLogout: () => void;
   children: React.ReactNode;
-  onTaskAdded: () => void;
+  onItemCreated: () => void;
 }
 
 const capitalize = (s: string) => {
@@ -19,7 +19,7 @@ const capitalize = (s: string) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: DashboardLayoutProps) => {
+const DashboardLayout = ({ firstName, onLogout, children, onItemCreated }: DashboardLayoutProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
 
@@ -85,7 +85,7 @@ const DashboardLayout = ({ firstName, onLogout, children, onTaskAdded }: Dashboa
       <CreateDialog
         isOpen={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        onTaskAdded={onTaskAdded}
+        onItemCreated={onItemCreated}
       />
     </div>
   );

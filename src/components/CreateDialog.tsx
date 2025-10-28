@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -32,12 +33,28 @@ import { showError, showSuccess } from '@/utils/toast';
 import MakePlanForm from './ai/MakePlanForm';
 
 const priorities = ['High', 'Medium', 'Low'];
+const loomItemTypes = [
+  'Project',
+  'Book',
+  'Course',
+  'Writing',
+  'Open Source',
+  'Habit',
+  'Misc',
+];
 
-const formSchema = z.object({
+const taskSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   priority: z.string().nullable(),
   due_date: z.date().nullable(),
   loom_item_id: z.string().nullable(),
+});
+
+const flowItemSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().optional(),
+  notes: z.string().optional(),
+  link: z.string().url().or(z.literal('')).optional(),
 });
 
 type LoomItem = {
@@ -48,167 +65,118 @@ type LoomItem = {
 interface CreateDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onTaskAdded: () => void;
+  onItemCreated: () => void;
 }
 
 const CreateDialog = ({
   isOpen,
   onOpenChange,
-  onTaskAdded,
+  onItemCreated,
 }: CreateDialogProps) => {
   const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      content: '',
-      priority: null,
-      due_date: null,
-      loom_item_id: null,
-    },
+  
+  const taskForm = useForm<z.infer<typeof taskSchema>>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: { content: '', priority: null, due_date: null, loom_item_id: null },
+  });
+
+  const flowForm = useForm<z.infer<typeof flowItemSchema>>({
+    resolver: zodResolver(flowItemSchema),
+    defaultValues: { name: '', type: '', notes: '', link: '' },
   });
 
   useEffect(() => {
     if (isOpen) {
-      form.reset();
+      taskForm.reset();
+      flowForm.reset();
       const fetchLoomItems = async () => {
-        const { data, error } = await supabase
-          .from('loom_items')
-          .select('id, name')
-          .neq('status', 'Completed');
-        if (error) {
-          showError('Could not fetch projects.');
-        } else {
-          setLoomItems(data);
-        }
+        const { data, error } = await supabase.from('loom_items').select('id, name').neq('status', 'Completed');
+        if (error) showError('Could not fetch projects.');
+        else setLoomItems(data);
       };
       fetchLoomItems();
     }
-  }, [isOpen, form]);
+  }, [isOpen, taskForm, flowForm]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onTaskSubmit = async (values: z.infer<typeof taskSchema>) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
     const { error } = await supabase.from('ledger_items').insert({
       ...values,
-      due_date: values.due_date
-        ? format(values.due_date, 'yyyy-MM-dd')
-        : null,
+      due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
       user_id: user.id,
       type: 'Task',
     });
-
-    if (error) {
-      showError(error.message);
-    } else {
+    if (error) showError(error.message);
+    else {
       showSuccess('Task created.');
-      onTaskAdded();
+      onItemCreated();
+      onOpenChange(false);
+    }
+  };
+
+  const onFlowSubmit = async (values: z.infer<typeof flowItemSchema>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('loom_items').insert({
+      ...values,
+      user_id: user.id,
+      start_date: new Date().toISOString().split('T')[0],
+    });
+    if (error) showError(error.message);
+    else {
+      showSuccess('New item created in Flow.');
+      onItemCreated();
       onOpenChange(false);
     }
   };
 
   const handlePlanCreated = () => {
-    onTaskAdded(); // This will refetch flow data
+    onItemCreated();
     onOpenChange(false);
   };
+
+  const contentWrapperClass = "pt-4 min-h-[350px] flex flex-col";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create</DialogTitle>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>Create</DialogTitle></DialogHeader>
         <Tabs defaultValue="task" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="task">New Task</TabsTrigger>
+            <TabsTrigger value="flow">New Flow Item</TabsTrigger>
             <TabsTrigger value="plan">Make a Plan</TabsTrigger>
           </TabsList>
-          <TabsContent value="task">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-              <Input {...form.register('content')} placeholder="Task content" />
-              <Controller
-                control={form.control}
-                name="loom_item_id"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Link to project (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loomItems.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+          <TabsContent value="task" className={contentWrapperClass}>
+            <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 flex flex-col flex-grow">
+              <Input {...taskForm.register('content')} placeholder="Task content" />
+              <Controller control={taskForm.control} name="loom_item_id" render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Link to project (optional)" /></SelectTrigger><SelectContent>{loomItems.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>
+              )} />
               <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  control={form.control}
-                  name="due_date"
-                  render={({ field }) => (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'justify-start text-left font-normal',
-                            !field.value && 'text-muted-foreground',
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Due Date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                         <Button
-                            variant="ghost"
-                            className="w-full rounded-t-none"
-                            onClick={() => field.onChange(null)}
-                          >
-                            Clear Date
-                          </Button>
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                />
-                <Controller
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priorities.map((p) => (
-                          <SelectItem key={p} value={p}>
-                            {p}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+                <Controller control={taskForm.control} name="due_date" render={({ field }) => (
+                  <Popover><PopoverTrigger asChild><Button variant={'outline'} className={cn('justify-start text-left font-normal', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP') : <span>Due Date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /><Button variant="ghost" className="w-full rounded-t-none" onClick={() => field.onChange(null)}>Clear Date</Button></PopoverContent></Popover>
+                )} />
+                <Controller control={taskForm.control} name="priority" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger><SelectContent>{priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
+                )} />
               </div>
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Creating...' : 'Create Task'}
-              </Button>
+              <div className="flex-grow" />
+              <Button type="submit" className="w-full" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}</Button>
             </form>
           </TabsContent>
-          <TabsContent value="plan">
+          <TabsContent value="flow" className={contentWrapperClass}>
+            <form onSubmit={flowForm.handleSubmit(onFlowSubmit)} className="space-y-4 flex flex-col flex-grow">
+              <Input {...flowForm.register('name')} placeholder="Name (e.g., Launch new website)" />
+              <Select onValueChange={(value) => flowForm.setValue('type', value)}><SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger><SelectContent>{loomItemTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
+              <Textarea {...flowForm.register('notes')} placeholder="Description / Notes (optional)" />
+              <Input {...flowForm.register('link')} placeholder="Link (optional)" />
+              <div className="flex-grow" />
+              <Button type="submit" className="w-full" disabled={flowForm.formState.isSubmitting}>{flowForm.formState.isSubmitting ? 'Creating...' : 'Create Item'}</Button>
+            </form>
+          </TabsContent>
+          <TabsContent value="plan" className={contentWrapperClass}>
             <MakePlanForm onPlanCreated={handlePlanCreated} />
           </TabsContent>
         </Tabs>
