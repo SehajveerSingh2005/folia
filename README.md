@@ -28,43 +28,41 @@ Describe a goal, and our AI planner will generate a complete project in your Flo
 
 A widget-based homepage that gives you an at-a-glance view of your day. Arrange widgets like a clock, task inbox, quick notes, and goals overview to create the perfect command center.
 
-[IMAGE OF THE DASHBOARD]
+<img width="1421" height="928" alt="screely-1761907939835" src="https://github.com/user-attachments/assets/37a8dfe0-7710-4c81-a6df-f6d06ced128f" />
 
 ### **Flow**
 
 The space for your active projects, courses, and endeavors. Each item has its own notes and a dedicated task list, helping you track progress from start to finish.
 
-[IMAGE OF THE FLOW SPACE]
+<img width="1421" height="928" alt="screely-1761908060037" src="https://github.com/user-attachments/assets/e8fcd13f-d503-468f-ac6a-a19b2a32ba17" />
 
 ### **Garden**
 
 A creative space to cultivate raw ideas and quick notes. Let your thoughts grow, find connections, and "promote" a seed of an idea into a full-fledged project in your Flow when it's ready.
 
-[IMAGE OF THE GARDEN SPACE]
+<img width="1421" height="928" alt="screely-1761908359420" src="https://github.com/user-attachments/assets/35a835c9-e605-4cbb-9a7a-a2932efcc067" />
 
 ### **Journal**
 
 A private space for daily reflection. Use the calendar to navigate through your entries, track your mood, and import completed tasks to get a clear picture of your progress.
 
-[IMAGE OF THE JOURNAL SPACE]
+<img width="1421" height="928" alt="screely-1761908392793" src="https://github.com/user-attachments/assets/9f528075-7239-4107-9d5b-f4a0775d15dc" />
 
 ### **Horizon**
 
 Your personal space for long-term planning. Set your sights on future goals, track skills you want to learn, books you want to read, or maintain a simple wishlist.
 
-[IMAGE OF THE HORIZON SPACE]
+<img width="1421" height="928" alt="screely-1761908420223" src="https://github.com/user-attachments/assets/4d902f1f-1d69-4cd2-a12c-48b254bceedf" />
 
 ### **Loom**
 
 A unified command center for all your tasks. See everything you need to do from your inbox and across all your projects in one organized, filterable view.
 
-[IMAGE OF THE LOOM SPACE]
+<img width="1421" height="928" alt="screely-1761908463750" src="https://github.com/user-attachments/assets/8c596dad-6fad-4db6-a275-dda495db2a46" />
 
 ### **Archive**
 
 A clean, organized record of your completed projects. Items from your Flow are moved here once completed, keeping your active workspace clutter-free.
-
-[IMAGE OF THE ARCHIVE]
 
 ---
 
