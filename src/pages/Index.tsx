@@ -16,6 +16,7 @@ import HeroVisual from "@/components/HeroVisual";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import CrowdSimulator from "@/components/landing/CrowdSimulator";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -38,9 +39,12 @@ const Index = () => {
       <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 z-20">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-serif font-medium">Folia</h1>
-          <Button asChild variant="ghost">
-            <Link to="/login">Log In</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button asChild variant="ghost">
+              <Link to="/login">Log In</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -49,7 +53,9 @@ const Index = () => {
         <div className="text-center max-w-3xl mx-auto px-4 z-10">
           <ScrollFadeIn>
             <h1 className="text-5xl md:text-7xl font-serif font-normal mb-6">
-              A home for your thoughts, projects, and days.
+              <span className="bg-gradient-to-r from-primary via-foreground/80 to-primary bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
+                A home for your thoughts, projects, and days.
+              </span>
             </h1>
           </ScrollFadeIn>
           <ScrollFadeIn delay={200}>
