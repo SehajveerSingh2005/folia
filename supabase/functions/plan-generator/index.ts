@@ -120,15 +120,24 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
     if (!aiResponse.ok) {
       const errorBody = await aiResponse.text()
       console.error('Cloudflare AI Error:', errorBody)
-      return new Response(JSON.stringify({ error: 'Failed to generate plan from AI.' }), {
+      return new Response(JSON.stringify({ error: 'Failed to generate plan from AI. The service may be temporarily unavailable.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       })
     }
 
     const aiResult = await aiResponse.json()
+    console.log('Raw AI Result:', JSON.stringify(aiResult, null, 2));
+
     const planJsonString = aiResult.result.response.trim().replace(/```json\n?|\n?```/g, '');
-    const plan = JSON.parse(planJsonString)
+    let plan;
+    try {
+      plan = JSON.parse(planJsonString);
+    } catch (e) {
+      console.error('Failed to parse JSON from AI response.');
+      console.error('Malformed JSON string:', planJsonString);
+      throw new Error('AI returned a malformed plan. Please try rephrasing your goal.');
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -229,7 +238,7 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
       status: 200,
     })
   } catch (error) {
-    console.error(error)
+    console.error('Error in plan-generator function:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
