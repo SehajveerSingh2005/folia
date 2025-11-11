@@ -113,7 +113,7 @@ Generate a plan with 3-5 tasks. Ensure the tasks are logical first steps. For \`
           'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, max_tokens: 1024 }),
       }
     )
 
