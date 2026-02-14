@@ -15,7 +15,7 @@ import {
   Book,
   Telescope,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 interface MobileHeaderProps {
   firstName: string;
@@ -27,7 +27,7 @@ const MobileHeader = ({ firstName, onLogout }: MobileHeaderProps) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between h-16 px-4 bg-background/80 backdrop-blur-sm border-b">
-      <Link to="/dashboard" className="flex items-center gap-2">
+      <Link href="/dashboard" className="flex items-center gap-2">
         <img src="/logo.png" alt="Folia Logo" className="h-7 w-auto" />
         <h1 className="text-xl font-serif font-medium">Folia</h1>
       </Link>
@@ -48,25 +48,25 @@ const MobileHeader = ({ firstName, onLogout }: MobileHeaderProps) => {
           </SheetHeader>
           <nav className="mt-6 space-y-2">
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
-              <Link to="/journal">
+              <Link href="/journal">
                 <Book className="mr-3 h-5 w-5" />
                 Journal
               </Link>
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
-              <Link to="/horizon">
+              <Link href="/horizon">
                 <Telescope className="mr-3 h-5 w-5" />
                 Horizon
               </Link>
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
-              <Link to="/archive">
+              <Link href="/archive">
                 <Archive className="mr-3 h-5 w-5" />
                 Archive
               </Link>
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
-              <Link to="/settings">
+              <Link href="/settings">
                 <Settings className="mr-3 h-5 w-5" />
                 Settings
               </Link>

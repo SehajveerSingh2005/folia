@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { View } from './Sidebar';
 
 const navItems: { id: View; label: string; icon: React.ElementType; path: string }[] = [
@@ -36,7 +36,7 @@ const BottomNavBar = ({ activeView, onOpenCreateDialog }: BottomNavBarProps) => 
               activeView === item.id ? 'text-primary' : 'text-muted-foreground'
             )}
           >
-            <Link to={item.path}>
+            <Link href={item.path}>
               <item.icon className="h-5 w-5" />
               {item.label}
             </Link>
@@ -63,7 +63,7 @@ const BottomNavBar = ({ activeView, onOpenCreateDialog }: BottomNavBarProps) => 
               activeView === item.id ? 'text-primary' : 'text-muted-foreground'
             )}
           >
-            <Link to={item.path}>
+            <Link href={item.path}>
               <item.icon className="h-5 w-5" />
               {item.label}
             </Link>

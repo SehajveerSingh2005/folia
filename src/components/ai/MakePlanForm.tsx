@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Wand2, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation';
 
 interface MakePlanFormProps {
   onPlanCreated: () => void;
@@ -35,26 +35,34 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('plan-generator', {
-        body: { goal },
-      });
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (error) {
-        throw new Error(error.message);
+      if (!session) {
+        throw new Error('You must be logged in to create a plan.');
       }
 
-      showSuccess('Your plan has been created!');
+      const response = await fetch('/api/ai/plan-generator', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ goal }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate plan');
+      }
+
+      showSuccess(result.message || 'Your plan has been created!');
       queryClient.invalidateQueries({ queryKey: ['flow_data'] });
       queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
       queryClient.invalidateQueries({ queryKey: ['horizon_data'] });
-      
-      onPlanCreated();
 
-      if (data.projectId) {
-        navigate('/flow');
-      } else {
-        navigate('/loom');
-      }
+      onPlanCreated();
+      navigate('/flow');
     } catch (error: any) {
       showError(error.message || 'Failed to create plan. Please try again.');
     } finally {

@@ -45,7 +45,7 @@ const TreeNode = ({ item }: TreeNodeProps) => {
           {item.priority && <Badge>{item.priority}</Badge>}
           {item.link && (
             <a href={item.link} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="xs" className="h-6 px-2">
+              <Button variant="outline" size="sm" className="h-6 px-2">
                 <LinkIcon className="mr-1 h-3 w-3" /> Link
               </Button>
             </a>

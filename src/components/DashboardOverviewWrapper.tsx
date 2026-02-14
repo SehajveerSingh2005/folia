@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useOutletContext } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from '@/lib/navigation';
 import DashboardOverview from '@/components/DashboardOverview';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil } from 'lucide-react';
 import AddWidgetSheet, { availableWidgets } from '@/components/dashboard/AddWidgetSheet';
@@ -10,13 +10,31 @@ import { cn } from '@/lib/utils';
 import { showSuccess } from '@/utils/toast';
 
 const DashboardOverviewWrapper = () => {
-  const { firstName } = useOutletContext<{ firstName: string }>();
+  const [firstName, setFirstName] = useState('User');
   const navigate = useNavigate();
   const [isEditable, setIsEditable] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [addWidgetTrigger, setAddWidgetTrigger] = useState<any>(null);
   const saveLayoutRef = useRef<(() => Promise<void>) | null>(null);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.first_name) {
+          setFirstName(profile.first_name);
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleAddWidget = (widget: typeof availableWidgets[0]) => {
     setAddWidgetTrigger({ ...widget, id: Date.now() });

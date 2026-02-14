@@ -154,7 +154,7 @@ const CrowdSimulator: React.FC = () => {
     }
 
     function render() {
-      if (canvas) {
+      if (canvas && ctx) {
         canvas.width = canvas.width;
         ctx.save();
         ctx.scale(devicePixelRatio, devicePixelRatio);

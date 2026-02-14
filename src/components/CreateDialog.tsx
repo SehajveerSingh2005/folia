@@ -76,7 +76,7 @@ const CreateDialog = ({
   onItemCreated,
 }: CreateDialogProps) => {
   const [loomItems, setLoomItems] = useState<LoomItem[]>([]);
-  
+
   const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: { content: '', priority: null, due_date: null, loom_item_id: null, notes: '' },
@@ -92,44 +92,62 @@ const CreateDialog = ({
       taskForm.reset();
       flowForm.reset();
       const fetchLoomItems = async () => {
-        const { data, error } = await supabase.from('loom_items').select('id, name').neq('status', 'Completed');
-        if (error) showError('Could not fetch projects.');
-        else setLoomItems(data);
+        try {
+          const response = await fetch('/api/projects');
+          if (!response.ok) throw new Error('Failed to fetch projects');
+          const result = await response.json();
+          const data = result.data || [];
+          // Filter out completed projects
+          const activeProjects = data.filter((item: LoomItem & { status?: string }) => item.status !== 'Completed');
+          setLoomItems(activeProjects);
+        } catch (error) {
+          showError('Could not fetch projects.');
+        }
       };
       fetchLoomItems();
     }
   }, [isOpen, taskForm, flowForm]);
 
   const onTaskSubmit = async (values: z.infer<typeof taskSchema>) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { error } = await supabase.from('ledger_items').insert({
-      ...values,
-      due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
-      user_id: user.id,
-      type: 'Task',
-    });
-    if (error) showError(error.message);
-    else {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...values,
+          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
+          type: 'Task',
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create task');
+
       showSuccess('Task created.');
       onItemCreated();
       onOpenChange(false);
+    } catch (error: any) {
+      showError(error.message || 'Failed to create task');
     }
   };
 
   const onFlowSubmit = async (values: z.infer<typeof flowItemSchema>) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { error } = await supabase.from('loom_items').insert({
-      ...values,
-      user_id: user.id,
-      start_date: new Date().toISOString().split('T')[0],
-    });
-    if (error) showError(error.message);
-    else {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...values,
+          start_date: new Date().toISOString().split('T')[0],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create loom item');
+
       showSuccess('New item created in Flow.');
       onItemCreated();
       onOpenChange(false);
+    } catch (error: any) {
+      showError(error.message || 'Failed to create loom item');
     }
   };
 
@@ -158,7 +176,7 @@ const CreateDialog = ({
               )} />
               <div className="grid grid-cols-2 gap-4">
                 <Controller control={taskForm.control} name="due_date" render={({ field }) => (
-                  <Popover><PopoverTrigger asChild><Button variant={'outline'} className={cn('justify-start text-left font-normal', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP') : <span>Due Date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /><Button variant="ghost" className="w-full rounded-t-none" onClick={() => field.onChange(null)}>Clear Date</Button></PopoverContent></Popover>
+                  <Popover><PopoverTrigger asChild><Button variant={'outline'} className={cn('justify-start text-left font-normal', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP') : <span>Due Date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} initialFocus /><Button variant="ghost" className="w-full rounded-t-none" onClick={() => field.onChange(null)}>Clear Date</Button></PopoverContent></Popover>
                 )} />
                 <Controller control={taskForm.control} name="priority" render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value || ''}><SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger><SelectContent>{priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>

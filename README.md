@@ -72,12 +72,12 @@ A clean, organized record of your completed projects. Items from your Flow are m
 
 Folia is built with a modern, robust, and scalable tech stack:
 
--   **Frontend:** [React](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/) and [Vite](https://vitejs.dev/)
+-   **Frontend:** [Next.js](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/)
 -   **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Row Level Security)
 -   **AI Integration:** [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
 -   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 -   **UI Components:** [shadcn/ui](https://ui.shadcn.com/)
--   **Routing:** [React Router](https://reactrouter.com/)
+-   **Routing:** [Next.js App Router](https://nextjs.org/docs/app)
 -   **State Management:** [TanStack Query](https://tanstack.com/query/latest)
 -   **Form Handling:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
 

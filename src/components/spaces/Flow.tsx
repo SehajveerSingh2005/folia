@@ -76,24 +76,24 @@ type SortMode = 'newest' | 'oldest' | 'deadline' | 'name';
 
 // Data Fetching
 const fetchFlowData = async (): Promise<LoomItem[]> => {
-  const { data: loomData, error: loomError } = await supabase
-    .from('loom_items')
-    .select('*')
-    .neq('status', 'Completed')
-    .order('created_at', { ascending: false });
+  // Fetch projects from API
+  const projectsResponse = await fetch('/api/projects');
+  if (!projectsResponse.ok) throw new Error('Could not fetch projects.');
+  const projectsData = await projectsResponse.json();
+  const loomData = projectsData.data || projectsData; // Handle both { data: [] } and [] formats
 
-  if (loomError) throw new Error('Could not fetch projects.');
+  // Filter out completed projects
+  const activeProjects = loomData.filter((item: LoomItem) => item.status !== 'Completed');
 
-  const { data: ledgerData, error: ledgerError } = await supabase
-    .from('ledger_items')
-    .select('*')
-    .order('created_at', { ascending: true });
+  // Fetch all tasks from API
+  const tasksResponse = await fetch('/api/tasks');
+  if (!tasksResponse.ok) throw new Error('Could not fetch tasks.');
+  const tasksData = await tasksResponse.json();
+  const ledgerData = tasksData.data || tasksData; // Handle both { data: [] } and [] formats
 
-  if (ledgerError) throw new Error('Could not fetch tasks.');
-
-  return loomData.map((item) => ({
+  return activeProjects.map((item: LoomItem) => ({
     ...item,
-    tasks: ledgerData?.filter((task) => task.loom_item_id === item.id) || [],
+    tasks: ledgerData?.filter((task: LedgerItem) => task.loom_item_id === item.id) || [],
   }));
 };
 
@@ -105,7 +105,7 @@ const Flow = () => {
   const [isTaskEditDialogOpen, setIsTaskEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
   const [newTaskContent, setNewTaskContent] = useState<{ [key: string]: string }>({});
-  
+
   const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem('flowViewMode') as ViewMode) || 'list');
   const [sortMode, setSortMode] = useState<SortMode>(() => (localStorage.getItem('flowSortMode') as SortMode) || 'newest');
 
@@ -121,15 +121,15 @@ const Flow = () => {
     if (!activeItems) return [];
     const itemsToSort = [...activeItems];
     itemsToSort.sort((a, b) => {
-        switch (sortMode) {
-            case 'oldest': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-            case 'deadline':
-                if (!a.deadline_date) return 1;
-                if (!b.deadline_date) return -1;
-                return new Date(a.deadline_date).getTime() - new Date(b.deadline_date).getTime();
-            case 'name': return a.name.localeCompare(b.name);
-            case 'newest': default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        }
+      switch (sortMode) {
+        case 'oldest': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'deadline':
+          if (!a.deadline_date) return 1;
+          if (!b.deadline_date) return -1;
+          return new Date(a.deadline_date).getTime() - new Date(b.deadline_date).getTime();
+        case 'name': return a.name.localeCompare(b.name);
+        case 'newest': default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
     });
     return itemsToSort;
   }, [activeItems, sortMode]);
@@ -141,10 +141,12 @@ const Flow = () => {
 
   const addTaskMutation = useMutation({
     mutationFn: async ({ loomId, content }: { loomId: string, content: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error } = await supabase.from('ledger_items').insert({ content, loom_item_id: loomId, user_id: user.id, type: 'Task' });
-      if (error) throw error;
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, loom_item_id: loomId, type: 'Task' }),
+      });
+      if (!response.ok) throw new Error('Failed to create task');
     },
     ...mutationOptions,
     onSuccess: (_, vars) => {
@@ -156,16 +158,29 @@ const Flow = () => {
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ taskId, isDone }: { taskId: string, isDone: boolean }) => {
       const newStatus = !isDone;
-      const { error } = await supabase.from('ledger_items').update({
-        is_done: newStatus, completed_at: newStatus ? new Date().toISOString() : null
-      }).eq('id', taskId);
-      if (error) throw error;
+      const response = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          is_done: newStatus,
+          completed_at: newStatus ? new Date().toISOString() : null
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update task');
     },
     ...mutationOptions
   });
 
   const archiveLoomItemMutation = useMutation({
-    mutationFn: (loomId: string) => supabase.from('loom_items').update({ status: 'Completed' }).eq('id', loomId),
+    mutationFn: async (loomId: string) => {
+      const response = await fetch('/api/projects', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: loomId, status: 'Completed' }),
+      });
+      if (!response.ok) throw new Error('Failed to archive project');
+    },
     ...mutationOptions,
     onSuccess: () => {
       showSuccess('Item moved to Archive.');
@@ -175,7 +190,12 @@ const Flow = () => {
   });
 
   const deleteLoomItemMutation = useMutation({
-    mutationFn: (loomId: string) => supabase.from('loom_items').delete().eq('id', loomId),
+    mutationFn: async (loomId: string) => {
+      const response = await fetch(`/api/projects?id=${loomId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete project');
+    },
     ...mutationOptions,
     onSuccess: () => {
       showSuccess('Item deleted.');
@@ -279,7 +299,7 @@ const Flow = () => {
                   <div className="text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pt-2">
                     <span>Started: {item.start_date ? format(new Date(item.start_date), 'MMM d, yyyy') : 'Not set'}</span>
                     <span>Deadline: {item.deadline_date ? format(new Date(item.deadline_date), 'MMM d, yyyy') : 'Not set'}</span>
-                    {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Button variant="outline" size="xs" className="h-6 px-2"><LinkIcon className="mr-1 h-3 w-3" />Link</Button></a>}
+                    {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Button variant="outline" size="sm" className="h-6 px-2"><LinkIcon className="mr-1 h-3 w-3" />Link</Button></a>}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow">

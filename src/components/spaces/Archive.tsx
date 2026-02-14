@@ -25,13 +25,12 @@ type LoomItem = {
 };
 
 const fetchCompletedItems = async (): Promise<LoomItem[]> => {
-  const { data, error } = await supabase
-    .from('loom_items')
-    .select('id, name, type')
-    .eq('status', 'Completed')
-    .order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  return data || [];
+  const response = await fetch('/api/projects');
+  if (!response.ok) throw new Error('Failed to fetch archived items');
+  const result = await response.json();
+  const data = result.data || result; // Handle both { data: [] } and [] formats
+  // Filter only completed items
+  return data.filter((item: LoomItem & { status?: string }) => item.status === 'Completed');
 };
 
 const Archive = () => {
@@ -43,11 +42,12 @@ const Archive = () => {
 
   const unarchiveMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from('loom_items')
-        .update({ status: 'Active' })
-        .eq('id', itemId);
-      if (error) throw new Error(error.message);
+      const response = await fetch('/api/projects', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId, status: 'Active' }),
+      });
+      if (!response.ok) throw new Error('Failed to unarchive item');
     },
     onSuccess: () => {
       showSuccess('Item moved back to Flow.');
@@ -59,8 +59,8 @@ const Archive = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase.from('loom_items').delete().eq('id', itemId);
-      if (error) throw new Error(error.message);
+      const response = await fetch(`/api/projects?id=${itemId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete item');
     },
     onSuccess: () => {
       showSuccess('Item permanently deleted.');

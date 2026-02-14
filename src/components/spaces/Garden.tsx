@@ -55,12 +55,10 @@ const loomItemTypes = [
 
 // Data Fetching
 const fetchGardenItems = async (): Promise<GardenItem[]> => {
-  const { data, error } = await supabase
-    .from('garden_items')
-    .select('id, content, category, created_at')
-    .order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  return data || [];
+  const response = await fetch('/api/garden');
+  if (!response.ok) throw new Error('Failed to fetch garden items');
+  const result = await response.json();
+  return result.data || result; // Handle both { data: [] } and [] formats
 };
 
 // Component
@@ -87,10 +85,12 @@ const Garden = () => {
 
   const addItemMutation = useMutation({
     mutationFn: async (itemData: typeof newItem) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error } = await supabase.from('garden_items').insert({ ...itemData, user_id: user.id });
-      if (error) throw error;
+      const response = await fetch('/api/garden', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData),
+      });
+      if (!response.ok) throw new Error('Failed to add garden item');
     },
     ...mutationOptions,
     onSuccess: () => {
@@ -101,8 +101,12 @@ const Garden = () => {
 
   const updateItemMutation = useMutation({
     mutationFn: async (itemData: GardenItem) => {
-      const { error } = await supabase.from('garden_items').update({ content: itemData.content, category: itemData.category }).eq('id', itemData.id);
-      if (error) throw error;
+      const response = await fetch('/api/garden', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemData.id, content: itemData.content, category: itemData.category }),
+      });
+      if (!response.ok) throw new Error('Failed to update garden item');
     },
     ...mutationOptions,
     onSuccess: () => {
@@ -113,19 +117,27 @@ const Garden = () => {
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId: string) => supabase.from('garden_items').delete().eq('id', itemId),
+    mutationFn: async (itemId: string) => {
+      const response = await fetch(`/api/garden?id=${itemId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete garden item');
+    },
     ...mutationOptions,
     onSuccess: () => showSuccess('Note deleted.'),
   });
 
   const promoteItemMutation = useMutation({
     mutationFn: async ({ item, promotedData }: { item: GardenItem, promotedData: typeof promotedItem }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error: loomError } = await supabase.from('loom_items').insert({ name: promotedData.name, type: promotedData.type, user_id: user.id });
-      if (loomError) throw loomError;
-      const { error: gardenError } = await supabase.from('garden_items').delete().eq('id', item.id);
-      if (gardenError) throw gardenError;
+      // Create loom item
+      const createResponse = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: promotedData.name, type: promotedData.type }),
+      });
+      if (!createResponse.ok) throw new Error('Failed to create loom item');
+
+      // Delete garden item
+      const deleteResponse = await fetch(`/api/garden?id=${item.id}`, { method: 'DELETE' });
+      if (!deleteResponse.ok) throw new Error('Failed to delete garden item');
     },
     onSuccess: () => {
       showSuccess('Idea promoted to Flow!');

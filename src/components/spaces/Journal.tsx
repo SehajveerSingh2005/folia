@@ -28,15 +28,30 @@ const moodOptions = ['Excellent', 'Good', 'Neutral', 'Low', 'Bad'];
 
 // Data Fetching
 const fetchEntry = async (date: string): Promise<Partial<ChronicleEntry>> => {
-  const { data, error } = await supabase.from('chronicle_entries').select('*').eq('entry_date', date).single();
-  if (error && error.code !== 'PGRST116') throw new Error(error.message);
-  return data || { entry: '', mood: 'Neutral', entry_date: date };
+  try {
+    const response = await fetch(`/api/journal?date=${date}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { entry: '', mood: 'Neutral', entry_date: date };
+      }
+      throw new Error('Failed to fetch journal entry');
+    }
+    const data = await response.json();
+    return data.entry || { entry: '', mood: 'Neutral', entry_date: date };
+  } catch (error) {
+    return { entry: '', mood: 'Neutral', entry_date: date };
+  }
 };
 
 const fetchCompletedTasks = async (date: string): Promise<CompletedTask[]> => {
-  const { data, error } = await supabase.from('ledger_items').select('id, content, notes, loom_items(name)').eq('is_done', true).gte('completed_at', `${date}T00:00:00.000Z`).lte('completed_at', `${date}T23:59:59.999Z`);
-  if (error) throw new Error(error.message);
-  return data || [];
+  try {
+    const response = await fetch(`/api/journal?date=${date}`);
+    if (!response.ok) throw new Error('Failed to fetch completed tasks');
+    const data = await response.json();
+    return data.completedTasks || [];
+  } catch (error) {
+    return [];
+  }
 };
 
 // Component
@@ -74,11 +89,12 @@ const Journal = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (entryData: Partial<ChronicleEntry>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const dataToSave = { ...entryData, user_id: user.id, entry_date: formattedDate };
-      const { error } = await supabase.from('chronicle_entries').upsert(dataToSave, { onConflict: 'user_id, entry_date' });
-      if (error) throw error;
+      const response = await fetch('/api/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...entryData, entry_date: formattedDate }),
+      });
+      if (!response.ok) throw new Error('Failed to save journal entry');
     },
     onSuccess: () => {
       showSuccess('Journal entry saved.');

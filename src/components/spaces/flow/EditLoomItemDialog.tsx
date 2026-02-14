@@ -187,7 +187,7 @@ const EditLoomItemDialog = ({
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value || undefined}
                       onSelect={field.onChange}
                       initialFocus
                     />
@@ -219,7 +219,7 @@ const EditLoomItemDialog = ({
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value || undefined}
                       onSelect={field.onChange}
                     />
                   </PopoverContent>

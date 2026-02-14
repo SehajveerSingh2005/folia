@@ -61,17 +61,14 @@ type ViewMode = 'list' | 'tree' | 'compact';
 
 // --- DATA FETCHING ---
 const fetchHorizonData = async (): Promise<HorizonData> => {
-  const { data: horizonItems, error: horizonError } = await supabase.from('horizon_items').select('*');
-  if (horizonError) throw new Error(horizonError.message);
-  const { data: loomItems, error: loomError } = await supabase.from('loom_items').select('id, name').neq('status', 'Completed');
-  if (loomError) throw new Error(loomError.message);
-  const { data: links, error: linksError } = await supabase.from('horizon_flow_links').select('horizon_item_id, loom_item_id');
-  if (linksError) throw new Error(linksError.message);
+  const response = await fetch('/api/horizon');
+  if (!response.ok) throw new Error('Failed to fetch horizon data');
+  const { items: horizonItems, links, projects: loomItems } = await response.json();
 
-  const itemsById = new Map(horizonItems.map((item) => [item.id, { ...item, children: [], linked_projects: [] }]));
-  links.forEach((link) => {
+  const itemsById = new Map<string, HorizonItemNode>(horizonItems.map((item: HorizonItem) => [item.id, { ...item, children: [], linked_projects: [] }]));
+  links.forEach((link: any) => {
     const horizonItem = itemsById.get(link.horizon_item_id);
-    const loomItem = loomItems.find((l) => l.id === link.loom_item_id);
+    const loomItem = loomItems.find((l: LoomItemStub) => l.id === link.loom_item_id);
     if (horizonItem && loomItem) horizonItem.linked_projects.push({ id: loomItem.id, name: loomItem.name });
   });
 
@@ -107,10 +104,12 @@ const Horizon = () => {
 
   const addItemMutation = useMutation({
     mutationFn: async (itemData: typeof newItem) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error } = await supabase.from('horizon_items').insert({ ...itemData, user_id: user.id });
-      if (error) throw error;
+      const response = await fetch('/api/horizon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData),
+      });
+      if (!response.ok) throw new Error('Failed to add horizon item');
     },
     ...mutationOptions,
     onSuccess: () => {
@@ -121,7 +120,10 @@ const Horizon = () => {
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId: string) => supabase.from('horizon_items').delete().eq('id', itemId),
+    mutationFn: async (itemId: string) => {
+      const response = await fetch(`/api/horizon?id=${itemId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete horizon item');
+    },
     ...mutationOptions,
     onSuccess: () => {
       showSuccess('Item removed.');
@@ -131,10 +133,15 @@ const Horizon = () => {
 
   const linkProjectMutation = useMutation({
     mutationFn: async ({ horizon_item_id, loom_item_id }: { horizon_item_id: string, loom_item_id: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-      const { error } = await supabase.from('horizon_flow_links').insert({ user_id: user.id, horizon_item_id, loom_item_id });
-      if (error) throw error;
+      const response = await fetch('/api/horizon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'link', horizon_item_id, loom_item_id }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to link project');
+      }
     },
     ...mutationOptions,
     onSuccess: () => {
@@ -142,7 +149,7 @@ const Horizon = () => {
       setIsLinkDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['horizon_data'] });
     },
-    onError: (err: any) => showError(err.code === '23505' ? 'This project is already linked.' : err.message),
+    onError: (err: any) => showError(err.message.includes('duplicate') || err.message.includes('already') ? 'This project is already linked.' : err.message),
   });
 
   if (error) showError('Could not fetch horizon data.');
@@ -233,7 +240,7 @@ const HorizonSmartListItem = ({ item, level, onAddSubGoal, onDelete, onLinkProje
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
             {item.type && <Badge variant="secondary">{item.type}</Badge>}
             {item.priority && <Badge>{item.priority}</Badge>}
-            {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="xs" className="h-6 px-2"><LinkIcon className="mr-1 h-3 w-3" /> Link</Button></a>}
+            {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm" className="h-6 px-2"><LinkIcon className="mr-1 h-3 w-3" /> Link</Button></a>}
           </div>
         </div>
         <DropdownMenu>

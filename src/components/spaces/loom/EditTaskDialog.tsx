@@ -29,7 +29,6 @@ import {
 import { CalendarIcon, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 
 const priorities = ['High', 'Medium', 'Low'];
@@ -81,34 +80,37 @@ const EditTaskDialog = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!task) return;
 
-    const { error } = await supabase
-      .from('ledger_items')
-      .update({
-        ...values,
-        due_date: values.due_date
-          ? format(values.due_date, 'yyyy-MM-dd')
-          : null,
-      })
-      .eq('id', task.id);
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: task.id,
+          ...values,
+          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
+        }),
+      });
 
-    if (error) {
-      showError(error.message);
-    } else {
+      if (!response.ok) throw new Error('Failed to update task');
+
       showSuccess('Task updated.');
       onTaskUpdated();
       onOpenChange(false);
+    } catch (error: any) {
+      showError(error.message || 'Failed to update task');
     }
   };
 
   const handleDeleteTask = async () => {
     if (!task) return;
-    const { error } = await supabase.from('ledger_items').delete().eq('id', task.id);
-    if (error) {
-      showError(error.message);
-    } else {
+    try {
+      const response = await fetch(`/api/tasks?id=${task.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete task');
       showSuccess('Task deleted.');
       onTaskUpdated();
       onOpenChange(false);
+    } catch (error: any) {
+      showError(error.message || 'Failed to delete task');
     }
   };
 
@@ -148,7 +150,7 @@ const EditTaskDialog = ({
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value || undefined}
                       onSelect={field.onChange}
                       disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
