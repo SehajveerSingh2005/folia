@@ -36,53 +36,47 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate comprehensive prompt for AI
-        const prompt = `You are an AI planning assistant. Your task is to create a comprehensive, actionable plan based on the user's goal.
-
+        const prompt = `You are an AI planning assistant.
 User's Goal: "${goal}"
 
-Generate a detailed project plan in JSON format. Analyze the goal and determine the most appropriate plan type:
+Generate a detailed project plan in JSON.
+IMPORTANT: Return only raw JSON. No markdown. No comments.
 
-1. **Project with Tasks**: Use this when the goal requires a coordinated effort with multiple related tasks (e.g., "Plan a trip to Italy", "Build a portfolio website", "Learn to play guitar").
+Plan Types:
+1. "project": coordinated effort (e.g., "Build a website").
+2. "tasks": independent tasks (e.g., "Grocery list").
+3. "future": aspirational (e.g., "Visit Antarctica").
 
-2. **Standalone Tasks**: Use this when the goal is simple and can be broken into independent, unrelated tasks (e.g., "Things to do this weekend", "Grocery shopping list").
-
-3. **Future Goal**: Use this when the goal is aspirational or long-term with no immediate tasks (e.g., "Someday visit Antarctica", "Learn Japanese when I retire"). For this type, create a horizon_item only.
-
-**Output Format:**
-
+Output Format:
 {
   "type": "project" | "tasks" | "future",
   "project": {
-    "name": "Clear, descriptive project name",
-    "type": "Project" | "Learning" | "Creative" | "Career" | "Personal",
-    "deadline_date": "YYYY-MM-DD" or null,
-    "notes": "Brief description or context"
+    "name": "Project Name",
+    "type": "Project" | "Course",
+    "deadline_date": "YYYY-MM-DD",
+    "notes": "Context"
   },
   "tasks": [
     {
-      "content": "Specific, actionable task description",
+      "content": "Task description",
       "priority": "High" | "Medium" | "Low",
-      "due_date": "YYYY-MM-DD" or null,
-      "notes": "Additional context or tips"
+      "due_date": "YYYY-MM-DD",
+      "notes": "Tips"
     }
   ],
   "horizon_item": {
     "title": "Goal title",
-    "description": "Detailed description",
+    "description": "Description",
     "timeframe": "Short-term" | "Medium-term" | "Long-term" | "Someday"
   }
 }
 
-**Rules:**
-1. For "project" type: Include project object and tasks array (3-7 tasks).
-2. For "tasks" type: Include only tasks array (2-5 tasks), set project to null.
-3. For "future" type: Include only horizon_item, set project and tasks to null.
-4. Use realistic deadlines based on the goal's complexity.
-5. Prioritize tasks logically (first tasks should be "High" priority).
-6. Make task descriptions clear and actionable.
-7. Keep notes concise and helpful.
-
-Generate the plan now:`;
+Rules:
+- "project": include project + 3-7 tasks.
+- "tasks": tasks array only (2-5 tasks).
+- "future": horizon_item only.
+- Use realistic deadlines.
+- JSON only.`;
 
         // Call Cloudflare AI
         const aiResponse = await fetch(
@@ -95,7 +89,7 @@ Generate the plan now:`;
                 },
                 body: JSON.stringify({
                     prompt,
-                    max_tokens: 1024,
+                    max_tokens: 2048,
                 }),
             }
         );
@@ -110,12 +104,37 @@ Generate the plan now:`;
         const aiText = aiData.result?.response || '';
 
         // Extract JSON from AI response
-        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+        // clean up the response
+        let cleanText = aiText.trim();
+
+        // Remove markdown code blocks if present
+        if (cleanText.includes('```')) {
+            cleanText = cleanText.replace(/```json/g, '').replace(/```/g, '');
         }
 
-        const plan = JSON.parse(jsonMatch[0]);
+        // Find the first '{' and last '}'
+        const firstOpen = cleanText.indexOf('{');
+        const lastClose = cleanText.lastIndexOf('}');
+
+        if (firstOpen !== -1 && lastClose !== -1) {
+            cleanText = cleanText.substring(firstOpen, lastClose + 1);
+        }
+
+        let plan;
+        try {
+            plan = JSON.parse(cleanText);
+        } catch (e) {
+            // Attempt to fix common JSON errors (very basic)
+            console.warn('Initial JSON parse failed, attempting cleanup:', e);
+            try {
+                // Fix trailing commas
+                const fixedText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                plan = JSON.parse(fixedText);
+            } catch (retryError) {
+                console.error('Failed to parse AI response:', cleanText);
+                return NextResponse.json({ error: 'Failed to generate a valid plan. Please try again.' }, { status: 500 });
+            }
+        }
 
         // Insert data based on plan type
         if (plan.type === 'future') {
@@ -132,6 +151,7 @@ Generate the plan now:`;
                 .single();
 
             if (horizonError) {
+                console.error('Error creating horizon item:', horizonError);
                 return NextResponse.json({ error: horizonError.message }, { status: 500 });
             }
 
@@ -158,6 +178,7 @@ Generate the plan now:`;
                 .single();
 
             if (projectError) {
+                console.error('Error creating project:', projectError);
                 return NextResponse.json({ error: projectError.message }, { status: 500 });
             }
 
@@ -178,6 +199,7 @@ Generate the plan now:`;
                 .select();
 
             if (tasksError) {
+                console.error('Error creating tasks:', tasksError);
                 return NextResponse.json({ error: tasksError.message }, { status: 500 });
             }
 
