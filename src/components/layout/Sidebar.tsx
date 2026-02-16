@@ -46,6 +46,7 @@ interface SidebarProps {
   onOpenCreateDialog: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onOpenSettings: () => void;
 }
 
 const Sidebar = ({
@@ -56,6 +57,7 @@ const Sidebar = ({
   onOpenCreateDialog,
   isCollapsed,
   onToggleCollapse,
+  onOpenSettings,
 }: SidebarProps) => {
   const router = useRouter();
 
@@ -185,7 +187,7 @@ const Sidebar = ({
                   <Button
                     variant="ghost"
                     className="w-full text-md font-normal p-0 h-12 flex justify-center"
-                    onClick={() => router.push('/settings')}
+                    onClick={onOpenSettings}
                   >
                     <Settings className="h-5 w-5" />
                   </Button>
@@ -196,7 +198,7 @@ const Sidebar = ({
               <Button
                 variant="ghost"
                 className="w-full text-md font-normal px-3 py-6 justify-start"
-                onClick={() => router.push('/settings')}
+                onClick={onOpenSettings}
               >
                 <Settings className="h-5 w-5 mr-3" />
                 Settings

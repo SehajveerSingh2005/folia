@@ -42,6 +42,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import ProjectCard from './flow/ProjectCard'; // Import ProjectCard
+import ProjectDetailSheet from './flow/ProjectDetailSheet'; // Import ProjectDetailSheet
 import EditLoomItemDialog from './flow/EditLoomItemDialog';
 import EditTaskDialog from './loom/EditTaskDialog';
 import { cn } from '@/lib/utils';
@@ -249,94 +251,53 @@ const Flow = () => {
       {isLoading ? <FlowSkeleton /> : sortedItems.length === 0 ? (
         <div className="text-center py-12"><p className="text-lg text-foreground/70">Your flow is clear!</p><p className="text-sm text-foreground/50">Create a new item to get started.</p></div>
       ) : (
-        <div className={cn(viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4')}>
-          {sortedItems.map((item) =>
-            viewMode === 'compact' ? (
-              <Card key={item.id} className="p-3">
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex items-center gap-3 flex-grow overflow-hidden">
-                    <div className="flex-grow overflow-hidden">
-                      <p className="font-medium truncate">{item.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span>{item.type}</span>
-                        {item.status && <>•<Badge variant="outline">{item.status}</Badge></>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                    {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8"><LinkIcon className="h-4 w-4" /></Button></a>}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => openEditDialog(item)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => archiveLoomItemMutation.mutate(item.id)}><Archive className="mr-2 h-4 w-4" />Archive</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => deleteLoomItemMutation.mutate(item.id)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              <Card key={item.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="font-sans font-medium">{item.name}</CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <span>{item.type}</span>
-                        {item.status && <>•<Badge variant="outline">{item.status}</Badge></>}
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => openEditDialog(item)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => archiveLoomItemMutation.mutate(item.id)}><Archive className="mr-2 h-4 w-4" />Archive</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => deleteLoomItemMutation.mutate(item.id)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pt-2">
-                    <span>Started: {item.start_date ? format(new Date(item.start_date), 'MMM d, yyyy') : 'Not set'}</span>
-                    <span>Deadline: {item.deadline_date ? format(new Date(item.deadline_date), 'MMM d, yyyy') : 'Not set'}</span>
-                    {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Button variant="outline" size="sm" className="h-6 px-2"><LinkIcon className="mr-1 h-3 w-3" />Link</Button></a>}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="notes"><AccordionTrigger>Notes</AccordionTrigger><AccordionContent className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">{item.notes || 'No notes yet.'}</AccordionContent></AccordionItem>
-                    <AccordionItem value="tasks">
-                      <AccordionTrigger>Tasks ({item.tasks.filter((t) => t.is_done).length}/{item.tasks.length})</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2">
-                          {item.tasks.map((task) => (
-                            <div key={task.id} className="flex items-center gap-3 group p-1 rounded-md hover:bg-secondary/50">
-                              <Checkbox id={`flow-task-${task.id}`} checked={task.is_done} onCheckedChange={() => toggleTaskMutation.mutate({ taskId: task.id, isDone: task.is_done })} onClick={(e) => e.stopPropagation()} />
-                              <label htmlFor={`flow-task-${task.id}`} className={`flex-grow cursor-pointer ${task.is_done ? 'line-through text-foreground/50' : ''}`} onClick={() => openTaskEditDialog(task)}>{task.content}</label>
-                              <div className="flex items-center gap-2 ml-auto">
-                                {task.notes && <StickyNote className="h-3 w-3 text-muted-foreground" />}
-                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); openTaskEditDialog(task); }}><Pencil className="h-3 w-3" /></Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </CardContent>
-                <CardFooter>
-                  <form onSubmit={(e) => { e.preventDefault(); addTaskMutation.mutate({ loomId: item.id, content: newTaskContent[item.id] || '' }); }} className="flex gap-2 w-full">
-                    <Input placeholder="Add a task..." value={newTaskContent[item.id] || ''} onChange={(e) => setNewTaskContent({ ...newTaskContent, [item.id]: e.target.value })} />
-                    <Button type="submit" variant="ghost" size="icon" disabled={addTaskMutation.isPending}><PlusCircle className="h-5 w-5" /></Button>
-                  </form>
-                </CardFooter>
-              </Card>
-            )
-          )}
+        <div className={cn(
+          viewMode === 'list' ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+        )}>
+          {sortedItems.map((item) => {
+            // Calculate progress
+            const totalTasks = item.tasks.length;
+            const completedTasks = item.tasks.filter(t => t.is_done);
+            const completedCount = item.tasks.filter(t => t.is_done).length;
+            const progress = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+
+            // Map tasks to ProjectCard format
+            const cardTasks = item.tasks.map(t => ({
+              id: t.id,
+              content: t.content,
+              completed: t.is_done,
+              due_date: t.due_date ? new Date(t.due_date) : undefined
+            }));
+
+            return (
+              <ProjectCard
+                key={item.id}
+                project={{
+                  id: item.id,
+                  name: item.name,
+                  status: (item.status as any) || 'Active', // Cast or ensure type
+                  progress: progress,
+                  due_date: item.deadline_date || undefined,
+                  tasks: cardTasks
+                }}
+                onClick={() => { setSelectedItem(item); setIsEditDialogOpen(true); }} // Reusing state for now, but better name would be setIsDetailOpen
+                onEdit={() => { setSelectedItem(item); setIsEditDialogOpen(true); }}
+                onDelete={() => deleteLoomItemMutation.mutate(item.id)}
+              />
+            );
+          })}
         </div>
       )}
-      {selectedItem && <EditLoomItemDialog isOpen={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} item={selectedItem} onItemUpdated={() => queryClient.invalidateQueries({ queryKey: ['flow_data'] })} />}
-      {selectedTask && <EditTaskDialog isOpen={isTaskEditDialogOpen} onOpenChange={setIsTaskEditDialogOpen} task={selectedTask} onTaskUpdated={() => queryClient.invalidateQueries({ queryKey: ['flow_data'] })} />}
+
+      {/* Detail Sheet replaces old Edit Dialog for "viewing" */}
+      {selectedItem && (
+        <ProjectDetailSheet
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          project={selectedItem}
+          onProjectUpdated={() => queryClient.invalidateQueries({ queryKey: ['flow_data'] })}
+        />
+      )}
     </div>
   );
 };
