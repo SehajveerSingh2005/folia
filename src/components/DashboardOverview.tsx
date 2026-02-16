@@ -126,14 +126,14 @@ const DashboardOverview = ({
             layoutData.layouts &&
             typeof layoutData.layouts === 'object' &&
             !Array.isArray(layoutData.layouts) &&
-            Object.keys(layoutData.layouts).length > 0;
+            Object.keys(layoutData.layouts).length > 0 &&
+            // Validate that all values are arrays
+            Object.values(layoutData.layouts).every(val => Array.isArray(val));
 
         if (isLayoutValid) {
-            // Ensure we just use what's there, but handle legacy multiple breakpoints if needed
-            // Ideally we normalize to 'lg' if we want strictly one
-            // But passing the whole object is fine as long as 'lg' exists
             setLayouts({ ...layoutData.layouts } as CustomLayouts);
         } else {
+            console.warn("Invalid layout data found, resetting to defaults:", layoutData?.layouts);
             const newLayouts = await createDefaultLayout(user.id);
             setLayouts(newLayouts);
         }
@@ -252,7 +252,8 @@ const DashboardOverview = ({
     // Get items to render from 'lg' layout
     // We prioritize 'lg', fallback to first available key
     const activeLayoutKey = layouts.lg ? 'lg' : Object.keys(layouts)[0];
-    const activeLayoutItems = layouts[activeLayoutKey] || [];
+    const rawLayoutItems = layouts[activeLayoutKey];
+    const activeLayoutItems = Array.isArray(rawLayoutItems) ? rawLayoutItems : [];
 
     return (
         <div ref={containerRef} className="w-full">
