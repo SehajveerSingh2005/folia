@@ -54,9 +54,9 @@ const InboxWidget = () => {
 
     const { data: newTask, error } = await supabase
       .from('ledger_items')
-      .insert({ 
-        content: newTaskContent, 
-        user_id: user.id, 
+      .insert({
+        content: newTaskContent,
+        user_id: user.id,
         type: 'Task',
       })
       .select()
@@ -88,7 +88,7 @@ const InboxWidget = () => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
         <CardTitle className="font-sans font-medium text-base sm:text-lg">Inbox</CardTitle>
         <CardDescription className="text-xs sm:text-sm">Quick tasks and ideas.</CardDescription>

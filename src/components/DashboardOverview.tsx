@@ -2,26 +2,33 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast'; // Import showSuccess
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
+
 
 // Import all widgets
 import WelcomeWidget from './dashboard/widgets/WelcomeWidget';
 import ClockWidget from './dashboard/widgets/ClockWidget';
 import DueTodayWidget from './dashboard/widgets/DueTodayWidget';
 import InboxWidget from './dashboard/widgets/InboxWidget';
-import NotesWidget from './dashboard/widgets/NotesWidget';
+import NotesWidget from './dashboard/widgets/NotesWidget'; // Original Widget
 import JournalWidget from './dashboard/widgets/JournalWidget';
 import GoalsWidget from './dashboard/widgets/GoalsWidget';
 import FlowWidget from './dashboard/widgets/FlowWidget';
+
+// New Rich Media Widgets
+import ImageWidget from './dashboard/widgets/ImageWidget';
+import NoteWidget from './dashboard/widgets/NoteWidget'; // New Editable Note
+import EmbedWidget from './dashboard/widgets/EmbedWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 type LayoutItem = Layout & { widget_type: string };
 type CustomLayouts = { [breakpoint: string]: LayoutItem[] };
+type WidgetDataMap = { [id: string]: any };
 
 interface DashboardOverviewProps {
     firstName: string;
@@ -37,10 +44,14 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
     Clock: ClockWidget,
     DueToday: DueTodayWidget,
     Inbox: InboxWidget,
-    Notes: NotesWidget,
+    Notes: NotesWidget, // Keeping old one for backward compat if needed, but 'Note' will use new
     Journal: JournalWidget,
     Goals: GoalsWidget,
     Flow: FlowWidget,
+    // New
+    Image: ImageWidget,
+    Note: NoteWidget, // The new one
+    Embed: EmbedWidget
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
@@ -52,7 +63,7 @@ const widgetNavigationMap: { [key: string]: string } = {
     Flow: 'Flow',
 };
 
-const generateDefaultLayouts = (): CustomLayouts => {
+const generateDefaultLayouts = (): { layouts: CustomLayouts; widgetData: WidgetDataMap } => {
     // Generate unique IDs for each widget instance
     const welcomeId = uuidv4();
     const clockId = uuidv4();
@@ -62,7 +73,7 @@ const generateDefaultLayouts = (): CustomLayouts => {
     const inboxId = uuidv4();
 
     // We are now only using 'lg' layout for consistency
-    return {
+    const layouts = {
         lg: [
             { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 4 },
             { i: flowId, widget_type: 'Flow', x: 6, y: 0, w: 6, h: 8, minW: 3, minH: 6 },
@@ -72,6 +83,8 @@ const generateDefaultLayouts = (): CustomLayouts => {
             { i: goalsId, widget_type: 'Goals', x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 6 },
         ],
     };
+
+    return { layouts, widgetData: {} };
 };
 
 const DashboardOverview = ({
@@ -83,22 +96,32 @@ const DashboardOverview = ({
     setSaveLayoutRef,
 }: DashboardOverviewProps) => {
     const [layouts, setLayouts] = useState<CustomLayouts>({});
+    const [widgetData, setWidgetData] = useState<WidgetDataMap>({});
     const [loading, setLoading] = useState(true);
+
+    // Refs for safe access in callbacks/async
     const layoutsRef = useRef(layouts);
+    const widgetDataRef = useRef(widgetData);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         layoutsRef.current = layouts;
     }, [layouts]);
 
+    useEffect(() => {
+        widgetDataRef.current = widgetData;
+    }, [widgetData]);
+
     const createDefaultLayout = async (user_id: string) => {
-        const newDefaultLayouts = generateDefaultLayouts();
-        const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: newDefaultLayouts });
+        const { layouts: newLayouts, widgetData: newData } = generateDefaultLayouts();
+        const payload = { layouts: newLayouts, widgetData: newData };
+
+        const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id, layouts: payload });
         if (error) {
             showError('Could not create default layout.');
-            return {};
+            return { layouts: newLayouts, widgetData: newData };
         }
-        return newDefaultLayouts;
+        return { layouts: newLayouts, widgetData: newData };
     };
 
     const loadLayouts = async () => {
@@ -109,7 +132,7 @@ const DashboardOverview = ({
             return;
         }
 
-        const { data: layoutData, error: layoutError } = await supabase
+        const { data: layoutRow, error: layoutError } = await supabase
             .from('user_dashboard_layouts')
             .select('layouts')
             .eq('user_id', user.id)
@@ -121,22 +144,55 @@ const DashboardOverview = ({
             return;
         }
 
-        // Validation
+        // Validation & Migration
+        const layoutData = layoutRow?.layouts; // Extract the actual layout data from the row
+
         const isLayoutValid = layoutData &&
-            layoutData.layouts &&
+            layoutData.layouts && // Check for the new structure { layouts, widgetData }
             typeof layoutData.layouts === 'object' &&
             !Array.isArray(layoutData.layouts) &&
             Object.keys(layoutData.layouts).length > 0 &&
-            // Validate that all values are arrays
             Object.values(layoutData.layouts).every(val => Array.isArray(val));
 
+        let finalLayouts: CustomLayouts = {};
+        let finalWidgetData: WidgetDataMap = {};
+
         if (isLayoutValid) {
-            setLayouts({ ...layoutData.layouts } as CustomLayouts);
+            finalLayouts = { ...layoutData.layouts } as CustomLayouts;
+
+            // Try to extract widgetData if it exists in the row (for new structure)
+            const rawData = layoutData as any;
+            if (rawData.widgetData) {
+                finalWidgetData = rawData.widgetData;
+            }
         } else {
-            console.warn("Invalid layout data found, resetting to defaults:", layoutData?.layouts);
-            const newLayouts = await createDefaultLayout(user.id);
-            setLayouts(newLayouts);
+            console.warn("Invalid or legacy layout data found, attempting migration or reset:", layoutData);
+
+            // Check if it's a legacy "layouts" object directly (without the {layouts, widgetData} wrapper)
+            const rawData = layoutData as any; // Treat layoutData itself as the potential legacy layout object
+            if (rawData && (rawData.lg || Object.keys(rawData).length > 0)) {
+                // It might be a valid object just failing the strict array check, or legacy format
+                // For safety, if it failed the strict validation, we'll reset to defaults.
+                // If it's a legacy format (e.g., just { lg: [...] }), we'll use it but without widgetData.
+                if (rawData.lg && Array.isArray(rawData.lg) && rawData.lg.every((item: any) => typeof item === 'object' && 'i' in item)) {
+                    finalLayouts = rawData;
+                    finalWidgetData = {}; // Legacy layouts don't have widgetData
+                } else {
+                    // If it's not a valid legacy layout either, create defaults
+                    const defaults = await createDefaultLayout(user.id);
+                    finalLayouts = defaults.layouts;
+                    finalWidgetData = defaults.widgetData;
+                }
+            } else {
+                // If layoutRow.layouts was null, undefined, or an empty object, create defaults
+                const defaults = await createDefaultLayout(user.id);
+                finalLayouts = defaults.layouts;
+                finalWidgetData = defaults.widgetData;
+            }
         }
+
+        setLayouts(finalLayouts);
+        setWidgetData(finalWidgetData);
         setLoading(false);
     };
 
@@ -164,21 +220,16 @@ const DashboardOverview = ({
             newLayouts.lg = [];
         }
 
-        // We only care about adding to 'lg' now since we locked the breakpoint
-        // But we iterate just in case legacy data has others
-        // Actually, let's just force add to 'lg' and any others present
         const keys = Object.keys(newLayouts).length > 0 ? Object.keys(newLayouts) : ['lg'];
 
         keys.forEach(breakpoint => {
-            // Initialize if missing (shouldn't happen for lg if we follow pattern)
             if (!newLayouts[breakpoint]) newLayouts[breakpoint] = [];
-
             newLayouts[breakpoint].push({
                 i: newWidgetId,
                 widget_type: widget.type,
                 x: 0,
                 y: Infinity, // Place at bottom
-                w: widget.w, // Use w from sheet (now 4 or 6)
+                w: widget.w,
                 h: widget.h,
                 minW: widget.minW,
                 minH: widget.minH,
@@ -186,6 +237,8 @@ const DashboardOverview = ({
         });
 
         setLayouts(newLayouts);
+        // Initialize widget data if needed (optional)
+        setWidgetData(prev => ({ ...prev, [newWidgetId]: {} }));
     };
 
     const handleRemoveWidget = useCallback((widgetId: string) => {
@@ -194,7 +247,12 @@ const DashboardOverview = ({
             newLayouts[breakpoint] = newLayouts[breakpoint].filter(l => l.i !== widgetId);
         }
         setLayouts(newLayouts);
-    }, [layouts]);
+
+        // Clean up data
+        const newData = { ...widgetData };
+        delete newData[widgetId];
+        setWidgetData(newData);
+    }, [layouts, widgetData]);
 
     const handleLayoutChange = useCallback((_layout: Layout[], newLayouts: { [breakpoint: string]: Layout[] }) => {
         // We need to merge the new layout positions with the existing widget types
@@ -220,14 +278,32 @@ const DashboardOverview = ({
         });
     }, []);
 
+    const handleWidgetDataUpdate = (id: string, data: any) => {
+        setWidgetData(prev => ({
+            ...prev,
+            [id]: data
+        }));
+
+        // Optional: Auto-save logic could go here if we wanted "live" saving
+        // But for now we stick to "Save Layout" to persist everything
+    };
+
     const saveLayoutToDatabase = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id: user.id, layouts: layoutsRef.current });
+        const payload = {
+            layouts: layoutsRef.current,
+            widgetData: widgetDataRef.current
+        };
+
+        const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id: user.id, layouts: payload });
         if (error) {
             showError('Could not save layout changes.');
             throw new Error(error.message);
+        } else {
+            // Usually handled by wrapper but good to log
+            // showSuccess('Layout saved'); 
         }
     }, []);
 
@@ -239,8 +315,11 @@ const DashboardOverview = ({
 
     const handleWidgetClick = (e: React.MouseEvent, widgetType: string) => {
         if (isEditable) return;
+
+        // Don't navigate if clicking inputs/buttons inside widgets
         const target = e.target as HTMLElement;
-        if (target.closest('button, input, textarea, label, [role="checkbox"], a')) return;
+        if (target.closest('button, input, textarea, label, [role="checkbox"], a, .nodrag')) return;
+
         const space = widgetNavigationMap[widgetType];
         if (space) onNavigate(space);
     };
@@ -249,14 +328,12 @@ const DashboardOverview = ({
         return <Skeleton className="h-[500px] w-full" />;
     }
 
-    // Get items to render from 'lg' layout
-    // We prioritize 'lg', fallback to first available key
     const activeLayoutKey = layouts.lg ? 'lg' : Object.keys(layouts)[0];
     const rawLayoutItems = layouts[activeLayoutKey];
     const activeLayoutItems = Array.isArray(rawLayoutItems) ? rawLayoutItems : [];
 
     return (
-        <div ref={containerRef} className="w-full">
+        <div ref={containerRef} className="w-full pb-32">
             <ResponsiveGridLayout
                 className="layout"
                 layouts={layouts}
@@ -278,24 +355,37 @@ const DashboardOverview = ({
                         <div
                             key={item.i}
                             className={cn(
-                                "relative group bg-card rounded-lg border border-border shadow-sm",
+                                "relative group bg-card rounded-lg border border-zinc-400/80 dark:border-zinc-600 shadow-sm overflow-hidden",
                                 isEditable && "select-none cursor-move hover:border-dashed hover:border-primary/50"
                             )}
                             onClick={(e) => handleWidgetClick(e, item.widget_type)}
                         >
                             {isEditable && (
-                                <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2 z-10 h-6 w-6"
-                                    onClick={(e) => { e.stopPropagation(); handleRemoveWidget(item.i); }}
-                                    onMouseDown={(e) => e.stopPropagation()} // Stop drag start on button click
-                                    onTouchStart={(e) => e.stopPropagation()}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <div className="absolute top-2 right-2 z-50 flex gap-2 transition-opacity opacity-0 group-hover:opacity-100">
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="h-6 w-6 shadow-md"
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveWidget(item.i); }}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onTouchStart={(e) => e.stopPropagation()}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
                             )}
-                            {WidgetComponent ? <WidgetComponent firstName={firstName} onNavigate={onNavigate} /> : <div>Unknown Widget</div>}
+                            {WidgetComponent ? (
+                                <WidgetComponent
+                                    firstName={firstName}
+                                    onNavigate={onNavigate}
+                                    data={widgetData[item.i] || {}}
+                                    onUpdate={(newData: any) => handleWidgetDataUpdate(item.i, newData)}
+                                    isEditable={isEditable} /* For ImageWidget overlay */
+                                    isEditableLayout={isEditable} /* For NoteWidget drag class */
+                                />
+                            ) : (
+                                <div className="p-4">Unknown Widget</div>
+                            )}
                         </div>
                     );
                 })}

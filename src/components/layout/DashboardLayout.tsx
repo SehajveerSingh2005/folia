@@ -121,12 +121,26 @@ const DashboardLayout = ({ firstName, onLogout, children, onItemCreated }: Dashb
 
           {/* Floating Dock Mode */}
           {navigationMode === 'dock' && (
-            <FloatingDock
-              activeView={activeView}
-              onOpenCreate={() => setIsCreateOpen(true)}
-              onSearch={() => setIsSearchOpen(true)}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-            />
+            <>
+              {activeView === 'Overview' && (
+                <div className="fixed top-6 left-8 z-40 flex items-center gap-3 select-none pointer-events-none animate-in fade-in slide-in-from-top-4 duration-500">
+                  <img src="/logo.png" alt="Folia Logo" className="h-8 w-auto flex-shrink-0 pointer-events-auto" />
+                  <div className="flex flex-col overflow-hidden">
+                    <h1 className="text-2xl font-serif font-medium truncate leading-none text-foreground/90">
+                      Folia
+                    </h1>
+                    <p className="text-sm text-muted-foreground truncate leading-none pt-1">Welcome, {firstName}</p>
+                  </div>
+                </div>
+              )}
+
+              <FloatingDock
+                activeView={activeView}
+                onOpenCreate={() => setIsCreateOpen(true)}
+                onSearch={() => setIsSearchOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+              />
+            </>
           )}
 
           <div className={cn(

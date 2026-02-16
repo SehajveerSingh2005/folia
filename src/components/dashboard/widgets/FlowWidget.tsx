@@ -40,7 +40,7 @@ const FlowWidget = () => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
         <CardTitle className="font-sans font-medium">Active in Flow</CardTitle>
         <CardDescription>A snapshot of your current projects.</CardDescription>

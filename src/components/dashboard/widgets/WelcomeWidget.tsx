@@ -20,7 +20,7 @@ const WelcomeWidget = ({ firstName }: WelcomeWidgetProps) => {
   const dateFormat = isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d';
 
   return (
-    <Card className="w-full h-full">
+    <Card className="w-full h-full border-none shadow-none">
       <CardContent className="p-6 flex flex-col justify-center h-full">
         <h2 className="text-xl sm:text-3xl font-serif">
           {getGreeting()}, {firstName}.

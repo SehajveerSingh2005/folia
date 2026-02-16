@@ -16,6 +16,9 @@ import {
   CalendarCheck,
   FolderKanban,
   Plus,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Edit3,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
@@ -89,7 +92,10 @@ export const availableWidgets = [
   { type: 'Clock', name: 'Clock', icon: Clock, description: 'A simple, elegant digital clock.', w: 4, h: 4, minW: 3, minH: 4, mw: 4, mh: 4, preview: <ClockPreview /> },
   { type: 'DueToday', name: 'Due Today', icon: CalendarCheck, description: 'See all tasks that are due today.', w: 4, h: 6, minW: 3, minH: 4, mw: 4, mh: 6, preview: <DueTodayPreview /> },
   { type: 'Inbox', name: 'Task Inbox', icon: Inbox, description: 'Quickly add and manage your inbox tasks.', w: 6, h: 8, minW: 4, minH: 6, mw: 6, mh: 8, preview: <InboxPreview /> },
-  { type: 'Notes', name: 'Quick Note', icon: StickyNote, description: 'Jot down a quick thought for your Garden.', w: 4, h: 5, minW: 3, minH: 5, mw: 4, mh: 5, preview: <NotesPreview /> },
+  { type: 'Notes', name: 'Garden Note', icon: StickyNote, description: 'Jot down a quick thought for your Garden.', w: 4, h: 5, minW: 3, minH: 5, mw: 4, mh: 5, preview: <NotesPreview /> },
+  { type: 'Note', name: 'Sticky Note', icon: Edit3, description: 'A colorful sticky note for your mood board.', w: 3, h: 4, minW: 3, minH: 3, mw: 6, mh: 8, preview: <div className="p-4 bg-yellow-100 dark:bg-yellow-900/20 h-full w-full" /> },
+  { type: 'Image', name: 'Image', icon: ImageIcon, description: 'Add an inspiring image to your dashboard.', w: 4, h: 6, minW: 2, minH: 4, mw: 8, mh: 10, preview: <div className="h-full w-full flex items-center justify-center bg-muted/20"><ImageIcon className="h-8 w-8 opacity-20" /></div> },
+  { type: 'Embed', name: 'Embed', icon: LinkIcon, description: 'Embed a YouTube video, Spotify track, etc.', w: 4, h: 6, minW: 4, minH: 4, mw: 8, mh: 10, preview: <div className="h-full w-full flex items-center justify-center bg-muted/20"><LinkIcon className="h-8 w-8 opacity-20" /></div> },
   { type: 'Journal', name: 'Journal', icon: BookOpen, description: 'A prompt for your daily journal entry.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <JournalPreview /> },
   { type: 'Goals', name: 'Goals Overview', icon: Telescope, description: 'A glimpse of your long-term Horizon goals.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <GoalsPreview /> },
   { type: 'Flow', name: 'Active Projects', icon: FolderKanban, description: 'Track the progress of your active projects.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <FlowPreview /> },

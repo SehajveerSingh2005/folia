@@ -87,7 +87,13 @@ const ProjectDetailSheet = ({
                 notes: project.notes || '',
                 link: project.link || '',
             });
-            fetchTasks();
+
+            // Initialize tasks from props if available to show immediately
+            if (project.tasks && Array.isArray(project.tasks)) {
+                setTasks(project.tasks);
+            } else {
+                fetchTasks();
+            }
         }
     }, [project, isOpen]);
 

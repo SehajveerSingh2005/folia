@@ -62,7 +62,7 @@ const DueTodayWidget = () => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
         <CardTitle className="font-sans font-medium text-base sm:text-lg">Due Today</CardTitle>
         <CardDescription className="text-xs sm:text-sm">Your tasks for today.</CardDescription>

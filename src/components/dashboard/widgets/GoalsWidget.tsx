@@ -30,7 +30,7 @@ const GoalsWidget = () => {
   }, []);
 
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
         <CardTitle className="font-sans font-medium">Horizon Items</CardTitle>
         <CardDescription>

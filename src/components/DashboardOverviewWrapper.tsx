@@ -3,7 +3,7 @@ import { useNavigate } from '@/lib/navigation';
 import DashboardOverview from '@/components/DashboardOverview';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Check } from 'lucide-react';
 import AddWidgetSheet, { availableWidgets } from '@/components/dashboard/AddWidgetSheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -76,17 +76,29 @@ const DashboardOverviewWrapper = () => {
         isMobile && "px-4"
       )}>
         {isEditable && (
-          <Button variant="outline" onClick={() => setIsAddSheetOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setIsAddSheetOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
             Add Widget
           </Button>
         )}
         <Button
-          variant={isEditable ? 'default' : 'outline'}
+          variant={isEditable ? 'default' : 'ghost'}
+          size={isEditable ? 'sm' : 'icon'}
           onClick={handleToggleEdit}
+          className={cn(
+            "transition-all",
+            !isEditable && "hover:bg-muted text-muted-foreground"
+          )}
+          title={isEditable ? 'Save Layout' : 'Edit Layout'}
         >
-          <Pencil className="mr-2 h-4 w-4" />
-          {isEditable ? 'Save Layout' : 'Edit Layout'}
+          {isEditable ? (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              Save
+            </>
+          ) : (
+            <Pencil className="h-4 w-4" />
+          )}
         </Button>
       </div>
       <div className="flex-grow">
