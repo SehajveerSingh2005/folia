@@ -123,16 +123,16 @@ const DashboardOverview = ({
 
         // Validation
         const isLayoutValid = layoutData &&
+            layoutData.layouts &&
             typeof layoutData.layouts === 'object' &&
-            layoutData.layouts !== null &&
-            // Check if it has 'lg' or any keys
+            !Array.isArray(layoutData.layouts) &&
             Object.keys(layoutData.layouts).length > 0;
 
         if (isLayoutValid) {
             // Ensure we just use what's there, but handle legacy multiple breakpoints if needed
             // Ideally we normalize to 'lg' if we want strictly one
             // But passing the whole object is fine as long as 'lg' exists
-            setLayouts(layoutData.layouts as CustomLayouts);
+            setLayouts({ ...layoutData.layouts } as CustomLayouts);
         } else {
             const newLayouts = await createDefaultLayout(user.id);
             setLayouts(newLayouts);
