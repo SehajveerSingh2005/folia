@@ -45,7 +45,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete }: ProjectCardProps) =
     return (
         <div
             onClick={onClick}
-            className="group relative flex flex-col justify-between p-5 bg-card hover:bg-accent/5 transition-all duration-300 border border-border/50 rounded-xl hover:shadow-md hover:border-border cursor-pointer h-[220px]"
+            className="group relative flex flex-col justify-between p-5 bg-card hover:bg-accent/5 transition-all duration-300 border border-border rounded-xl hover:shadow-lg hover:border-primary/20 cursor-pointer h-[220px]"
         >
             {/* Header */}
             <div className="flex justify-between items-start">

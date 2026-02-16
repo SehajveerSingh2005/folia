@@ -129,9 +129,7 @@ function DockIcon({
             </div>
 
             {/* Active Dot */}
-            {isActive && (
-                <div className="absolute -bottom-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary" />
-            )}
+
         </motion.div>
     );
 }

@@ -4,13 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription,
-    SheetFooter,
-} from '@/components/ui/sheet';
+    Dialog,
+    DialogContent,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -27,13 +24,14 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Trash2, CheckSquare, Square, Plus, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { useQueryClient } from '@tanstack/react-query';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 const projectSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -48,7 +46,7 @@ const projectSchema = z.object({
 interface ProjectDetailSheetProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    project: any; // Ideally typed
+    project: any;
     onProjectUpdated: () => void;
 }
 
@@ -59,7 +57,6 @@ const ProjectDetailSheet = ({
     onProjectUpdated,
 }: ProjectDetailSheetProps) => {
     const queryClient = useQueryClient();
-    const [tasks, setTasks] = useState<any[]>([]);
     const [newTaskContent, setNewTaskContent] = useState('');
     const [isEditing, setIsEditing] = useState(false);
 
@@ -76,8 +73,32 @@ const ProjectDetailSheet = ({
         },
     });
 
+    // Fetch tasks using React Query for caching and loading states
+    const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
+        queryKey: ['tasks', project?.id],
+        queryFn: async () => {
+            if (!project?.id) return [];
+            const { data, error } = await supabase
+                .from('ledger_items')
+                .select('*')
+                .eq('loom_item_id', project.id)
+                .order('is_done', { ascending: true })
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching tasks:', error);
+                throw error;
+            }
+            return data || [];
+        },
+        enabled: !!project?.id && isOpen,
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    });
+
     useEffect(() => {
-        if (project) {
+        if (project && isOpen) {
+            setIsEditing(false);
+
             form.reset({
                 name: project.name,
                 type: project.type,
@@ -87,27 +108,8 @@ const ProjectDetailSheet = ({
                 notes: project.notes || '',
                 link: project.link || '',
             });
-
-            // Initialize tasks from props if available to show immediately
-            if (project.tasks && Array.isArray(project.tasks)) {
-                setTasks(project.tasks);
-            } else {
-                fetchTasks();
-            }
         }
     }, [project, isOpen]);
-
-    const fetchTasks = async () => {
-        if (!project) return;
-        const { data, error } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('loom_item_id', project.id)
-            .order('completed', { ascending: true })
-            .order('due_date', { ascending: true }); // Then by date
-
-        if (data) setTasks(data);
-    };
 
     const onSubmit = async (values: z.infer<typeof projectSchema>) => {
         try {
@@ -135,56 +137,40 @@ const ProjectDetailSheet = ({
         if (!newTaskContent.trim() || !project) return;
 
         try {
-            const { error } = await supabase.from('tasks').insert({
+            const { error } = await supabase.from('ledger_items').insert({
                 content: newTaskContent,
                 loom_item_id: project.id,
-                user_id: (await supabase.auth.getUser()).data.user?.id
+                user_id: (await supabase.auth.getUser()).data.user?.id,
+                is_done: false
             });
 
             if (error) throw error;
 
             setNewTaskContent('');
-            fetchTasks();
-            onProjectUpdated(); // To update progress bar on card
+            queryClient.invalidateQueries({ queryKey: ['tasks', project.id] });
+            onProjectUpdated();
         } catch (error: any) {
             showError('Failed to add task');
         }
     };
 
-    const toggleTask = async (taskId: string, currentStatus: boolean) => {
-        try {
-            const { error } = await supabase.from('tasks').update({ completed: !currentStatus }).eq('id', taskId);
-            if (error) throw error;
-            fetchTasks();
-            onProjectUpdated();
-        } catch (error) {
-            showError('Failed to update task');
-        }
-    };
-
-    const deleteTask = async (taskId: string) => {
-        try {
-            const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-            if (error) throw error;
-            fetchTasks();
-            onProjectUpdated();
-        } catch (error) {
-            showError('Failed to delete task');
-        }
+    const handleTaskUpdate = () => {
+        queryClient.invalidateQueries({ queryKey: ['tasks', project.id] });
+        onProjectUpdated();
     };
 
     if (!project) return null;
 
     return (
-        <Sheet open={isOpen} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col gap-0 overflow-hidden" side="right">
-                {/* Header Area */}
-                <div className="p-6 pb-2 border-b bg-background z-10">
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col gap-0 p-0 overflow-hidden outline-none">
+                {/* Fixed Header Area */}
+                <div className="p-6 pb-4 bg-background z-10 shrink-0">
                     <div className="flex justify-between items-start mb-4">
                         {isEditing ? (
                             <Input {...form.register('name')} className="text-2xl font-serif font-bold border-none shadow-none p-0 h-auto focus-visible:ring-0" />
                         ) : (
-                            <SheetTitle className="text-2xl font-serif font-bold">{project.name}</SheetTitle>
+                            <DialogTitle className="text-2xl font-serif font-bold">{project.name}</DialogTitle>
                         )}
                         <div className="flex gap-2">
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
@@ -220,28 +206,27 @@ const ProjectDetailSheet = ({
                                 <span>{project.status}</span>
                             )}
                         </div>
-                        {/* Add Due Date display here if needed */}
                     </div>
                 </div>
 
-                {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto">
-                    <Tabs defaultValue="tasks" className="w-full h-full flex flex-col">
-                        <div className="px-6 border-b bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
-                            <TabsList className="bg-transparent p-0 w-full justify-start h-12">
-                                <TabsTrigger value="tasks" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4">
-                                    Tasks ({tasks.filter(t => !t.completed).length})
-                                </TabsTrigger>
-                                <TabsTrigger value="notes" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4">
-                                    Notes
-                                </TabsTrigger>
-                                <TabsTrigger value="info" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4">
-                                    Info
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
+                {/* Tabs with Fixed List and Scrollable Content */}
+                <Tabs defaultValue="tasks" className="flex-1 flex flex-col min-h-0">
+                    <div className="px-6 border-b shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
+                        <TabsList className="bg-transparent p-0 w-full justify-start h-10">
+                            <TabsTrigger value="tasks" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
+                                Tasks ({tasks.filter((t: any) => !t.is_done).length})
+                            </TabsTrigger>
+                            <TabsTrigger value="notes" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
+                                Notes
+                            </TabsTrigger>
+                            <TabsTrigger value="info" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
+                                Info
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                        <TabsContent value="tasks" className="p-6 flex-1 mt-0 space-y-6">
+                    <div className="flex-1 overflow-y-auto">
+                        <TabsContent value="tasks" className="p-6 m-0 space-y-6 min-h-full">
                             {/* Add Task Input */}
                             <form onSubmit={handleAddTask} className="flex gap-2">
                                 <Input
@@ -256,61 +241,46 @@ const ProjectDetailSheet = ({
                             </form>
 
                             {/* Task List */}
-                            <div className="space-y-1">
-                                {tasks.length === 0 && (
-                                    <div className="text-center py-8 text-muted-foreground italic">No tasks yet.</div>
-                                )}
-                                {tasks.map((task) => (
-                                    <div key={task.id} className="group flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
-                                        <button
-                                            onClick={() => toggleTask(task.id, task.completed)}
-                                            className={cn(
-                                                "mt-0.5 transition-colors",
-                                                task.completed ? "text-primary" : "text-muted-foreground hover:text-primary"
-                                            )}
-                                        >
-                                            {task.completed ? <CheckCircle2 className="h-5 w-5" /> : <Square className="h-5 w-5" />}
-                                        </button>
-                                        <span className={cn(
-                                            "flex-1 text-sm pt-0.5",
-                                            task.completed && "text-muted-foreground line-through decoration-muted-foreground/50"
-                                        )}>
-                                            {task.content}
-                                        </span>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <MoreHorizontal className="h-3 w-3" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-destructive text-xs">
-                                                    Delete Task
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                            <div className="space-y-1 min-h-[100px]">
+                                {isLoadingTasks ? (
+                                    <div className="flex flex-col gap-2 py-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="h-10 bg-muted/30 rounded-md animate-pulse" />
+                                        ))}
                                     </div>
-                                ))}
+                                ) : tasks.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground italic">No tasks yet.</div>
+                                ) : (
+                                    tasks.map((task: any, index: number) => (
+                                        <TaskItem
+                                            key={task.id}
+                                            index={index}
+                                            task={task}
+                                            onUpdate={handleTaskUpdate}
+                                            onDelete={handleTaskUpdate}
+                                        />
+                                    ))
+                                )}
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="notes" className="p-6 flex-1 mt-0 h-full flex flex-col">
+                        <TabsContent value="notes" className="p-6 m-0 h-full data-[state=active]:flex flex-col">
                             {isEditing ? (
                                 <Textarea
                                     {...form.register('notes')}
-                                    className="flex-1 resize-none border-none focus-visible:ring-0 bg-transparent text-lg leading-relaxed"
+                                    className="flex-1 resize-none border-none focus-visible:ring-0 bg-transparent text-lg leading-relaxed min-h-[300px]"
                                     placeholder="Project notes..."
                                 />
                             ) : (
-                                <div className="whitespace-pre-wrap text-lg leading-relaxed text-foreground/80">
+                                <div className="whitespace-pre-wrap text-lg leading-relaxed text-foreground/80 min-h-[300px]">
                                     {project.notes || <span className="text-muted-foreground italic">No notes added.</span>}
                                 </div>
                             )}
                         </TabsContent>
 
-                        <TabsContent value="info" className="p-6 flex-1 mt-0">
+                        <TabsContent value="info" className="p-6 m-0">
                             {isEditing ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 max-w-lg">
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Type</label>
                                         <Input {...form.register('type')} />
@@ -336,7 +306,7 @@ const ProjectDetailSheet = ({
                                 </div>
                             ) : (
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
+                                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm max-w-lg">
                                         <div><p className="text-muted-foreground mb-1">Type</p><p>{project.type || 'N/A'}</p></div>
                                         <div><p className="text-muted-foreground mb-1">Link</p><p>{project.link ? <a href={project.link} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate block">{project.link}</a> : 'None'}</p></div>
                                         <div><p className="text-muted-foreground mb-1">Start Date</p><p>{project.start_date ? format(new Date(project.start_date), 'PPP') : 'N/A'}</p></div>
@@ -345,10 +315,171 @@ const ProjectDetailSheet = ({
                                 </div>
                             )}
                         </TabsContent>
-                    </Tabs>
-                </div>
-            </SheetContent>
-        </Sheet>
+                    </div>
+                </Tabs>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+// --- TaskItem Component ---
+
+interface TaskItemProps {
+    task: any;
+    onUpdate: () => void;
+    onDelete: () => void;
+    index: number;
+}
+
+const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [content, setContent] = useState(task.content);
+    const [dueDate, setDueDate] = useState<Date | undefined>(task.due_date ? new Date(task.due_date) : undefined);
+    const [priority, setPriority] = useState<string>(task.priority || 'Medium');
+    const [notes, setNotes] = useState(task.notes || '');
+
+    const handleSave = async () => {
+        const { error } = await supabase.from('ledger_items').update({
+            content,
+            due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+            priority,
+            notes
+        }).eq('id', task.id);
+
+        if (error) {
+            showError("Failed to update task");
+        } else {
+            setIsEditing(false);
+            onUpdate();
+        }
+    };
+
+    const toggleComplete = async () => {
+        const newStatus = !task.is_done;
+        const { error } = await supabase.from('ledger_items').update({
+            is_done: newStatus,
+            completed_at: newStatus ? new Date().toISOString() : null
+        }).eq('id', task.id);
+
+        if (error) showError("Failed to toggle task");
+        else onUpdate();
+    };
+
+    return (
+        <div
+            className="group flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-both"
+            style={{ animationDelay: `${index * 50}ms` }}
+        >
+            <button
+                onClick={toggleComplete}
+                className={cn(
+                    "mt-0.5 transition-colors",
+                    task.is_done ? "text-primary/50" : "text-muted-foreground hover:text-primary"
+                )}
+            >
+                {task.is_done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+            </button>
+
+            <div className="flex-1 pt-0.5">
+                {isEditing ? (
+                    <div className="flex flex-col gap-3 p-2 bg-background border rounded-md shadow-sm">
+                        <Input
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="font-medium"
+                            placeholder="Task content"
+                            autoFocus
+                        />
+                        <div className="flex flex-wrap gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className={cn("text-xs h-8", !dueDate && "text-muted-foreground border-dashed")}>
+                                        <CalendarIconLucide className="mr-2 h-3.5 w-3.5" />
+                                        {dueDate ? format(dueDate, 'MMM d') : "Due Date"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+
+                            <Select value={priority} onValueChange={setPriority}>
+                                <SelectTrigger className="w-[100px] h-8 text-xs">
+                                    <SelectValue placeholder="Priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add notes..."
+                            className="text-xs min-h-[60px] resize-none"
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                            <Button size="sm" onClick={handleSave}>Save Changes</Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-1">
+                        <span className={cn(
+                            "text-sm transition-all select-text",
+                            task.is_done && "text-muted-foreground line-through decoration-muted-foreground/40"
+                        )}>
+                            {task.content}
+                        </span>
+
+                        {(task.due_date || task.priority || task.notes) && (
+                            <div className="flex flex-wrap gap-2 items-center mt-1">
+                                {task.due_date && (
+                                    <span className={cn("text-xs flex items-center gap-1", task.is_done ? "text-muted-foreground/50" : "text-muted-foreground")}>
+                                        <CalendarIconLucide className="w-3 h-3" />
+                                        {format(new Date(task.due_date), 'MMM d')}
+                                    </span>
+                                )}
+                                {task.priority && task.priority !== 'Medium' && (
+                                    <Badge variant={task.priority === 'High' ? 'destructive' : 'secondary'} className="h-5 px-1.5 text-[10px] font-normal">
+                                        {task.priority}
+                                    </Badge>
+                                )}
+                                {task.notes && (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <StickyNote className="w-3 h-3" />
+                                        Notes
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {!isEditing && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                            <Pencil className="h-3.5 w-3.5 mr-2" />
+                            Edit Task
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onDelete} className="text-destructive text-xs">
+                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                            Delete Task
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+        </div>
     );
 };
 

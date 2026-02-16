@@ -147,48 +147,27 @@ const DashboardOverview = ({
         // Validation & Migration
         const layoutData = layoutRow?.layouts; // Extract the actual layout data from the row
 
-        const isLayoutValid = layoutData &&
-            layoutData.layouts && // Check for the new structure { layouts, widgetData }
-            typeof layoutData.layouts === 'object' &&
-            !Array.isArray(layoutData.layouts) &&
-            Object.keys(layoutData.layouts).length > 0 &&
-            Object.values(layoutData.layouts).every(val => Array.isArray(val));
-
         let finalLayouts: CustomLayouts = {};
         let finalWidgetData: WidgetDataMap = {};
 
-        if (isLayoutValid) {
-            finalLayouts = { ...layoutData.layouts } as CustomLayouts;
-
-            // Try to extract widgetData if it exists in the row (for new structure)
-            const rawData = layoutData as any;
-            if (rawData.widgetData) {
-                finalWidgetData = rawData.widgetData;
-            }
-        } else {
-            console.warn("Invalid or legacy layout data found, attempting migration or reset:", layoutData);
-
-            // Check if it's a legacy "layouts" object directly (without the {layouts, widgetData} wrapper)
-            const rawData = layoutData as any; // Treat layoutData itself as the potential legacy layout object
-            if (rawData && (rawData.lg || Object.keys(rawData).length > 0)) {
-                // It might be a valid object just failing the strict array check, or legacy format
-                // For safety, if it failed the strict validation, we'll reset to defaults.
-                // If it's a legacy format (e.g., just { lg: [...] }), we'll use it but without widgetData.
-                if (rawData.lg && Array.isArray(rawData.lg) && rawData.lg.every((item: any) => typeof item === 'object' && 'i' in item)) {
-                    finalLayouts = rawData;
-                    finalWidgetData = {}; // Legacy layouts don't have widgetData
-                } else {
-                    // If it's not a valid legacy layout either, create defaults
-                    const defaults = await createDefaultLayout(user.id);
-                    finalLayouts = defaults.layouts;
-                    finalWidgetData = defaults.widgetData;
-                }
-            } else {
-                // If layoutRow.layouts was null, undefined, or an empty object, create defaults
-                const defaults = await createDefaultLayout(user.id);
-                finalLayouts = defaults.layouts;
-                finalWidgetData = defaults.widgetData;
-            }
+        // 1. Check for New Structure: { layouts: { lg: [...] }, widgetData: { ... } }
+        // We check for 'layouts.lg' to be sure it's the nested structure
+        if (layoutData && layoutData.layouts && (layoutData.layouts.lg || layoutData.layouts.md || layoutData.layouts.sm)) {
+            finalLayouts = layoutData.layouts;
+            finalWidgetData = layoutData.widgetData || {};
+        }
+        // 2. Check for Legacy Structure: { lg: [...] } directly in the root
+        else if (layoutData && (layoutData.lg || layoutData.md || layoutData.sm)) {
+            console.log("Restoring legacy layout structure");
+            finalLayouts = layoutData;
+            finalWidgetData = {};
+        }
+        // 3. Fallback: Create Defaults
+        else {
+            console.warn("No valid layout found, creating defaults", layoutData);
+            const defaults = await createDefaultLayout(user.id);
+            finalLayouts = defaults.layouts;
+            finalWidgetData = defaults.widgetData;
         }
 
         setLayouts(finalLayouts);
