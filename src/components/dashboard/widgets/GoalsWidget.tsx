@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Telescope } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type HorizonItem = {
   id: string;
@@ -11,6 +12,7 @@ type HorizonItem = {
 
 const GoalsWidget = () => {
   const [items, setItems] = useState<HorizonItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -25,6 +27,7 @@ const GoalsWidget = () => {
       } else if (data) {
         setItems(data);
       }
+      setIsLoading(false);
     };
     fetchItems();
   }, []);
@@ -39,15 +42,31 @@ const GoalsWidget = () => {
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-start gap-3">
-              <Telescope className="h-5 w-5 mt-0.5 text-primary" />
-              <div>
-                <p className="font-medium text-sm">{item.title}</p>
-                {item.priority && <p className="text-xs text-muted-foreground">{item.priority} Priority</p>}
+          {isLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="h-5 w-5 mt-0.5 rounded-full opacity-50" />
+                <div className="space-y-1 w-full">
+                  <Skeleton className="h-4 w-3/4 opacity-50" />
+                  <Skeleton className="h-3 w-1/3 opacity-30" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            items.map((item, index) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-3 animate-in slide-in-from-top-2 fade-in duration-300 fill-mode-both"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <Telescope className="h-5 w-5 mt-0.5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">{item.title}</p>
+                  {item.priority && <p className="text-xs text-muted-foreground">{item.priority} Priority</p>}
+                </div>
+              </div>
+            ))
+          )}
           {items.length === 0 && <p className="text-sm text-muted-foreground">No items in your horizon yet.</p>}
         </div>
       </CardContent>

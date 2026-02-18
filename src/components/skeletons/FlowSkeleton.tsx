@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const FlowSkeleton = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {[1, 2, 3].map((i) => (
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
         <Card key={i}>
           <CardHeader>
             <Skeleton className="h-6 w-3/4" />

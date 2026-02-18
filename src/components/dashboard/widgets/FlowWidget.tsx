@@ -2,13 +2,23 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { FolderKanban } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const AnimatedProgress = ({ value, className }: { value: number, className?: string }) => {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => setProgress(value), 100);
+    return () => clearTimeout(timer);
+  }, [value]);
+  return <Progress value={progress} className={className} />;
+};
 
 type Task = { is_done: boolean };
 type FlowItem = { id: string; name: string; tasks: Task[] };
 
 const FlowWidget = () => {
   const [items, setItems] = useState<FlowItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -29,6 +39,7 @@ const FlowWidget = () => {
         }));
         setItems(formattedData);
       }
+      setIsLoading(false);
     };
     fetchItems();
   }, []);
@@ -47,16 +58,30 @@ const FlowWidget = () => {
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-4">
-          {items.map((item) => (
-            <div key={item.id}>
-              <div className="flex justify-between items-center mb-1">
-                <p className="font-medium text-sm truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{Math.round(calculateProgress(item.tasks))}%</p>
+          {isLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+                <Skeleton className="h-2 w-full" />
               </div>
-              <Progress value={calculateProgress(item.tasks)} />
-            </div>
-          ))}
-          {items.length === 0 && <p className="text-sm text-muted-foreground">No active items in your flow.</p>}
+            ))
+          ) : (
+            <>
+              {items.map((item) => (
+                <div key={item.id}>
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="font-medium text-sm truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{Math.round(calculateProgress(item.tasks))}%</p>
+                  </div>
+                  <AnimatedProgress value={calculateProgress(item.tasks)} />
+                </div>
+              ))}
+              {items.length === 0 && <p className="text-sm text-muted-foreground">No active items in your flow.</p>}
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

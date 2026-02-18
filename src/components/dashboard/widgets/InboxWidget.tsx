@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Task = {
   id: string;
@@ -15,6 +16,7 @@ type Task = {
 
 const InboxWidget = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [newTaskContent, setNewTaskContent] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -30,6 +32,7 @@ const InboxWidget = () => {
 
     if (error) console.error('Error fetching tasks:', error);
     else if (data) setTasks(data);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -96,21 +99,34 @@ const InboxWidget = () => {
       <CardContent className="flex-grow flex flex-col overflow-hidden">
         <div className="relative flex-grow overflow-hidden">
           <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto pr-2 space-y-2">
-            {tasks.map((task) => (
-              <div key={task.id} className="flex items-center gap-3">
-                <Checkbox
-                  id={`inbox-task-${task.id}`}
-                  checked={task.is_done}
-                  onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
-                />
-                <label
-                  htmlFor={`inbox-task-${task.id}`}
-                  className="text-xs sm:text-sm flex-grow"
+            {isLoading ? (
+              [1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded opacity-50" />
+                  <Skeleton className="h-4 w-3/4 opacity-50" />
+                </div>
+              ))
+            ) : (
+              tasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 animate-in slide-in-from-top-2 fade-in duration-300 fill-mode-both"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {task.content}
-                </label>
-              </div>
-            ))}
+                  <Checkbox
+                    id={`inbox-task-${task.id}`}
+                    checked={task.is_done}
+                    onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
+                  />
+                  <label
+                    htmlFor={`inbox-task-${task.id}`}
+                    className="text-xs sm:text-sm flex-grow"
+                  >
+                    {task.content}
+                  </label>
+                </div>
+              ))
+            )}
             {tasks.length === 0 && <p className="text-sm text-muted-foreground">Inbox is empty!</p>}
           </div>
           {isOverflowing && (

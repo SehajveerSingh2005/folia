@@ -283,6 +283,7 @@ const Flow = () => {
                 onClick={() => { setSelectedItem(item); setIsEditDialogOpen(true); }} // Reusing state for now, but better name would be setIsDetailOpen
                 onEdit={() => { setSelectedItem(item); setIsEditDialogOpen(true); }}
                 onDelete={() => deleteLoomItemMutation.mutate(item.id)}
+                onAddTask={(content) => addTaskMutation.mutate({ loomId: item.id, content })}
               />
             );
           })}

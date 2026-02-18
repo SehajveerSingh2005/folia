@@ -80,13 +80,13 @@ export default function DashboardRootLayout({
         queryClient.invalidateQueries({ queryKey: ['horizon_data'] });
     };
 
-    if (loading || !profile) {
-        return <DashboardSkeleton />;
-    }
+    // if (loading || !profile) {
+    //     return <DashboardSkeleton />;
+    // }
 
     return (
         <DashboardLayout
-            firstName={profile.first_name || 'User'}
+            firstName={profile?.first_name || 'User'}
             onLogout={handleLogout}
             onItemCreated={handleItemCreated}
         >

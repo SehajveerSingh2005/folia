@@ -24,6 +24,8 @@ import ImageWidget from './dashboard/widgets/ImageWidget';
 import NoteWidget from './dashboard/widgets/NoteWidget'; // New Editable Note
 import EmbedWidget from './dashboard/widgets/EmbedWidget';
 
+const LOCAL_STORAGE_KEY = 'dashboard_layout_data';
+
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 type LayoutItem = Layout & { widget_type: string };
@@ -64,13 +66,13 @@ const widgetNavigationMap: { [key: string]: string } = {
 };
 
 const generateDefaultLayouts = (): { layouts: CustomLayouts; widgetData: WidgetDataMap } => {
-    // Generate unique IDs for each widget instance
-    const welcomeId = uuidv4();
-    const clockId = uuidv4();
-    const dueTodayId = uuidv4();
-    const flowId = uuidv4();
-    const goalsId = uuidv4();
-    const inboxId = uuidv4();
+    // Generate static IDs for default layout to ensure stability
+    const welcomeId = 'widget-welcome-default';
+    const clockId = 'widget-clock-default';
+    const dueTodayId = 'widget-duetoday-default';
+    const flowId = 'widget-flow-default';
+    const goalsId = 'widget-goals-default';
+    const inboxId = 'widget-inbox-default';
 
     // We are now only using 'lg' layout for consistency
     const layouts = {
@@ -98,6 +100,7 @@ const DashboardOverview = ({
     const [layouts, setLayouts] = useState<CustomLayouts>({});
     const [widgetData, setWidgetData] = useState<WidgetDataMap>({});
     const [loading, setLoading] = useState(true);
+    const [isLayoutReady, setIsLayoutReady] = useState(false);
 
     // Refs for safe access in callbacks/async
     const layoutsRef = useRef(layouts);
@@ -176,8 +179,41 @@ const DashboardOverview = ({
     };
 
     useEffect(() => {
+        let hasLocal = false;
+        // 1. Try to load from LocalStorage for instant render
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.layouts) {
+                    setLayouts(parsed.layouts);
+                    if (parsed.widgetData) setWidgetData(parsed.widgetData);
+                    hasLocal = true;
+                }
+            } catch (e) {
+                console.error("Failed to parse local layout", e);
+            }
+        }
+
+        if (!hasLocal) {
+            // Initial render fallback if no local storage
+            const { layouts: defL, widgetData: defD } = generateDefaultLayouts();
+            setLayouts(defL);
+            setWidgetData(defD);
+        }
+
+        setIsLayoutReady(true);
+
+        // 2. Then load from DB to sync (source of truth)
         loadLayouts();
     }, []);
+
+    // Save to LocalStorage whenever state changes
+    useEffect(() => {
+        if (Object.keys(layouts).length > 0) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ layouts, widgetData }));
+        }
+    }, [layouts, widgetData]);
 
     useEffect(() => {
         if (addWidgetTrigger) {
@@ -303,16 +339,12 @@ const DashboardOverview = ({
         if (space) onNavigate(space);
     };
 
-    if (loading) {
-        return <Skeleton className="h-[500px] w-full" />;
-    }
-
     const activeLayoutKey = layouts.lg ? 'lg' : Object.keys(layouts)[0];
     const rawLayoutItems = layouts[activeLayoutKey];
     const activeLayoutItems = Array.isArray(rawLayoutItems) ? rawLayoutItems : [];
 
     return (
-        <div ref={containerRef} className="w-full pb-32">
+        <div ref={containerRef} className={cn("w-full pb-32 transition-opacity duration-300", isLayoutReady ? "opacity-100" : "opacity-0")}>
             <ResponsiveGridLayout
                 className="layout"
                 layouts={layouts}
@@ -328,43 +360,53 @@ const DashboardOverview = ({
                 margin={[16, 16]}
                 containerPadding={[0, 0]}
             >
-                {activeLayoutItems.map(item => {
+                {activeLayoutItems.map((item, index) => {
                     const WidgetComponent = item.widget_type ? widgetMap[item.widget_type] : null;
                     return (
                         <div
                             key={item.i}
                             className={cn(
-                                "relative group bg-card rounded-lg border border-zinc-400/80 dark:border-zinc-600 shadow-sm overflow-hidden",
-                                isEditable && "select-none cursor-move hover:border-dashed hover:border-primary/50"
+                                // Outer container for RGL mapping
+                                "relative",
+                                isEditable && "z-10" // Ensure editable items are clickable/draggable
                             )}
                             onClick={(e) => handleWidgetClick(e, item.widget_type)}
                         >
-                            {isEditable && (
-                                <div className="absolute top-2 right-2 z-50 flex gap-2 transition-opacity opacity-0 group-hover:opacity-100">
-                                    <Button
-                                        variant="destructive"
-                                        size="icon"
-                                        className="h-6 w-6 shadow-md"
-                                        onClick={(e) => { e.stopPropagation(); handleRemoveWidget(item.i); }}
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onTouchStart={(e) => e.stopPropagation()}
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            )}
-                            {WidgetComponent ? (
-                                <WidgetComponent
-                                    firstName={firstName}
-                                    onNavigate={onNavigate}
-                                    data={widgetData[item.i] || {}}
-                                    onUpdate={(newData: any) => handleWidgetDataUpdate(item.i, newData)}
-                                    isEditable={isEditable} /* For ImageWidget overlay */
-                                    isEditableLayout={isEditable} /* For NoteWidget drag class */
-                                />
-                            ) : (
-                                <div className="p-4">Unknown Widget</div>
-                            )}
+                            <div
+                                className={cn(
+                                    "h-full w-full bg-card rounded-lg border border-zinc-400/80 dark:border-zinc-600 shadow-sm overflow-hidden",
+                                    "animate-in slide-in-from-bottom-4 fade-in duration-700 fill-mode-both",
+                                    isEditable && "select-none cursor-move hover:border-dashed hover:border-primary/50"
+                                )}
+                                style={{ animationDelay: `${index * 75}ms` }}
+                            >
+                                {isEditable && (
+                                    <div className="absolute top-2 right-2 z-50 flex gap-2 transition-opacity opacity-0 group-hover:opacity-100">
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-6 w-6 shadow-md"
+                                            onClick={(e) => { e.stopPropagation(); handleRemoveWidget(item.i); }}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onTouchStart={(e) => e.stopPropagation()}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                )}
+                                {WidgetComponent ? (
+                                    <WidgetComponent
+                                        firstName={firstName}
+                                        onNavigate={onNavigate}
+                                        data={widgetData[item.i] || {}}
+                                        onUpdate={(newData: any) => handleWidgetDataUpdate(item.i, newData)}
+                                        isEditable={isEditable} /* For ImageWidget overlay */
+                                        isEditableLayout={isEditable} /* For NoteWidget drag class */
+                                    />
+                                ) : (
+                                    <div className="p-4">Unknown Widget</div>
+                                )}
+                            </div>
                         </div>
                     );
                 })}

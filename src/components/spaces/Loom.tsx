@@ -33,8 +33,8 @@ const fetchTasks = async () => {
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return data.filter(task => 
-    !task.is_done || 
+  return data.filter(task =>
+    !task.is_done ||
     (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
   );
 };
@@ -86,9 +86,9 @@ const Loom = () => {
     },
   });
 
-  const projectsMap = useMemo(() => 
-    new Map((projects || []).map(p => [p.id, p.name])), 
-  [projects]);
+  const projectsMap = useMemo(() =>
+    new Map((projects || []).map(p => [p.id, p.name])),
+    [projects]);
 
   const taskGroups = useMemo(() => {
     const groups: { [key: string]: LedgerItem[] } = {
@@ -127,14 +127,15 @@ const Loom = () => {
     return <Badge variant={variant} className="hidden sm:inline-flex"><Flag className="h-3 w-3 mr-1" /> {priority}</Badge>;
   };
 
-  const renderTaskItem = (task: LedgerItem) => {
+  const renderTaskItem = (task: LedgerItem, index: number) => {
     const isOverdue = !task.is_done && task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date));
     const projectName = task.loom_item_id ? projectsMap.get(task.loom_item_id) : null;
 
     return (
       <div
         key={task.id}
-        className="flex items-center gap-3 group p-2 -mx-2 rounded-md hover:bg-secondary/50 cursor-pointer"
+        className="flex items-center gap-3 group p-2 -mx-2 rounded-md hover:bg-secondary/50 cursor-pointer animate-in slide-in-from-top-2 fade-in duration-300 fill-mode-both"
+        style={{ animationDelay: `${index * 50}ms` }}
         onClick={() => openEditDialog(task)}
       >
         <Checkbox
@@ -182,10 +183,10 @@ const Loom = () => {
         </CardHeader>
         <CardContent className="flex-grow overflow-hidden relative">
           <div className={cn("space-y-1", isScrollable && "max-h-80 overflow-y-auto pr-2")}>
-            {tasks.map(renderTaskItem)}
+            {tasks.map((task, index) => renderTaskItem(task, index))}
           </div>
           {isScrollable && tasks.length > 5 && (
-             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
           )}
         </CardContent>
       </Card>

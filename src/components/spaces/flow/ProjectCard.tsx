@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Play, Pause, CheckCircle2, Circle } from 'lucide-react';
+import { MoreHorizontal, Play, Pause, CheckCircle2, Circle, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,10 +30,14 @@ export interface ProjectCardProps {
     onClick: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    onAddTask?: (content: string) => void;
 }
 
-const ProjectCard = ({ project, onClick, onEdit, onDelete }: ProjectCardProps) => {
+const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask }: ProjectCardProps) => {
     const nextTask = project.tasks?.find(t => !t.completed);
+    const [isAddingTask, setIsAddingTask] = useState(false);
+    const [newTaskContent, setNewTaskContent] = useState('');
+
     // specific progress logic can be passed in or calculated here if we have full task list
     const progress = project.progress || 0;
 
@@ -42,6 +48,16 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete }: ProjectCardProps) =
         Backlog: 'bg-slate-500/10 text-slate-600 border-slate-200/50',
     };
 
+    const handleAddTask = (e: React.FormEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (newTaskContent.trim() && onAddTask) {
+            onAddTask(newTaskContent);
+            setNewTaskContent('');
+            setIsAddingTask(false);
+        }
+    };
+
     return (
         <div
             onClick={onClick}
@@ -50,7 +66,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete }: ProjectCardProps) =
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                    <h3 className="font-serif text-lg font-medium leading-tight group-hover:text-primary transition-colors">
+                    <h3 className="font-sans text-lg font-medium leading-tight group-hover:text-primary transition-colors">
                         {project.name}
                     </h3>
                     <div className={cn(
@@ -79,16 +95,40 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete }: ProjectCardProps) =
 
             {/* Up Next / Summary */}
             <div className="mt-4 flex-grow">
-                {nextTask ? (
+                <div className="flex justify-between items-center mb-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Up Next</p>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 -mr-1 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); setIsAddingTask(!isAddingTask); }}
+                    >
+                        <Plus className="h-3 w-3" />
+                    </Button>
+                </div>
+
+                {isAddingTask ? (
+                    <form onSubmit={handleAddTask} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                        <Input
+                            value={newTaskContent}
+                            onChange={(e) => setNewTaskContent(e.target.value)}
+                            placeholder="New task..."
+                            className="h-8 text-sm"
+                            autoFocus
+                        />
+                        <Button type="submit" size="icon" variant="secondary" className="h-8 w-8 shrink-0">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </form>
+                ) : nextTask ? (
                     <div className="text-sm">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">Up Next</p>
                         <div className="flex items-start gap-2 text-foreground/90">
                             <Circle className="w-4 h-4 mt-0.5 text-primary/60 shrink-0" />
                             <span className="line-clamp-2">{nextTask.content}</span>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
+                    <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm italic">
                         No active tasks
                     </div>
                 )}

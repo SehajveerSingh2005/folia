@@ -10,7 +10,12 @@ import { cn } from '@/lib/utils';
 import { showSuccess } from '@/utils/toast';
 
 const DashboardOverviewWrapper = () => {
-  const [firstName, setFirstName] = useState('User');
+  const [firstName, setFirstName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('user_first_name') || 'User';
+    }
+    return 'User';
+  });
   const navigate = useNavigate();
   const [isEditable, setIsEditable] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
@@ -30,6 +35,7 @@ const DashboardOverviewWrapper = () => {
 
         if (profile?.first_name) {
           setFirstName(profile.first_name);
+          localStorage.setItem('user_first_name', profile.first_name);
         }
       }
     };
