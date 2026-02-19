@@ -52,7 +52,7 @@ Output Format:
   "type": "project" | "tasks" | "future",
   "project": {
     "name": "Project Name",
-    "type": "Project" | "Course",
+    "type": "Project" | "Book" | "Course" | "Writing" | "Open Source" | "Habit" | "Misc",
     "deadline_date": "YYYY-MM-DD",
     "notes": "Context"
   },
@@ -162,12 +162,24 @@ Rules:
         }
 
         if (plan.type === 'project') {
+            // Validate type
+            let projectType = plan.project.type;
+
+            // Normalize: capitalize first letter
+            if (projectType && typeof projectType === 'string') {
+                projectType = projectType.charAt(0).toUpperCase() + projectType.slice(1);
+                // Special case for 'Open Source'
+                if (projectType.toLowerCase() === 'open source') projectType = 'Open Source';
+            } else {
+                projectType = 'Project'; // Fallback if missing/invalid
+            }
+
             // Create project
             const { data: newProject, error: projectError } = await supabase
                 .from('loom_items')
                 .insert({
                     name: plan.project.name,
-                    type: plan.project.type,
+                    type: projectType,
                     deadline_date: plan.project.deadline_date,
                     notes: plan.project.notes,
                     user_id: user.id,

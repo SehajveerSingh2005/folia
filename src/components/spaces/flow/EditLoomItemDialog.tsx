@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +26,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,20 +138,74 @@ const EditLoomItemDialog = ({
           <Controller
             control={form.control}
             name="type"
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {loomItemTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            render={({ field }) => {
+              const [open, setOpen] = useState(false);
+              const [inputValue, setInputValue] = useState("");
+
+              return (
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className={cn(
+                        "w-full justify-between font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value
+                        ? field.value
+                        : "Select type..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search or create..."
+                        onValueChange={(val) => setInputValue(val)}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div
+                            className="py-2 px-4 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const val = inputValue.charAt(0).toUpperCase() + inputValue.slice(1);
+                              field.onChange(val);
+                              setOpen(false);
+                            }}
+                          >
+                            Create <span className="font-semibold">"{inputValue}"</span>
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {loomItemTypes.map((type) => (
+                            <CommandItem
+                              key={type}
+                              value={type}
+                              onSelect={(currentValue) => {
+                                field.onChange(type);
+                                setOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === type ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {type}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )
+            }}
           />
           <Controller
             control={form.control}

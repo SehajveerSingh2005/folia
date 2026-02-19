@@ -99,7 +99,21 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "shimmer": "shimmer 2.5s linear infinite",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            h1: { marginTop: '0.5em', marginBottom: '0.25em', lineHeight: '1.2', fontWeight: '700' },
+            h2: { marginTop: '0.5em', marginBottom: '0.2em', lineHeight: '1.3', fontWeight: '600' },
+            h3: { marginTop: '0.5em', marginBottom: '0.2em', lineHeight: '1.4', fontWeight: '600' },
+            p: { marginTop: '0.5em', marginBottom: '0.2em', lineHeight: '1.6' },
+            'ul > li': { marginTop: '0em', marginBottom: '0em' },
+            'ol > li': { marginTop: '0em', marginBottom: '0em' },
+            'ul': { marginTop: '0.2em', marginBottom: '0.2em' },
+            'ol': { marginTop: '0.2em', marginBottom: '0.2em' },
+          },
+        },
+      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

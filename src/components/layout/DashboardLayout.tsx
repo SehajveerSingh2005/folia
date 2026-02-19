@@ -140,7 +140,10 @@ const DashboardLayout = ({ firstName, onLogout, children, onItemCreated }: Dashb
               ? (isSidebarCollapsed ? "ml-20" : "ml-64")
               : "ml-0" // No padding, true overlay
           )}>
-            <main className="w-full max-w-[1600px] mx-auto p-8 sm:p-12 overflow-auto h-full scrollbar-hide">
+            <main className={cn(
+              "w-full max-w-[1600px] mx-auto p-8 sm:p-12 overflow-auto h-full scrollbar-hide",
+              activeView === 'Garden' && "p-0 sm:p-0 max-w-none"
+            )}>
               {children}
             </main>
           </div>
