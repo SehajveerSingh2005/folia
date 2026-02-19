@@ -44,7 +44,7 @@ export const FloatingDock = ({
         <motion.div
             onMouseMove={(e) => mouseX.set(e.pageX)}
             onMouseLeave={() => mouseX.set(Infinity)}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex h-16 items-end gap-4 rounded-2xl border bg-background/80 px-4 pb-3 backdrop-blur-md shadow-2xl dark:border-white/10 dark:bg-black/80"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex h-16 items-end gap-4 rounded-full border bg-background/80 px-4 pb-3 backdrop-blur-md shadow-2xl dark:border-white/10 dark:bg-black/80"
         >
             {/* Create Button (Special styling) */}
             <DockIcon mouseX={mouseX} onClick={onOpenCreate} label="Create">

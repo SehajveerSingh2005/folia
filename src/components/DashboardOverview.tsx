@@ -77,10 +77,10 @@ const generateDefaultLayouts = (): { layouts: CustomLayouts; widgetData: WidgetD
     // We are now only using 'lg' layout for consistency
     const layouts = {
         lg: [
-            { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 4 },
+            { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 4, minW: 3, minH: 2 },
             { i: flowId, widget_type: 'Flow', x: 6, y: 0, w: 6, h: 8, minW: 3, minH: 6 },
             { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 4, w: 4, h: 6, minW: 3, minH: 4 },
-            { i: clockId, widget_type: 'Clock', x: 4, y: 4, w: 4, h: 6, minW: 3, minH: 4 },
+            { i: clockId, widget_type: 'Clock', x: 4, y: 4, w: 4, h: 4, minW: 3, minH: 2 },
             { i: inboxId, widget_type: 'Inbox', x: 0, y: 10, w: 6, h: 8, minW: 3, minH: 6 },
             { i: goalsId, widget_type: 'Goals', x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 6 },
         ],
@@ -211,7 +211,9 @@ const DashboardOverview = ({
     // Save to LocalStorage whenever state changes
     useEffect(() => {
         if (Object.keys(layouts).length > 0) {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ layouts, widgetData }));
+            const dataToSave = { layouts, widgetData };
+            console.log(">>> CURRENT LAYOUT JSON (Copy this):", JSON.stringify(dataToSave));
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
         }
     }, [layouts, widgetData]);
 
@@ -374,7 +376,7 @@ const DashboardOverview = ({
                         >
                             <div
                                 className={cn(
-                                    "h-full w-full bg-card rounded-lg border border-zinc-400/80 dark:border-zinc-600 shadow-sm overflow-hidden",
+                                    "h-full w-full bg-card rounded-lg border border-zinc-400/80 dark:border-zinc-600 shadow-sm overflow-hidden group",
                                     "animate-in slide-in-from-bottom-4 fade-in duration-700 fill-mode-both",
                                     isEditable && "select-none cursor-move hover:border-dashed hover:border-primary/50"
                                 )}
@@ -410,8 +412,8 @@ const DashboardOverview = ({
                         </div>
                     );
                 })}
-            </ResponsiveGridLayout>
-        </div>
+            </ResponsiveGridLayout >
+        </div >
     );
 };
 

@@ -9,7 +9,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { showSuccess } from '@/utils/toast';
 
+import { useToast } from "@/hooks/use-toast";
+
 const DashboardOverviewWrapper = () => {
+  const { toast } = useToast();
   const [firstName, setFirstName] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('user_first_name') || 'User';
@@ -55,7 +58,9 @@ const DashboardOverviewWrapper = () => {
       if (saveLayoutRef.current) {
         try {
           await saveLayoutRef.current();
-          showSuccess("Layout saved successfully!");
+          toast({
+            description: "Layout saved successfully!",
+          });
           setIsEditable(false);
         } catch (error) {
           console.error("Failed to save layout:", error);
@@ -78,34 +83,41 @@ const DashboardOverviewWrapper = () => {
   return (
     <>
       <div className={cn(
-        "flex justify-end items-center mb-4 gap-2",
-        isMobile && "px-4"
+        "fixed bottom-6 right-6 z-50 transition-all duration-300",
+        isMobile && "bottom-20 right-4"
       )}>
-        {isEditable && (
-          <Button variant="outline" size="sm" onClick={() => setIsAddSheetOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Widget
+        <div className="flex flex-col gap-2 items-end">
+          {isEditable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAddSheetOpen(true)}
+              className="gap-2 shadow-lg bg-background/80 rounded-full backdrop-blur-sm animate-in slide-in-from-bottom-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Widget
+            </Button>
+          )}
+          <Button
+            variant={isEditable ? 'default' : 'secondary'}
+            size={isEditable ? 'default' : 'icon'}
+            onClick={handleToggleEdit}
+            className={cn(
+              "shadow-lg transition-all rounded-full h-12 w-12",
+              isEditable && "w-auto px-4 h-10 rounded-full"
+            )}
+            title={isEditable ? 'Save Layout' : 'Edit Layout'}
+          >
+            {isEditable ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Done
+              </>
+            ) : (
+              <Pencil className="h-5 w-5" />
+            )}
           </Button>
-        )}
-        <Button
-          variant={isEditable ? 'default' : 'ghost'}
-          size={isEditable ? 'sm' : 'icon'}
-          onClick={handleToggleEdit}
-          className={cn(
-            "transition-all",
-            !isEditable && "hover:bg-muted text-muted-foreground"
-          )}
-          title={isEditable ? 'Save Layout' : 'Edit Layout'}
-        >
-          {isEditable ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Save
-            </>
-          ) : (
-            <Pencil className="h-4 w-4" />
-          )}
-        </Button>
+        </div>
       </div>
       <div className="flex-grow">
         <DashboardOverview
