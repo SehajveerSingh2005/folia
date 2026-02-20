@@ -59,7 +59,9 @@ const DashboardOverviewWrapper = () => {
         try {
           await saveLayoutRef.current();
           toast({
-            description: "Layout saved successfully!",
+            description: "Layout saved",
+            className: "!w-auto !min-w-0 !p-3 !px-6 !min-h-0 !h-9 rounded-full bg-foreground text-background border-none shadow-none font-medium text-xs justify-center mx-auto",
+            duration: 2000,
           });
           setIsEditable(false);
         } catch (error) {

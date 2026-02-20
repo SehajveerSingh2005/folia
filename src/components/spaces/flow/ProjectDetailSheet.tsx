@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -141,7 +142,8 @@ const ProjectDetailSheet = ({
                 content: newTaskContent,
                 loom_item_id: project.id,
                 user_id: (await supabase.auth.getUser()).data.user?.id,
-                is_done: false
+                is_done: false,
+                type: 'Task'
             });
 
             if (error) throw error;
@@ -151,6 +153,23 @@ const ProjectDetailSheet = ({
             onProjectUpdated();
         } catch (error: any) {
             showError('Failed to add task');
+        }
+    };
+
+    const handleDeleteTask = async (taskId: string) => {
+        try {
+            const { error } = await supabase
+                .from('ledger_items')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+
+            showSuccess('Task deleted');
+            queryClient.invalidateQueries({ queryKey: ['tasks', project.id] });
+            onProjectUpdated();
+        } catch (error: any) {
+            showError('Failed to delete task');
         }
     };
 
@@ -164,7 +183,7 @@ const ProjectDetailSheet = ({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[80vh] flex flex-col gap-0 p-0 overflow-hidden outline-none">
-                {/* Fixed Header Area */}
+                {/* ... (Header Area skipped for brevity, keeping existing) ... */}
                 <div className="p-6 pb-4 bg-background z-10 shrink-0">
                     <div className="flex justify-between items-start mb-4">
                         {isEditing ? (
@@ -251,19 +270,22 @@ const ProjectDetailSheet = ({
                                 ) : tasks.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground italic">No tasks yet.</div>
                                 ) : (
-                                    tasks.map((task: any, index: number) => (
-                                        <TaskItem
-                                            key={task.id}
-                                            index={index}
-                                            task={task}
-                                            onUpdate={handleTaskUpdate}
-                                            onDelete={handleTaskUpdate}
-                                        />
-                                    ))
+                                    <AnimatePresence mode="popLayout">
+                                        {tasks.map((task: any, index: number) => (
+                                            <TaskItem
+                                                key={task.id}
+                                                index={index}
+                                                task={task}
+                                                onUpdate={handleTaskUpdate}
+                                                onDelete={() => handleDeleteTask(task.id)}
+                                            />
+                                        ))}
+                                    </AnimatePresence>
                                 )}
                             </div>
                         </TabsContent>
 
+                        {/* ... (Rest of TabsContents) ... */}
                         <TabsContent value="notes" className="p-6 m-0 h-full data-[state=active]:flex flex-col">
                             {isEditing ? (
                                 <Textarea
@@ -332,6 +354,7 @@ interface TaskItemProps {
 }
 
 const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
+    // ... (rest of TaskItem component logic can remain or be partially updated if needed, but I'll update the motion.div below)
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState(task.content);
     const [dueDate, setDueDate] = useState<Date | undefined>(task.due_date ? new Date(task.due_date) : undefined);
@@ -366,9 +389,13 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
     };
 
     return (
-        <div
-            className="group flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors animate-in slide-in-from-bottom-2 fade-in duration-300 fill-mode-both"
-            style={{ animationDelay: `${index * 50}ms` }}
+        <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.2, delay: index * 0.05 }}
+            className="group flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
         >
             <button
                 onClick={toggleComplete}
@@ -479,7 +506,7 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
-        </div>
+        </motion.div>
     );
 };
 
