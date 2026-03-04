@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Search, Pin, PinOff } from 'lucide-react';
+import { Plus, Search, Pin, PinOff, LayoutGrid, Network } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -22,6 +22,8 @@ interface NoteListProps {
     onAdd: () => void;
     isPinned: boolean;
     onTogglePin: () => void;
+    viewMode: 'editor' | 'graph';
+    onChangeViewMode: (mode: 'editor' | 'graph') => void;
 }
 
 const stripHtml = (html: string) => {
@@ -30,7 +32,7 @@ const stripHtml = (html: string) => {
     return tmp.textContent || tmp.innerText || "";
 }
 
-const NoteList = ({ items, selectedId, onSelect, onAdd, isPinned, onTogglePin }: NoteListProps) => {
+const NoteList = ({ items, selectedId, onSelect, onAdd, isPinned, onTogglePin, viewMode, onChangeViewMode }: NoteListProps) => {
     const [search, setSearch] = useState('');
 
     const filteredItems = items.filter(item => {
@@ -45,7 +47,28 @@ const NoteList = ({ items, selectedId, onSelect, onAdd, isPinned, onTogglePin }:
         <div className="flex flex-col h-full w-full max-w-full overflow-hidden bg-background/50 backdrop-blur-xl">
             <div className="p-4 border-b space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Notes</h3>
+                    <div className="flex bg-muted/50 p-1 rounded-md">
+                        <div
+                            onClick={() => onChangeViewMode('editor')}
+                            className={cn(
+                                "cursor-pointer p-1.5 rounded-sm transition-colors",
+                                viewMode === 'editor' ? "bg-background shadow-sm text-foreground" : "hover:bg-muted/80 text-muted-foreground"
+                            )}
+                            title="Editor View"
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </div>
+                        <div
+                            onClick={() => onChangeViewMode('graph')}
+                            className={cn(
+                                "cursor-pointer p-1.5 rounded-sm transition-colors",
+                                viewMode === 'graph' ? "bg-background shadow-sm text-foreground" : "hover:bg-muted/80 text-muted-foreground"
+                            )}
+                            title="Constellation View"
+                        >
+                            <Network className="w-4 h-4" />
+                        </div>
+                    </div>
                     <div className="flex items-center gap-1">
                         <Button size="icon" variant="ghost" onClick={onTogglePin} title={isPinned ? "Unpin Sidebar" : "Pin Sidebar"}>
                             {isPinned ? <Pin className="h-4 w-4 rotate-45" /> : <PinOff className="h-4 w-4" />}

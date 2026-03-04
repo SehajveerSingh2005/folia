@@ -25,14 +25,16 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote } from 'lucide-react';
+import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { ItemLinker } from '@/components/spaces/garden/ItemLinker';
+import { useRouter } from 'next/navigation';
 
 const projectSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -58,6 +60,7 @@ const ProjectDetailSheet = ({
     onProjectUpdated,
 }: ProjectDetailSheetProps) => {
     const queryClient = useQueryClient();
+    const router = useRouter();
     const [newTaskContent, setNewTaskContent] = useState('');
     const [isEditing, setIsEditing] = useState(false);
 
@@ -285,19 +288,14 @@ const ProjectDetailSheet = ({
                             </div>
                         </TabsContent>
 
-                        {/* ... (Rest of TabsContents) ... */}
                         <TabsContent value="notes" className="p-6 m-0 h-full data-[state=active]:flex flex-col">
-                            {isEditing ? (
-                                <Textarea
-                                    {...form.register('notes')}
-                                    className="flex-1 resize-none border-none focus-visible:ring-0 bg-transparent text-lg leading-relaxed min-h-[300px]"
-                                    placeholder="Project notes..."
-                                />
-                            ) : (
-                                <div className="whitespace-pre-wrap text-lg leading-relaxed text-foreground/80 min-h-[300px]">
-                                    {project.notes || <span className="text-muted-foreground italic">No notes added.</span>}
+                            <div className="flex-1">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-medium">Linked Notes</h3>
+                                    <ItemLinker itemId={project.id} itemType="Project" hideItems />
                                 </div>
-                            )}
+                                <LinkedNotesGrid projectId={project.id} />
+                            </div>
                         </TabsContent>
 
                         <TabsContent value="info" className="p-6 m-0">
@@ -507,6 +505,112 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                 </DropdownMenu>
             )}
         </motion.div>
+    );
+};
+
+// --- LinkedNotesGrid Component ---
+
+const LinkedNotesGrid = ({ projectId }: { projectId: string }) => {
+    const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const { data: notes, isLoading } = useQuery({
+        queryKey: ['project_linked_notes', projectId],
+        queryFn: async () => {
+            const { data: links, error: linksError } = await supabase
+                .from('item_links')
+                .select('*')
+                .or(`source_item_id.eq.${projectId},target_item_id.eq.${projectId}`);
+
+            if (linksError) throw linksError;
+
+            const linkedIds = links.map(l => l.source_item_id === projectId ? l.target_item_id : l.source_item_id);
+            if (linkedIds.length === 0) return [];
+
+            const { data: gardenItems, error: itemsError } = await supabase
+                .from('garden_items')
+                .select('id, title, content, created_at')
+                .in('id', linkedIds);
+
+            if (itemsError) throw itemsError;
+
+            return gardenItems.map(item => {
+                const link = links.find(l => l.source_item_id === item.id || l.target_item_id === item.id);
+                return { ...item, link_id: link?.id };
+            });
+        }
+    });
+
+    const removeLinkMutation = useMutation({
+        mutationFn: async (linkId: string) => {
+            const { error } = await supabase.from('item_links').delete().eq('id', linkId);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['item_links', projectId] });
+            queryClient.invalidateQueries({ queryKey: ['project_linked_notes', projectId] });
+            queryClient.invalidateQueries({ queryKey: ['constellation_data'] });
+        },
+        onError: (err: Error) => showError(err.message)
+    });
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-40 bg-muted/40 animate-pulse rounded-xl" />
+                ))}
+            </div>
+        );
+    }
+
+    if (!notes || notes.length === 0) {
+        return <div className="text-muted-foreground italic text-sm mt-4">No garden notes linked to this project yet. Use the button above to link or create one.</div>;
+    }
+
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {notes.map(note => {
+                const cleanContent = (note.content || '').replace(/<[^>]+>/g, ' ');
+                return (
+                    <div
+                        key={note.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Also trigger the sheet to close so it navigates cleanly
+                            const closeBtn = document.querySelector('[data-state="open"]')?.parentElement?.querySelector('button[aria-label="Close"]') as HTMLButtonElement | null;
+                            if (closeBtn) closeBtn.click();
+
+                            // Small delay to let sheet closing animation start
+                            setTimeout(() => router.push(`/garden?noteId=${note.id}`), 150);
+                        }}
+                        className="group bg-card border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-all flex flex-col h-40 shadow-sm hover:shadow-md relative"
+                    >
+                        {note.link_id && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeLinkMutation.mutate(note.link_id as string);
+                                }}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        )}
+                        <div className="flex items-center gap-2 mb-2 pr-6">
+                            <StickyNote className="w-4 h-4 text-green-500 shrink-0" />
+                            <h4 className="font-semibold text-sm line-clamp-1 flex-1">{note.title || 'Untitled Note'}</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-4 flex-1 mt-1">{cleanContent || 'Empty note'}</p>
+                        <div className="text-[10px] text-muted-foreground mt-3 font-medium opacity-60">
+                            {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
     );
 };
 

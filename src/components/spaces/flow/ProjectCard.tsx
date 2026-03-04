@@ -31,9 +31,10 @@ export interface ProjectCardProps {
     onEdit?: () => void;
     onDelete?: () => void;
     onAddTask?: (content: string) => void;
+    readOnly?: boolean;
 }
 
-const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask }: ProjectCardProps) => {
+const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask, readOnly }: ProjectCardProps) => {
     const nextTask = project.tasks?.find(t => !t.completed);
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [newTaskContent, setNewTaskContent] = useState('');
@@ -44,7 +45,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask }: ProjectC
     const statusColors = {
         Active: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50',
         Paused: 'bg-amber-500/10 text-amber-600 border-amber-200/50',
-        Completed: 'bg-blue-500/10 text-blue-600 border-blue-200/50',
+        Completed: 'bg-primary/10 text-primary border-primary/20',
         Backlog: 'bg-slate-500/10 text-slate-600 border-slate-200/50',
     };
 
@@ -80,31 +81,35 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask }: ProjectC
                     </div>
                 </div>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>Edit Project</DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="text-destructive">Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                {!readOnly && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>Edit Project</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="text-destructive">Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
 
             {/* Up Next / Summary */}
             <div className="mt-4 flex-grow">
                 <div className="flex justify-between items-center mb-2">
                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Up Next</p>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 -mr-1 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => { e.stopPropagation(); setIsAddingTask(!isAddingTask); }}
-                    >
-                        <Plus className="h-3 w-3" />
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 -mr-1 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); setIsAddingTask(!isAddingTask); }}
+                        >
+                            <Plus className="h-3 w-3" />
+                        </Button>
+                    )}
                 </div>
 
                 {isAddingTask ? (
@@ -140,9 +145,7 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask }: ProjectC
                     <span>Progress</span>
                     <span>{Math.round(progress)}%</span>
                 </div>
-                <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName={cn(
-                    project.status === 'Completed' ? 'bg-blue-500' : 'bg-primary'
-                )} />
+                <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-primary" />
                 {project.due_date && (
                     <p className="text-xs text-muted-foreground mt-2 text-right">
                         Due {format(new Date(project.due_date), 'MMM d')}

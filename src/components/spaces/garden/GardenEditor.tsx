@@ -16,13 +16,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { SlashCommand } from './SlashCommand';
+import { ItemLinker } from './ItemLinker';
 
 interface GardenEditorProps {
     item: GardenItem;
     onUpdate: (id: string, data: Partial<GardenItem>) => Promise<void>;
+    onDelete?: (id: string) => Promise<void>;
 }
 
-const GardenEditor = ({ item, onUpdate }: GardenEditorProps) => {
+const GardenEditor = ({ item, onUpdate, onDelete }: GardenEditorProps) => {
     const [title, setTitle] = useState(item.title || '');
     const [isSaving, setIsSaving] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -102,7 +104,11 @@ const GardenEditor = ({ item, onUpdate }: GardenEditorProps) => {
                                 <Download className="mr-2 h-4 w-4" />
                                 <span>Export Markdown</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
+                                if (onDelete) {
+                                    onDelete(item.id);
+                                }
+                            }}>
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 <span>Delete Note</span>
                             </DropdownMenuItem>
@@ -122,8 +128,21 @@ const GardenEditor = ({ item, onUpdate }: GardenEditorProps) => {
                 </div>
             </div>
 
-            <div className="flex-grow overflow-y-auto cursor-text" onClick={() => editor.commands.focus()}>
-                <div className="max-w-3xl mx-auto pt-12 pb-12 px-12">
+            <div
+                className="flex-grow overflow-y-auto cursor-text"
+                onClick={(e) => {
+                    // Only focus if clicking the background wrapper, not the textarea or inner contents
+                    if (e.target === e.currentTarget) {
+                        editor.commands.focus();
+                    }
+                }}
+            >
+                <div className="max-w-3xl mx-auto pt-12 pb-12 px-12" onClick={(e) => {
+                    // Same here for the inner wrapper
+                    if (e.target === e.currentTarget) {
+                        editor.commands.focus();
+                    }
+                }}>
                     <TextareaAutosize
                         value={title}
                         onChange={(e) => handleTitleChange(e as any)}
@@ -137,6 +156,7 @@ const GardenEditor = ({ item, onUpdate }: GardenEditorProps) => {
                         className="w-full resize-none bg-transparent text-5xl font-bold font-serif focus:outline-none placeholder:text-muted-foreground/30 mb-8"
                     />
                     <EditorContent editor={editor} />
+                    <ItemLinker itemId={item.id} itemType="Garden" />
                 </div>
             </div>
         </div>
