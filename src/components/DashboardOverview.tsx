@@ -139,6 +139,7 @@ const DashboardOverview = ({
     const layoutsRef = useRef(layouts);
     const widgetDataRef = useRef(widgetData);
     const containerRef = useRef<HTMLDivElement>(null);
+    const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         layoutsRef.current = layouts;
@@ -329,13 +330,31 @@ const DashboardOverview = ({
     }, []);
 
     const handleWidgetDataUpdate = (id: string, data: any) => {
-        setWidgetData(prev => ({
-            ...prev,
-            [id]: data
-        }));
+        setWidgetData(prev => {
+            const newData = {
+                ...prev,
+                [id]: data
+            };
 
-        // Optional: Auto-save logic could go here if we wanted "live" saving
-        // But for now we stick to "Save Layout" to persist everything
+            // Auto-save logic for immediate widget settings updates
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+            autoSaveTimeoutRef.current = setTimeout(async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const payload = {
+                    layouts: layoutsRef.current,
+                    widgetData: newData
+                };
+
+                const { error } = await supabase.from('user_dashboard_layouts').upsert({ user_id: user.id, layouts: payload });
+                if (error) console.error("Auto-save widget data failed:", error);
+            }, 1000);
+
+            return newData;
+        });
     };
 
     const saveLayoutToDatabase = useCallback(async () => {
