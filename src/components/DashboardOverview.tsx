@@ -68,25 +68,58 @@ const widgetNavigationMap: { [key: string]: string } = {
 const generateDefaultLayouts = (): { layouts: CustomLayouts; widgetData: WidgetDataMap } => {
     // Generate static IDs for default layout to ensure stability
     const welcomeId = 'widget-welcome-default';
-    const clockId = 'widget-clock-default';
-    const dueTodayId = 'widget-duetoday-default';
     const flowId = 'widget-flow-default';
-    const goalsId = 'widget-goals-default';
+    const dueTodayId = 'widget-duetoday-default';
+    const clockId = 'widget-clock-default';
     const inboxId = 'widget-inbox-default';
+    const goalsId = 'widget-goals-default';
+    const imageId = 'widget-image-default';
+    const noteId = 'widget-note-default';
+    const journalId = 'widget-journal-default';
 
-    // We are now only using 'lg' layout for consistency
     const layouts = {
         lg: [
-            { i: welcomeId, widget_type: 'Welcome', x: 0, y: 0, w: 4, h: 4, minW: 3, minH: 2 },
-            { i: flowId, widget_type: 'Flow', x: 6, y: 0, w: 6, h: 8, minW: 3, minH: 6 },
-            { i: dueTodayId, widget_type: 'DueToday', x: 0, y: 4, w: 4, h: 6, minW: 3, minH: 4 },
-            { i: clockId, widget_type: 'Clock', x: 4, y: 4, w: 4, h: 4, minW: 3, minH: 2 },
-            { i: inboxId, widget_type: 'Inbox', x: 0, y: 10, w: 6, h: 8, minW: 3, minH: 6 },
-            { i: goalsId, widget_type: 'Goals', x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 6 },
+            { h: 4, i: welcomeId, w: 4, x: 0, y: 0, minH: 4, minW: 3, widget_type: "Welcome" },
+            { h: 6, i: flowId, w: 4, x: 4, y: 0, minH: 6, minW: 3, widget_type: "Flow" },
+            { h: 6, i: dueTodayId, w: 4, x: 0, y: 11, minH: 4, minW: 3, widget_type: "DueToday" },
+            { h: 4, i: clockId, w: 4, x: 4, y: 6, minH: 4, minW: 3, widget_type: "Clock" },
+            { h: 7, i: inboxId, w: 4, x: 0, y: 4, minH: 6, minW: 3, widget_type: "Inbox" },
+            { h: 6, i: goalsId, w: 4, x: 8, y: 0, minH: 6, minW: 3, widget_type: "Goals" },
+            { h: 6, i: imageId, w: 4, x: 8, y: 6, minH: 4, minW: 2, widget_type: "Image" },
+            { h: 5, i: noteId, w: 4, x: 8, y: 12, minH: 3, minW: 3, widget_type: "Note" },
+            { h: 7, i: journalId, w: 4, x: 4, y: 10, minH: 6, minW: 4, widget_type: "Journal" }
         ],
     };
 
-    return { layouts, widgetData: {} };
+    const widgetData = {
+        [journalId]: {},
+        [noteId]: {
+            "font": "serif",
+            "color": "green",
+            "content": "Let's Do it",
+            "fontSize": 64,
+            "isItalic": true,
+            "textAlign": "left",
+            "isVerticalCenter": true
+        },
+        [clockId]: {
+            "fontSize": 64,
+            "isItalic": true,
+            "format24h": false,
+            "fontFamily": "font-serif",
+            "showSeconds": false
+        },
+        [imageId]: {
+            "url": "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=2674&auto=format&fit=crop",
+            "scale": 1,
+            "position": {
+                "x": 40.666656494140625,
+                "y": 100
+            }
+        }
+    };
+
+    return { layouts, widgetData };
 };
 
 const DashboardOverview = ({

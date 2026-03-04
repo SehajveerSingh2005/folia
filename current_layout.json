@@ -1,0 +1,141 @@
+{
+  "layouts": {
+    "lg": [
+      {
+        "h": 4,
+        "i": "074b6438-53ae-4f1e-aefb-0a9e998d8fe3",
+        "w": 4,
+        "x": 0,
+        "y": 0,
+        "minH": 4,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Welcome"
+      },
+      {
+        "h": 6,
+        "i": "aa90052b-1867-4d8f-a5eb-4b4d7ad9336c",
+        "w": 4,
+        "x": 4,
+        "y": 0,
+        "minH": 6,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Flow"
+      },
+      {
+        "h": 6,
+        "i": "7f7dd258-4502-4536-95d0-043ee92ebbee",
+        "w": 4,
+        "x": 0,
+        "y": 11,
+        "minH": 4,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "DueToday"
+      },
+      {
+        "h": 4,
+        "i": "b6f42b47-4a86-4894-b094-e327af4b3031",
+        "w": 4,
+        "x": 4,
+        "y": 6,
+        "minH": 4,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Clock"
+      },
+      {
+        "h": 7,
+        "i": "e89dca58-df8d-4f78-8e68-e02959b13e4b",
+        "w": 4,
+        "x": 0,
+        "y": 4,
+        "minH": 6,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Inbox"
+      },
+      {
+        "h": 6,
+        "i": "1278128c-7ce9-46db-8422-c551d5ddd752",
+        "w": 4,
+        "x": 8,
+        "y": 0,
+        "minH": 6,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Goals"
+      },
+      {
+        "h": 6,
+        "i": "d5ec12a3-99de-47de-bab4-217cca9b0c2d",
+        "w": 4,
+        "x": 8,
+        "y": 6,
+        "minH": 4,
+        "minW": 2,
+        "moved": false,
+        "static": false,
+        "widget_type": "Image"
+      },
+      {
+        "h": 5,
+        "i": "6c161799-498c-43bf-839c-c9f9b2d2b337",
+        "w": 4,
+        "x": 8,
+        "y": 12,
+        "minH": 3,
+        "minW": 3,
+        "moved": false,
+        "static": false,
+        "widget_type": "Note"
+      },
+      {
+        "h": 7,
+        "i": "20c1509b-a328-40be-ba25-6e80541f2ad8",
+        "w": 4,
+        "x": 4,
+        "y": 10,
+        "minH": 6,
+        "minW": 4,
+        "moved": false,
+        "static": false,
+        "widget_type": "Journal"
+      }
+    ]
+  },
+  "widgetData": {
+    "20c1509b-a328-40be-ba25-6e80541f2ad8": {},
+    "6c161799-498c-43bf-839c-c9f9b2d2b337": {
+      "font": "serif",
+      "color": "green",
+      "content": "Let's Do it",
+      "fontSize": 64,
+      "isItalic": true,
+      "textAlign": "left",
+      "isVerticalCenter": true
+    },
+    "b6f42b47-4a86-4894-b094-e327af4b3031": {
+      "fontSize": 64,
+      "isItalic": true,
+      "format24h": false,
+      "fontFamily": "font-serif",
+      "showSeconds": false
+    },
+    "d5ec12a3-99de-47de-bab4-217cca9b0c2d": {
+      "url": "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=2674&auto=format&fit=crop",
+      "scale": 1,
+      "position": {
+        "x": 40.666656494140625,
+        "y": 100
+      }
+    }
+  }
+}
