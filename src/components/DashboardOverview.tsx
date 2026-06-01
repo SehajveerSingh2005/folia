@@ -25,6 +25,9 @@ import NoteWidget from './dashboard/widgets/NoteWidget'; // New Editable Note
 import EmbedWidget from './dashboard/widgets/EmbedWidget';
 import GoogleCalendarWidget from './dashboard/widgets/GoogleCalendarWidget';
 import GitHubWidget from './dashboard/widgets/GitHubWidget';
+import GitHubHeatmapWidget from './dashboard/widgets/GitHubHeatmapWidget';
+import GitHubPRsWidget from './dashboard/widgets/GitHubPRsWidget';
+import GitHubIssuesWidget from './dashboard/widgets/GitHubIssuesWidget';
 
 const LOCAL_STORAGE_KEY = 'dashboard_layout_data';
 
@@ -57,7 +60,10 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
     Note: NoteWidget, // The new one
     Embed: EmbedWidget,
     GoogleCalendar: GoogleCalendarWidget,
-    GitHub: GitHubWidget
+    GitHub: GitHubWidget,
+    GitHubHeatmap: GitHubHeatmapWidget,
+    GitHubPRs: GitHubPRsWidget,
+    GitHubIssues: GitHubIssuesWidget
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
