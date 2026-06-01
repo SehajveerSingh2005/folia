@@ -19,6 +19,10 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   Edit3,
+  Calendar,
+  Github,
+  GitPullRequest,
+  CircleDot,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
@@ -99,6 +103,11 @@ export const availableWidgets = [
   { type: 'Journal', name: 'Journal', icon: BookOpen, description: 'A prompt for your daily journal entry.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <JournalPreview /> },
   { type: 'Goals', name: 'Goals Overview', icon: Telescope, description: 'A glimpse of your long-term Horizon goals.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <GoalsPreview /> },
   { type: 'Flow', name: 'Active Projects', icon: FolderKanban, description: 'Track the progress of your active projects.', w: 6, h: 6, minW: 4, minH: 6, mw: 6, mh: 6, preview: <FlowPreview /> },
+  { type: 'GoogleCalendar', name: 'Google Calendar', icon: Calendar, description: 'Track your daily agenda from Google Calendar.', w: 4, h: 6, minW: 4, minH: 4, mw: 6, mh: 8, preview: <div className="p-4 flex flex-col items-center justify-center h-full text-center"><Calendar className="h-8 w-8 opacity-20 mb-2" /><p className="text-[10px] text-muted-foreground">Daily Schedule</p></div> },
+  { type: 'GitHub', name: 'GitHub (All-in-One)', icon: Github, description: 'Monitor assigned issues and contribution streak.', w: 4, h: 7, minW: 4, minH: 5, mw: 6, mh: 8, preview: <div className="p-4 flex flex-col items-center justify-center h-full text-center"><Github className="h-8 w-8 opacity-20 mb-2" /><p className="text-[10px] text-muted-foreground">GitHub Board</p></div> },
+  { type: 'GitHubHeatmap', name: 'GitHub Heatmap', icon: Github, description: 'View your real GitHub contribution heatmap and streak.', w: 4, h: 4, minW: 3, minH: 4, mw: 8, mh: 4, preview: <div className="p-4 flex flex-col items-center justify-center h-full text-center"><Github className="h-8 w-8 opacity-20 mb-1" /><p className="text-[10px] text-muted-foreground">Contribution Heatmap</p></div> },
+  { type: 'GitHubPRs', name: 'GitHub Pull Requests', icon: GitPullRequest, description: 'Track your assigned open GitHub pull requests.', w: 4, h: 6, minW: 3, minH: 4, mw: 6, mh: 8, preview: <div className="p-4 flex flex-col items-center justify-center h-full text-center"><GitPullRequest className="h-8 w-8 opacity-20 mb-1 text-purple-500" /><p className="text-[10px] text-muted-foreground">Active PRs</p></div> },
+  { type: 'GitHubIssues', name: 'GitHub Issues', icon: CircleDot, description: 'Track your assigned open GitHub issues.', w: 4, h: 6, minW: 3, minH: 4, mw: 6, mh: 8, preview: <div className="p-4 flex flex-col items-center justify-center h-full text-center"><CircleDot className="h-8 w-8 opacity-20 mb-1 text-emerald-500" /><p className="text-[10px] text-muted-foreground">Assigned Issues</p></div> },
 ];
 
 interface AddWidgetSheetProps {

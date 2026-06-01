@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Moon, Sun, Monitor, Dock, Sidebar as SidebarIcon, Loader2 } from 'lucide-react';
+import { Moon, Sun, Monitor, Dock, Sidebar as SidebarIcon, Loader2, Bell } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
@@ -36,11 +36,25 @@ const SettingsDialog = ({
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
 
+    // Notifications State
+    const [notifEnabled, setNotifEnabled] = useState(false);
+    const [notifTime, setNotifTime] = useState('08:00');
+    const [notifLoading, setNotifLoading] = useState(false);
+
+    // GitHub State
+    const [githubToken, setGithubToken] = useState('');
+
     useEffect(() => {
         if (isOpen) {
             fetchUserProfile();
+            setGithubToken(localStorage.getItem('folia_github_token') || '');
         }
     }, [isOpen]);
+
+    const handleSaveGithubToken = () => {
+        localStorage.setItem('folia_github_token', githubToken.trim());
+        showSuccess('GitHub token saved successfully.');
+    };
 
     const fetchUserProfile = async () => {
         setUserLoading(true);
@@ -57,18 +71,19 @@ const SettingsDialog = ({
 
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('first_name, last_name')
+            .select('first_name, last_name, email_notifications_enabled, notification_time')
             .eq('id', user.id)
             .single();
 
         if (profileError && profileError.code !== 'PGRST116') {
-            // PGRST116 is "Row not found", which might happen if profile doesn't exist yet
-            showError("Failed to fetch user profile data");
+            showError(`Failed to fetch user profile data: ${profileError.message} (Code: ${profileError.code})`);
         }
 
         if (profile) {
             setFirstName(profile.first_name || '');
             setLastName(profile.last_name || '');
+            setNotifEnabled(profile.email_notifications_enabled ?? false);
+            setNotifTime(profile.notification_time ?? '08:00');
         }
         setUserLoading(false);
     };
@@ -107,6 +122,23 @@ const SettingsDialog = ({
         window.location.reload();
     };
 
+    const handleSaveNotifications = async () => {
+        setNotifLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { showError('No user logged in'); setNotifLoading(false); return; }
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                email_notifications_enabled: notifEnabled,
+                notification_time: notifTime,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', user.id);
+        if (error) showError(error.message);
+        else showSuccess('Notification preferences saved.');
+        setNotifLoading(false);
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl sm:max-w-[600px] gap-6">
@@ -121,6 +153,12 @@ const SettingsDialog = ({
                             className="rounded-none border-b-2 border-transparent px-2 py-2 text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                         >
                             Appearance
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="notifications"
+                            className="rounded-none border-b-2 border-transparent px-2 py-2 text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                        >
+                            Notifications
                         </TabsTrigger>
                         <TabsTrigger
                             value="account"
@@ -191,6 +229,49 @@ const SettingsDialog = ({
                         </div>
                     </TabsContent>
 
+                    {/* ── Notifications Tab ── */}
+                    <TabsContent value="notifications" className="space-y-6 mt-0">
+                        <div className="space-y-5">
+                            <div>
+                                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px] mb-4">Email Reminders</h4>
+                                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+                                    <div>
+                                        <p className="font-medium text-sm">Daily task digest</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Get an email each morning with tasks due today and any overdue items.</p>
+                                    </div>
+                                    <Switch
+                                        id="notif-toggle"
+                                        checked={notifEnabled}
+                                        onCheckedChange={setNotifEnabled}
+                                    />
+                                </div>
+                            </div>
+
+                            {notifEnabled && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="notif-time" className="text-sm">Send at</Label>
+                                    <Input
+                                        id="notif-time"
+                                        type="time"
+                                        value={notifTime}
+                                        onChange={(e) => setNotifTime(e.target.value)}
+                                        className="w-36"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Uses your local timezone.</p>
+                                </div>
+                            )}
+
+                            <Button
+                                onClick={handleSaveNotifications}
+                                disabled={notifLoading}
+                                className="w-full sm:w-auto"
+                            >
+                                {notifLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Notification Settings
+                            </Button>
+                        </div>
+                    </TabsContent>
+
                     <TabsContent value="account" className="space-y-6 mt-0">
                         {userLoading ? (
                             <div className="flex justify-center p-8">
@@ -225,6 +306,35 @@ const SettingsDialog = ({
                                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Changes
                                     </Button>
+
+                                    <div className="space-y-2 border-t pt-4 mt-2">
+                                        <Label htmlFor="githubToken">GitHub Personal Access Token (PAT)</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="githubToken"
+                                                type="password"
+                                                placeholder="ghp_..."
+                                                value={githubToken}
+                                                onChange={(e) => setGithubToken(e.target.value)}
+                                                className="font-mono flex-1 text-xs"
+                                            />
+                                            <Button size="sm" variant="secondary" onClick={handleSaveGithubToken}>
+                                                Save Token
+                                            </Button>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Optional. Used to close or create issues on GitHub. Will be stored locally on your device. You can{' '}
+                                            <a
+                                                href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                                            >
+                                                generate a Personal Access Token (Classic)
+                                            </a>{' '}
+                                            with the <code className="px-1 py-0.5 bg-muted rounded text-[10px]">repo</code> scope.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="border-t pt-6">

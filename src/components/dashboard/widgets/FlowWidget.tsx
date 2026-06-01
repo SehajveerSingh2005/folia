@@ -53,8 +53,8 @@ const FlowWidget = () => {
   return (
     <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Active in Flow</CardTitle>
-        <CardDescription>A snapshot of your current projects.</CardDescription>
+        <CardTitle className="font-sans font-medium text-base sm:text-lg">Active Projects</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">A snapshot of your current projects.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-4">
@@ -79,7 +79,7 @@ const FlowWidget = () => {
                   <AnimatedProgress value={calculateProgress(item.tasks)} />
                 </div>
               ))}
-              {items.length === 0 && <p className="text-sm text-muted-foreground">No active items in your flow.</p>}
+              {items.length === 0 && <p className="text-sm text-muted-foreground">No active projects found.</p>}
             </>
           )}
         </div>

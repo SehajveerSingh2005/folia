@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Play, Pause, CheckCircle2, Circle, Plus } from 'lucide-react';
+import { MoreHorizontal, Play, Pause, CheckCircle2, Circle, Plus, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -30,11 +30,12 @@ export interface ProjectCardProps {
     onClick: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    onArchive?: () => void;
     onAddTask?: (content: string) => void;
     readOnly?: boolean;
 }
 
-const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask, readOnly }: ProjectCardProps) => {
+const ProjectCard = ({ project, onClick, onEdit, onDelete, onArchive, onAddTask, readOnly }: ProjectCardProps) => {
     const nextTask = project.tasks?.find(t => !t.completed);
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [newTaskContent, setNewTaskContent] = useState('');
@@ -90,6 +91,9 @@ const ProjectCard = ({ project, onClick, onEdit, onDelete, onAddTask, readOnly }
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>Edit Project</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive?.(); }}>
+                                <Archive className="w-4 h-4 mr-2" /> Archive Project
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="text-destructive">Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

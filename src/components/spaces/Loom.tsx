@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban, Plus } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { format, isToday, isPast, parseISO, startOfToday, isFuture } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -28,12 +29,55 @@ type Project = {
 };
 
 const fetchTasks = async () => {
-  const { data, error } = await supabase
+  const { data: dbTasks, error } = await supabase
     .from('ledger_items')
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return data.filter(task =>
+
+  let merged = dbTasks || [];
+
+  const token = localStorage.getItem('folia_github_token');
+  if (token) {
+    try {
+      const userRes = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `token ${token}` },
+      });
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        const login = userData.login;
+
+        const issuesRes = await fetch(`https://api.github.com/search/issues?q=is:issue+state:open+assignee:${login}`, {
+          headers: { Authorization: `token ${token}` },
+        });
+        if (issuesRes.ok) {
+          const issuesData = await issuesRes.json();
+          const githubTasks = (issuesData.items || []).map((issue: any) => {
+            const repoName = issue.repository_url.split('/repos/')[1] || 'repo';
+            return {
+              id: `github-${issue.number}`,
+              content: issue.title,
+              is_done: false,
+              loom_item_id: null,
+              completed_at: null,
+              due_date: null,
+              priority: 'Medium',
+              notes: `GitHub Issue #${issue.number}`,
+              isGitHub: true,
+              githubUrl: issue.html_url,
+              githubNumber: issue.number,
+              githubRepo: repoName,
+            };
+          });
+          merged = [...merged, ...githubTasks];
+        }
+      }
+    } catch (ghErr) {
+      console.error('Error fetching GitHub issues for Loom:', ghErr);
+    }
+  }
+
+  return merged.filter(task =>
     !task.is_done ||
     (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
   );
@@ -51,6 +95,9 @@ const fetchProjects = async () => {
 const Loom = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
+  const [quickCapture, setQuickCapture] = useState('');
+  const [quickPriority, setQuickPriority] = useState<string | null>(null);
+  const quickInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: allTasks, isLoading: isLoadingTasks, error: tasksError } = useQuery<LedgerItem[]>({
@@ -68,15 +115,59 @@ const Loom = () => {
     if (projectsError) showError('Could not fetch projects.');
   }, [tasksError, projectsError]);
 
-  const toggleTaskMutation = useMutation({
-    mutationFn: async ({ taskId, isDone }: { taskId: string; isDone: boolean }) => {
-      const newStatus = !isDone;
-      const completed_at = newStatus ? new Date().toISOString() : null;
-      const { error } = await supabase
-        .from('ledger_items')
-        .update({ is_done: newStatus, completed_at })
-        .eq('id', taskId);
+  const createTaskMutation = useMutation({
+    mutationFn: async ({ content, priority }: { content: string; priority: string | null }) => {
+      const { error } = await supabase.from('ledger_items').insert({
+        content,
+        priority,
+        is_done: false,
+      });
       if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+      setQuickCapture('');
+      setQuickPriority(null);
+      quickInputRef.current?.focus();
+    },
+    onError: (err: Error) => showError(err.message),
+  });
+
+  const handleQuickCapture = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && quickCapture.trim()) {
+      createTaskMutation.mutate({ content: quickCapture.trim(), priority: quickPriority });
+    }
+  };
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: async ({ task }: { task: LedgerItem }) => {
+      const newStatus = !task.is_done;
+      if (task.id.startsWith('github-') || (task as any).isGitHub) {
+        const token = localStorage.getItem('folia_github_token');
+        if (!token) throw new Error("GitHub token not found.");
+        const githubRepo = (task as any).githubRepo;
+        const githubNumber = (task as any).githubNumber;
+        if (!githubRepo || !githubNumber) throw new Error("Invalid GitHub issue metadata.");
+        
+        const [owner, repo] = githubRepo.split('/');
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${githubNumber}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ state: 'closed' }),
+        });
+        if (!res.ok) throw new Error(`GitHub API error: ${res.statusText}`);
+      } else {
+        const completed_at = newStatus ? new Date().toISOString() : null;
+        const { error } = await supabase
+          .from('ledger_items')
+          .update({ is_done: newStatus, completed_at })
+          .eq('id', task.id);
+        if (error) throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
@@ -141,7 +232,7 @@ const Loom = () => {
         <Checkbox
           id={task.id}
           checked={task.is_done}
-          onCheckedChange={() => toggleTaskMutation.mutate({ taskId: task.id, isDone: task.is_done })}
+          onCheckedChange={() => toggleTaskMutation.mutate({ task })}
           onClick={(e) => e.stopPropagation()}
         />
         <div className="flex-grow flex flex-col">
@@ -199,11 +290,48 @@ const Loom = () => {
         <div className="flex items-center gap-4">
           <ClipboardList className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-3xl sm:text-4xl font-serif">Loom</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Tasks</h2>
             <p className="text-foreground/70">
               A unified view of all your tasks.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Quick Capture Bar ── */}
+      <div className="mb-8 rounded-xl border border-border/60 bg-card px-4 py-3 flex items-center gap-3 shadow-sm focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.08)] transition-all">
+        <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Input
+          ref={quickInputRef}
+          value={quickCapture}
+          onChange={(e) => setQuickCapture(e.target.value)}
+          onKeyDown={handleQuickCapture}
+          placeholder="Capture a task… press Enter to save"
+          className="border-none shadow-none focus-visible:ring-0 bg-transparent p-0 h-auto text-base placeholder:text-muted-foreground/50"
+        />
+        <div className="flex gap-1.5 shrink-0">
+          {(['High', 'Med', 'Low'] as const).map((p) => {
+            const priority = p === 'Med' ? 'Medium' : p;
+            const isActive = quickPriority === priority;
+            return (
+              <button
+                key={p}
+                onClick={() => setQuickPriority(isActive ? null : priority)}
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full border transition-all',
+                  isActive
+                    ? p === 'High'
+                      ? 'bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400'
+                      : p === 'Med'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
+                        : 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400'
+                    : 'border-border/40 text-muted-foreground hover:border-border'
+                )}
+              >
+                {p}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -219,12 +347,13 @@ const Loom = () => {
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">All clear!</p>
               <p className="text-sm text-foreground/50">
-                Create a new task to get started.
+                Type above to capture your first task.
               </p>
             </div>
           )}
         </div>
       )}
+
 
       {selectedTask && (
         <EditTaskDialog

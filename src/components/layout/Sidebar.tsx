@@ -21,21 +21,21 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export type View =
   | 'Overview'
-  | 'Flow'
-  | 'Loom'
-  | 'Garden'
+  | 'Projects'
+  | 'Tasks'
+  | 'Notes'
   | 'Journal'
-  | 'Horizon'
-  | 'Archive';
+  | 'Goals'
+  | 'Shipped';
 
 const navItems: { id: View; icon: React.ElementType; label: string; path: string }[] = [
   { id: 'Overview', icon: LayoutGrid, label: 'Home', path: '/dashboard' },
-  { id: 'Loom', icon: ClipboardList, label: 'Loom', path: '/loom' },
-  { id: 'Flow', icon: FolderKanban, label: 'Flow', path: '/flow' },
-  { id: 'Garden', icon: Sparkles, label: 'Garden', path: '/garden' },
+  { id: 'Tasks', icon: ClipboardList, label: 'Tasks', path: '/loom' },
+  { id: 'Projects', icon: FolderKanban, label: 'Projects', path: '/flow' },
+  { id: 'Notes', icon: Sparkles, label: 'Notes', path: '/garden' },
   { id: 'Journal', icon: Book, label: 'Journal', path: '/journal' },
-  { id: 'Horizon', icon: Telescope, label: 'Horizon', path: '/horizon' },
-  { id: 'Archive', icon: Archive, label: 'Archive', path: '/archive' },
+  { id: 'Goals', icon: Telescope, label: 'Goals', path: '/horizon' },
+  { id: 'Shipped', icon: Archive, label: 'Shipped', path: '/archive' },
 ];
 
 interface SidebarProps {

@@ -5,13 +5,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type Task = {
   id: string;
   content: string;
   is_done: boolean;
+  isGitHub?: boolean;
+  githubRepo?: string;
+  githubNumber?: number;
 };
 
 const InboxWidget = () => {
@@ -22,17 +25,62 @@ const InboxWidget = () => {
   const [isOverflowing, setIsOverflowing] = useState(false);
 
   const fetchData = async () => {
-    const { data, error } = await supabase
-      .from('ledger_items')
-      .select('id, content, is_done')
-      .is('loom_item_id', null)
-      .eq('is_done', false)
-      .limit(10)
-      .order('created_at', { ascending: true });
+    setIsLoading(true);
+    try {
+      const { data: dbTasks, error: dbError } = await supabase
+        .from('ledger_items')
+        .select('id, content, is_done')
+        .is('due_date', null)
+        .eq('is_done', false)
+        .limit(10)
+        .order('created_at', { ascending: true });
 
-    if (error) console.error('Error fetching tasks:', error);
-    else if (data) setTasks(data);
-    setIsLoading(false);
+      if (dbError) {
+        console.error('Error fetching tasks:', dbError);
+      }
+
+      let merged: Task[] = dbTasks || [];
+
+      const token = localStorage.getItem('folia_github_token');
+      if (token) {
+        try {
+          const userRes = await fetch('https://api.github.com/user', {
+            headers: { Authorization: `token ${token}` },
+          });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            const login = userData.login;
+
+            const issuesRes = await fetch(`https://api.github.com/search/issues?q=is:issue+state:open+assignee:${login}`, {
+              headers: { Authorization: `token ${token}` },
+            });
+            if (issuesRes.ok) {
+              const issuesData = await issuesRes.json();
+              const githubTasks = (issuesData.items || []).map((issue: any) => {
+                const repoName = issue.repository_url.split('/repos/')[1] || 'repo';
+                return {
+                  id: `github-${issue.number}`,
+                  content: issue.title,
+                  is_done: false,
+                  isGitHub: true,
+                  githubRepo: repoName,
+                  githubNumber: issue.number,
+                };
+              });
+              merged = [...merged, ...githubTasks];
+            }
+          }
+        } catch (ghErr) {
+          console.error('Error fetching GitHub issues for inbox:', ghErr);
+        }
+      }
+
+      setTasks(merged);
+    } catch (err) {
+      console.error('Error in inbox fetchData:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -72,21 +120,53 @@ const InboxWidget = () => {
     }
   };
 
-  const handleToggleTask = async (taskId: string, isDone: boolean) => {
+  const handleToggleTask = async (task: Task) => {
+    const taskId = task.id;
+    const isDone = task.is_done;
     const newStatus = !isDone;
     setTasks(tasks.filter(t => t.id !== taskId));
 
-    const { error } = await supabase
-      .from('ledger_items')
-      .update({
-        is_done: newStatus,
-        completed_at: newStatus ? new Date().toISOString() : null,
-      })
-      .eq('id', taskId);
+    if (taskId.startsWith('github-') || task.isGitHub) {
+      const token = localStorage.getItem('folia_github_token');
+      if (!token) {
+        showError("Please add your GitHub Personal Access Token in Settings to close issues.");
+        fetchData();
+        return;
+      }
+      try {
+        const githubRepo = task.githubRepo;
+        const githubNumber = task.githubNumber;
+        if (!githubRepo || !githubNumber) throw new Error("Invalid GitHub issue metadata.");
+        
+        const [owner, repo] = githubRepo.split('/');
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${githubNumber}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ state: 'closed' }),
+        });
+        if (!res.ok) throw new Error(res.statusText);
+        showSuccess(`Closed GitHub issue #${githubNumber}`);
+      } catch (err: any) {
+        showError(`Failed to close issue: ${err.message}`);
+        fetchData();
+      }
+    } else {
+      const { error } = await supabase
+        .from('ledger_items')
+        .update({
+          is_done: newStatus,
+          completed_at: newStatus ? new Date().toISOString() : null,
+        })
+        .eq('id', taskId);
 
-    if (error) {
-      showError(error.message);
-      fetchData();
+      if (error) {
+        showError(error.message);
+        fetchData();
+      }
     }
   };
 
@@ -116,7 +196,7 @@ const InboxWidget = () => {
                   <Checkbox
                     id={`inbox-task-${task.id}`}
                     checked={task.is_done}
-                    onCheckedChange={() => handleToggleTask(task.id, task.is_done)}
+                    onCheckedChange={() => handleToggleTask(task)}
                   />
                   <label
                     htmlFor={`inbox-task-${task.id}`}

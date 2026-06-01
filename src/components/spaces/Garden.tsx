@@ -13,7 +13,7 @@ import { Loader2 } from 'lucide-react';
 const fetchGardenItems = async (): Promise<GardenItem[]> => {
   const { data, error } = await supabase
     .from('garden_items')
-    .select('id, title, content, category, created_at')
+    .select('id, title, content, category, tags, source, created_at')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -28,7 +28,7 @@ const Garden = () => {
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(true);
-  const [viewMode, setViewMode] = useState<'editor' | 'graph'>('graph');
+  const [viewMode, setViewMode] = useState<'editor' | 'graph'>('editor');
 
   const { data: items, isLoading, error } = useQuery<GardenItem[]>({
     queryKey: ['garden_items'],

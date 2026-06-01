@@ -18,20 +18,24 @@ interface DashboardLayoutProps {
   onItemCreated: () => void;
 }
 
-const capitalize = (s: string) => {
-  if (!s) return '';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 const DashboardLayout = ({ firstName, onLogout, children, onItemCreated }: DashboardLayoutProps) => {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   // const navigate = useNavigate(); // If you need programmatic nav
 
+  const pathToViewMap: Record<string, View> = {
+    dashboard: 'Overview',
+    loom: 'Tasks',
+    flow: 'Projects',
+    garden: 'Notes',
+    journal: 'Journal',
+    horizon: 'Goals',
+    archive: 'Shipped',
+  };
+
   const getViewFromPath = (): View => {
     const path = (pathname || '').split('/').pop() || '';
-    if (path === 'dashboard') return 'Overview';
-    return capitalize(path) as View;
+    return pathToViewMap[path] || 'Overview';
   };
 
   const [activeView, setActiveView] = useState<View>(getViewFromPath());
@@ -142,7 +146,7 @@ const DashboardLayout = ({ firstName, onLogout, children, onItemCreated }: Dashb
           )}>
             <main className={cn(
               "w-full max-w-[1600px] mx-auto p-8 sm:p-12 overflow-auto h-full scrollbar-hide",
-              activeView === 'Garden' && "p-0 sm:p-0 max-w-none"
+              activeView === 'Notes' && "p-0 sm:p-0 max-w-none"
             )}>
               {children}
             </main>

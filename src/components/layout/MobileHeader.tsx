@@ -56,13 +56,13 @@ const MobileHeader = ({ firstName, onLogout }: MobileHeaderProps) => {
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
               <Link href="/horizon">
                 <Telescope className="mr-3 h-5 w-5" />
-                Horizon
+                Goals
               </Link>
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
               <Link href="/archive">
                 <Archive className="mr-3 h-5 w-5" />
-                Archive
+                Shipped
               </Link>
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-md" onClick={() => setIsOpen(false)}>
