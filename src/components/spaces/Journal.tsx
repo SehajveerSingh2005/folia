@@ -21,6 +21,8 @@ import remarkGfm from 'remark-gfm';
 import { AutoGrowTextarea } from '@/components/ui/auto-grow-textarea';
 import JournalSkeleton from '../skeletons/JournalSkeleton';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import WinsBoard from './journal/WinsBoard';
 
 // Types
 type ChronicleEntry = { id?: string; entry_date: string; entry: string; mood: string; };
@@ -172,16 +174,34 @@ const Journal = () => {
   if (isLoadingEntry) return <JournalSkeleton />;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
-      {/* ── Left: Header + Calendar ── */}
-      <div className="lg:col-span-2">
-        <div className="flex items-center gap-4 mb-6">
-          <Book className="h-10 w-10 text-primary flex-shrink-0" />
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-serif">Journal</h2>
-            <p className="text-foreground/70">Reflect daily on your thoughts and progress.</p>
-          </div>
+    <div className="space-y-0">
+      {/* Space header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Book className="h-10 w-10 text-primary flex-shrink-0" />
+        <div>
+          <h2 className="text-3xl sm:text-4xl font-serif">Journal</h2>
+          <p className="text-foreground/70">Reflect daily. Track your wins.</p>
         </div>
+      </div>
+
+      <Tabs defaultValue="journal" className="w-full">
+        <TabsList className="mb-6 h-auto p-0 bg-transparent border-b rounded-none w-full justify-start space-x-6">
+          <TabsTrigger
+            value="journal"
+            className="rounded-none border-b-2 border-transparent px-2 py-2 text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          >
+            Journal
+          </TabsTrigger>
+          <TabsTrigger
+            value="wins"
+            className="rounded-none border-b-2 border-transparent px-2 py-2 text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          >
+            Wins 🏆
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="journal" className="mt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
         <Card>
           <CardContent className="p-2 flex justify-center">
             <Calendar
@@ -326,6 +346,12 @@ const Journal = () => {
           )}
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="wins" className="mt-0">
+          <WinsBoard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
