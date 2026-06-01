@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ClipboardList, Calendar, AlertCircle, Flag, Pencil, StickyNote, FolderKanban, Plus } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { format, isToday, isPast, parseISO, startOfToday, isFuture } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +52,9 @@ const fetchProjects = async () => {
 const Loom = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<LedgerItem | null>(null);
+  const [quickCapture, setQuickCapture] = useState('');
+  const [quickPriority, setQuickPriority] = useState<string | null>(null);
+  const quickInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: allTasks, isLoading: isLoadingTasks, error: tasksError } = useQuery<LedgerItem[]>({
@@ -67,6 +71,30 @@ const Loom = () => {
     if (tasksError) showError('Could not fetch tasks.');
     if (projectsError) showError('Could not fetch projects.');
   }, [tasksError, projectsError]);
+
+  const createTaskMutation = useMutation({
+    mutationFn: async ({ content, priority }: { content: string; priority: string | null }) => {
+      const { error } = await supabase.from('ledger_items').insert({
+        content,
+        priority,
+        is_done: false,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
+      setQuickCapture('');
+      setQuickPriority(null);
+      quickInputRef.current?.focus();
+    },
+    onError: (err: Error) => showError(err.message),
+  });
+
+  const handleQuickCapture = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && quickCapture.trim()) {
+      createTaskMutation.mutate({ content: quickCapture.trim(), priority: quickPriority });
+    }
+  };
 
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ taskId, isDone }: { taskId: string; isDone: boolean }) => {
@@ -207,6 +235,43 @@ const Loom = () => {
         </div>
       </div>
 
+      {/* ── Quick Capture Bar ── */}
+      <div className="mb-8 rounded-xl border border-border/60 bg-card px-4 py-3 flex items-center gap-3 shadow-sm focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.08)] transition-all">
+        <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Input
+          ref={quickInputRef}
+          value={quickCapture}
+          onChange={(e) => setQuickCapture(e.target.value)}
+          onKeyDown={handleQuickCapture}
+          placeholder="Capture a task… press Enter to save"
+          className="border-none shadow-none focus-visible:ring-0 bg-transparent p-0 h-auto text-base placeholder:text-muted-foreground/50"
+        />
+        <div className="flex gap-1.5 shrink-0">
+          {(['High', 'Med', 'Low'] as const).map((p) => {
+            const priority = p === 'Med' ? 'Medium' : p;
+            const isActive = quickPriority === priority;
+            return (
+              <button
+                key={p}
+                onClick={() => setQuickPriority(isActive ? null : priority)}
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full border transition-all',
+                  isActive
+                    ? p === 'High'
+                      ? 'bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400'
+                      : p === 'Med'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
+                        : 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400'
+                    : 'border-border/40 text-muted-foreground hover:border-border'
+                )}
+              >
+                {p}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {isLoadingTasks || isLoadingProjects ? (
         <LoomSkeleton />
       ) : (
@@ -219,12 +284,13 @@ const Loom = () => {
             <div className="text-center py-12">
               <p className="text-lg text-foreground/70">All clear!</p>
               <p className="text-sm text-foreground/50">
-                Create a new task to get started.
+                Type above to capture your first task.
               </p>
             </div>
           )}
         </div>
       )}
+
 
       {selectedTask && (
         <EditTaskDialog
