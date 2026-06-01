@@ -25,7 +25,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X } from 'lucide-react';
+import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X, Github, CircleDot, GitPullRequest } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +63,8 @@ const ProjectDetailSheet = ({
     const router = useRouter();
     const [newTaskContent, setNewTaskContent] = useState('');
     const [isEditing, setIsEditing] = useState(false);
+    const [githubRepoInput, setGithubRepoInput] = useState('');
+    const [isLinkingRepo, setIsLinkingRepo] = useState(false);
 
     const form = useForm<z.infer<typeof projectSchema>>({
         resolver: zodResolver(projectSchema),
@@ -181,6 +183,48 @@ const ProjectDetailSheet = ({
         onProjectUpdated();
     };
 
+    const handleLinkRepo = async () => {
+        if (!githubRepoInput.trim() || !project) return;
+        setIsLinkingRepo(true);
+        try {
+            let repoUrl = githubRepoInput.trim();
+            if (!repoUrl.startsWith('http')) {
+                repoUrl = `https://github.com/${repoUrl}`;
+            }
+            const { error } = await supabase
+                .from('loom_items')
+                .update({ link: repoUrl })
+                .eq('id', project.id);
+
+            if (error) throw error;
+            showSuccess('GitHub repository linked!');
+            onProjectUpdated();
+            project.link = repoUrl;
+        } catch (err: any) {
+            showError('Failed to link GitHub repository');
+        } finally {
+            setIsLinkingRepo(false);
+        }
+    };
+
+    const handleUnlinkRepo = async () => {
+        if (!project) return;
+        try {
+            const { error } = await supabase
+                .from('loom_items')
+                .update({ link: '' })
+                .eq('id', project.id);
+
+            if (error) throw error;
+            showSuccess('GitHub repository unlinked');
+            onProjectUpdated();
+            project.link = '';
+            setGithubRepoInput('');
+        } catch (err: any) {
+            showError('Failed to unlink repository');
+        }
+    };
+
     if (!project) return null;
 
     return (
@@ -243,6 +287,9 @@ const ProjectDetailSheet = ({
                             </TabsTrigger>
                             <TabsTrigger value="info" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
                                 Info
+                            </TabsTrigger>
+                            <TabsTrigger value="github" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
+                                GitHub 🐙
                             </TabsTrigger>
                         </TabsList>
                     </div>
@@ -331,6 +378,97 @@ const ProjectDetailSheet = ({
                                         <div><p className="text-muted-foreground mb-1">Link</p><p>{project.link ? <a href={project.link} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate block">{project.link}</a> : 'None'}</p></div>
                                         <div><p className="text-muted-foreground mb-1">Start Date</p><p>{project.start_date ? format(new Date(project.start_date), 'PPP') : 'N/A'}</p></div>
                                         <div><p className="text-muted-foreground mb-1">Due Date</p><p>{project.due_date ? format(new Date(project.due_date), 'PPP') : 'N/A'}</p></div>
+                                    </div>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="github" className="p-6 m-0 space-y-6">
+                            {project.link && project.link.includes('github.com') ? (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <Github className="h-6 w-6 text-zinc-950 dark:text-zinc-50" />
+                                            <div>
+                                                <h4 className="font-serif font-semibold text-sm">Linked Repository</h4>
+                                                <a
+                                                    href={project.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-primary hover:underline truncate block max-w-xs sm:max-w-md"
+                                                >
+                                                    {project.link.replace('https://github.com/', '')}
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <Button size="sm" variant="outline" onClick={handleUnlinkRepo} className="text-xs h-8">
+                                            Disconnect
+                                        </Button>
+                                    </div>
+
+                                    {/* Mock Repo Issues and Pull Requests */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active GitHub Issues & PRs</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
+                                                <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium truncate">fix: overflow bug in commonplace list scroll view</p>
+                                                    <span className="text-[10px] text-muted-foreground">#142 · Opened yesterday by sehaj</span>
+                                                </div>
+                                                <Badge className="text-[9px] font-normal shrink-0 bg-amber-500/10 text-amber-500 border-none hover:bg-amber-500/20">
+                                                    in-progress
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
+                                                <GitPullRequest className="h-4 w-4 mt-0.5 text-purple-500 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium truncate">feat: schedule email reminders dynamically via profiles</p>
+                                                    <span className="text-[10px] text-muted-foreground">#140 · Drafted 2 days ago</span>
+                                                </div>
+                                                <Badge className="text-[9px] font-normal shrink-0 bg-blue-500/10 text-blue-500 border-none hover:bg-blue-500/20">
+                                                    draft
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
+                                                <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium truncate">chore: migrate user layout state storage key structure</p>
+                                                    <span className="text-[10px] text-muted-foreground">#139 · Opened 3 days ago</span>
+                                                </div>
+                                                <Badge className="text-[9px] font-normal shrink-0 bg-zinc-500/10 text-zinc-500 border-none hover:bg-zinc-500/20">
+                                                    backlog
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="h-60 flex flex-col items-center justify-center text-center p-6 gap-4 border border-dashed rounded-2xl max-w-md mx-auto">
+                                    <div className="p-3.5 bg-muted rounded-full">
+                                        <Github className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-sm">Link GitHub Repository</h4>
+                                        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                                            Track and view repository issues and PR status right inside this project board.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2 w-full max-w-sm">
+                                        <Input
+                                            value={githubRepoInput}
+                                            onChange={(e) => setGithubRepoInput(e.target.value)}
+                                            placeholder="owner/repo (e.g. facebook/react)"
+                                            className="text-xs flex-1 h-9"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={handleLinkRepo}
+                                            disabled={isLinkingRepo || !githubRepoInput.trim()}
+                                            className="text-xs h-9"
+                                        >
+                                            Link
+                                        </Button>
                                     </div>
                                 </div>
                             )}
