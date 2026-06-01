@@ -4,7 +4,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useState, useEffect, useRef } from 'react';
 import { GardenItem } from './NoteList';
-import { MoreHorizontal, Download, Trash2, Tag } from 'lucide-react';
+import { MoreHorizontal, Download, Trash2, Tag, FolderKanban, ExternalLink } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,7 +43,33 @@ const GardenEditor = ({ item, onUpdate, onDelete }: GardenEditorProps) => {
     const [tagsInput, setTagsInput] = useState(item.tags?.join(', ') || '');
     const [source, setSource] = useState(item.source || '');
     const [isSaving, setIsSaving] = useState(false);
+    const [isPromoting, setIsPromoting] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePromoteToProject = async () => {
+        setIsPromoting(true);
+        try {
+            const plainContent = editor?.getText() || '';
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: title || 'Untitled',
+                    notes: plainContent.slice(0, 500) + (plainContent.length > 500 ? '…' : ''),
+                    source_note_id: item.id,
+                }),
+            });
+            if (!response.ok) throw new Error('Failed to promote note');
+            // Show toast with link — using showSuccess from utils
+            const { showSuccess } = await import('@/utils/toast');
+            showSuccess(`"${title || 'Untitled'}" promoted to Projects!`);
+        } catch (err) {
+            const { showError } = await import('@/utils/toast');
+            showError('Could not promote note to project.');
+        } finally {
+            setIsPromoting(false);
+        }
+    };
 
     // Initialize Editor
     const editor = useEditor({
@@ -131,6 +157,11 @@ const GardenEditor = ({ item, onUpdate, onDelete }: GardenEditorProps) => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-64">
                             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Note Options</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={handlePromoteToProject} disabled={isPromoting}>
+                                <FolderKanban className="mr-2 h-4 w-4 text-primary" />
+                                <span>Promote to Project</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => {
                                 const blob = new Blob([item.content || ''], { type: 'text/markdown' });
                                 const url = URL.createObjectURL(blob);
