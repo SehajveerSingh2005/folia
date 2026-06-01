@@ -40,9 +40,8 @@ interface NoteListProps {
 }
 
 const stripHtml = (html: string) => {
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, '');
 }
 
 const NoteList = ({ items, selectedId, onSelect, onAdd, isPinned, onTogglePin, viewMode, onChangeViewMode }: NoteListProps) => {
