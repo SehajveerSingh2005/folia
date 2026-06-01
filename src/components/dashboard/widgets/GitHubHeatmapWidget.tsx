@@ -1,25 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Github, RefreshCw, Key, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 const ContributionGraph = ({ weeks }: { weeks: any[] }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollLeft = el.scrollWidth;
+      const handle = requestAnimationFrame(() => {
+        el.scrollLeft = el.scrollWidth;
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+  }, [weeks]);
+
   if (!weeks || weeks.length === 0) return null;
 
   return (
-    <div className="flex gap-1 overflow-x-auto py-2 scrollbar-none justify-between">
+    <div
+      ref={scrollRef}
+      className="flex gap-[3.5px] overflow-x-auto py-2 scrollbar-none justify-start md:justify-center w-full select-none"
+    >
       {weeks.map((week, wIdx) => (
-        <div key={wIdx} className="flex flex-col gap-1 shrink-0">
+        <div key={wIdx} className="flex flex-col gap-[3.5px] shrink-0">
           {week.contributionDays.map((day: any, dIdx: number) => (
             <span
               key={dIdx}
               title={`${day.contributionCount} contributions on ${day.date}`}
-              className="w-2 h-2 rounded-[1.5px] transition-colors"
+              className={cn(
+                "w-[11px] h-[11px] rounded-[2px] transition-colors",
+                day.contributionCount === 0
+                  ? "bg-zinc-200/50 dark:bg-zinc-800/80"
+                  : "hover:opacity-85"
+              )}
               style={{
-                backgroundColor: day.contributionCount === 0
-                  ? 'var(--contrib-bg-empty, rgba(228, 228, 231, 0.2))'
-                  : day.color
+                backgroundColor: day.contributionCount > 0 ? day.color : undefined
               }}
             />
           ))}
@@ -131,8 +150,8 @@ const GitHubHeatmapWidget = ({ data, onUpdate }: any) => {
           if (calendar) {
             setTotalContributions(calendar.totalContributions);
             const calendarWeeks = calendar.weeks || [];
-            // Slice last 25 weeks to fit in the wide heatmap widget nicely
-            setWeeks(calendarWeeks.slice(-25));
+            // Use full calendar weeks (53 weeks) for a complete yearly heatmap
+            setWeeks(calendarWeeks);
 
             let currentStreak = 0;
             const allDays = calendarWeeks
@@ -168,25 +187,21 @@ const GitHubHeatmapWidget = ({ data, onUpdate }: any) => {
   }, [token]);
 
   return (
-    <div className="h-full flex flex-col p-4 bg-card text-card-foreground select-none justify-between">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
-        <div className="flex items-center gap-2">
-          <Github className="h-4 w-4 text-zinc-950 dark:text-zinc-50" />
-          <span className="font-serif font-medium text-sm tracking-wide">Contributions</span>
-        </div>
-        {token && (
+    <div className="h-full w-full relative bg-card text-card-foreground select-none group flex flex-col justify-center p-4">
+      {/* Floating Settings Button */}
+      {token && (
+        <div className="absolute top-2 left-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto nodrag">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors nodrag"
+            className="p-1.5 rounded-full bg-background/80 dark:bg-zinc-900/80 border shadow-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="flex-grow flex flex-col justify-center min-h-0">
+      <div className="w-full h-full flex flex-col justify-center min-h-0">
         {!token ? (
           <div className="flex flex-col items-center justify-center text-center py-2 gap-2">
             <div className="p-2 bg-zinc-100 dark:bg-zinc-800/40 rounded-full">
@@ -195,7 +210,16 @@ const GitHubHeatmapWidget = ({ data, onUpdate }: any) => {
             <div className="space-y-0.5">
               <p className="text-xs font-semibold">GitHub Heatmap</p>
               <p className="text-[10px] text-muted-foreground max-w-[240px] leading-normal">
-                Configure your GitHub PAT below to display your contributions graph.
+                Configure your GitHub PAT below to display your contributions graph. You can{' '}
+                <a
+                  href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo,user"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  generate one here
+                </a>{' '}
+                with <code className="px-1 py-0.5 bg-muted rounded text-[9px]">repo</code> and <code className="px-1 py-0.5 bg-muted rounded text-[9px]">user</code> scopes.
               </p>
             </div>
             <div className="flex w-full max-w-sm gap-1 px-4 nodrag">
@@ -239,30 +263,7 @@ const GitHubHeatmapWidget = ({ data, onUpdate }: any) => {
             <p className="text-[10px] text-muted-foreground mt-1">{errorMsg}</p>
           </div>
         ) : (
-          <div className="space-y-3 nodrag py-1">
-            <div className="flex items-end justify-between">
-              <div className="flex gap-4">
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Total Contributions</p>
-                  <p className="text-2xl font-semibold tracking-tight">{totalContributions}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Current Streak</p>
-                  <p className="text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">{streak} days 🔥</p>
-                </div>
-              </div>
-              {avatarUrl && (
-                <a
-                  href={`https://github.com/${username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity pb-1"
-                >
-                  <img src={avatarUrl} alt={username} className="w-5 h-5 rounded-full border border-border" />
-                  <span className="text-[10px] font-semibold text-muted-foreground">@{username}</span>
-                </a>
-              )}
-            </div>
+          <div className="flex-grow flex items-center justify-center min-h-0 py-2 nodrag">
             <ContributionGraph weeks={weeks} />
           </div>
         )}

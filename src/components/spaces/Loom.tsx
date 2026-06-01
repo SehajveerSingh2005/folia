@@ -29,12 +29,55 @@ type Project = {
 };
 
 const fetchTasks = async () => {
-  const { data, error } = await supabase
+  const { data: dbTasks, error } = await supabase
     .from('ledger_items')
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return data.filter(task =>
+
+  let merged = dbTasks || [];
+
+  const token = localStorage.getItem('folia_github_token');
+  if (token) {
+    try {
+      const userRes = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `token ${token}` },
+      });
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        const login = userData.login;
+
+        const issuesRes = await fetch(`https://api.github.com/search/issues?q=is:issue+state:open+assignee:${login}`, {
+          headers: { Authorization: `token ${token}` },
+        });
+        if (issuesRes.ok) {
+          const issuesData = await issuesRes.json();
+          const githubTasks = (issuesData.items || []).map((issue: any) => {
+            const repoName = issue.repository_url.split('/repos/')[1] || 'repo';
+            return {
+              id: `github-${issue.number}`,
+              content: issue.title,
+              is_done: false,
+              loom_item_id: null,
+              completed_at: null,
+              due_date: null,
+              priority: 'Medium',
+              notes: `GitHub Issue #${issue.number}`,
+              isGitHub: true,
+              githubUrl: issue.html_url,
+              githubNumber: issue.number,
+              githubRepo: repoName,
+            };
+          });
+          merged = [...merged, ...githubTasks];
+        }
+      }
+    } catch (ghErr) {
+      console.error('Error fetching GitHub issues for Loom:', ghErr);
+    }
+  }
+
+  return merged.filter(task =>
     !task.is_done ||
     (task.is_done && task.completed_at && isToday(parseISO(task.completed_at)))
   );
@@ -97,14 +140,34 @@ const Loom = () => {
   };
 
   const toggleTaskMutation = useMutation({
-    mutationFn: async ({ taskId, isDone }: { taskId: string; isDone: boolean }) => {
-      const newStatus = !isDone;
-      const completed_at = newStatus ? new Date().toISOString() : null;
-      const { error } = await supabase
-        .from('ledger_items')
-        .update({ is_done: newStatus, completed_at })
-        .eq('id', taskId);
-      if (error) throw new Error(error.message);
+    mutationFn: async ({ task }: { task: LedgerItem }) => {
+      const newStatus = !task.is_done;
+      if (task.id.startsWith('github-') || (task as any).isGitHub) {
+        const token = localStorage.getItem('folia_github_token');
+        if (!token) throw new Error("GitHub token not found.");
+        const githubRepo = (task as any).githubRepo;
+        const githubNumber = (task as any).githubNumber;
+        if (!githubRepo || !githubNumber) throw new Error("Invalid GitHub issue metadata.");
+        
+        const [owner, repo] = githubRepo.split('/');
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${githubNumber}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ state: 'closed' }),
+        });
+        if (!res.ok) throw new Error(`GitHub API error: ${res.statusText}`);
+      } else {
+        const completed_at = newStatus ? new Date().toISOString() : null;
+        const { error } = await supabase
+          .from('ledger_items')
+          .update({ is_done: newStatus, completed_at })
+          .eq('id', task.id);
+        if (error) throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loom_tasks'] });
@@ -169,7 +232,7 @@ const Loom = () => {
         <Checkbox
           id={task.id}
           checked={task.is_done}
-          onCheckedChange={() => toggleTaskMutation.mutate({ taskId: task.id, isDone: task.is_done })}
+          onCheckedChange={() => toggleTaskMutation.mutate({ task })}
           onClick={(e) => e.stopPropagation()}
         />
         <div className="flex-grow flex flex-col">

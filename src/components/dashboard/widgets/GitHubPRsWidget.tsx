@@ -61,6 +61,24 @@ const GitHubPRsWidget = ({ data, onUpdate }: any) => {
     setShowSettings(false);
   };
 
+  const filter = data.filter || 'created';
+
+  const getTitle = () => {
+    switch (filter) {
+      case 'assigned':
+        return 'Assigned PRs';
+      case 'user':
+        return 'PRs in My Repos';
+      case 'review-requested':
+        return 'Review Requests';
+      case 'involves':
+        return 'PRs Involving Me';
+      case 'created':
+      default:
+        return 'Created PRs';
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -77,7 +95,13 @@ const GitHubPRsWidget = ({ data, onUpdate }: any) => {
         setUsername(login);
         setAvatarUrl(userData.avatar_url);
 
-        const prsRes = await fetch(`https://api.github.com/search/issues?q=is:pr+state:open+author:${login}`, {
+        let queryPart = `author:${login}`;
+        if (filter === 'assigned') queryPart = `assignee:${login}`;
+        else if (filter === 'user') queryPart = `user:${login}`;
+        else if (filter === 'review-requested') queryPart = `review-requested:${login}`;
+        else if (filter === 'involves') queryPart = `involves:${login}`;
+
+        const prsRes = await fetch(`https://api.github.com/search/issues?q=is:pr+state:open+${queryPart}`, {
           headers: { Authorization: `token ${token}` },
         });
         if (!prsRes.ok) throw new Error('Failed to fetch Pull Requests.');
@@ -102,28 +126,32 @@ const GitHubPRsWidget = ({ data, onUpdate }: any) => {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, filter]);
 
   return (
-    <div className="h-full flex flex-col p-4 bg-card text-card-foreground select-none">
+    <div className="h-full flex flex-col p-4 bg-card text-card-foreground select-none relative group">
+      {/* Floating Settings Button in Bottom Left */}
+      {token && (
+        <div className="absolute bottom-3 left-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto nodrag">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-1.5 rounded-full bg-background/80 dark:bg-zinc-900/80 border shadow-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
         <div className="flex items-center gap-2">
           <GitPullRequest className="h-4 w-4 text-purple-500" />
-          <span className="font-serif font-medium text-sm tracking-wide">Pull Requests</span>
+          <span className="font-serif font-medium text-sm tracking-wide">{getTitle()}</span>
         </div>
-        {token && (
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors nodrag"
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
 
       {/* Content */}
-      <div className="flex-grow overflow-y-auto pt-2 min-h-0">
+      <div className="flex-grow overflow-y-auto pt-2 pb-10 min-h-0">
         {!token ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-2 gap-3">
             <div className="p-2.5 bg-zinc-100 dark:bg-zinc-800/40 rounded-full">
@@ -132,7 +160,16 @@ const GitHubPRsWidget = ({ data, onUpdate }: any) => {
             <div className="space-y-1">
               <p className="text-xs font-semibold">GitHub Pull Requests</p>
               <p className="text-[10px] text-muted-foreground max-w-[220px] leading-normal">
-                Paste your Personal Access Token (PAT) below to track your active pull requests.
+                Paste your Personal Access Token (PAT) below to track your active pull requests. You can{' '}
+                <a
+                  href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo,user"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  generate one here
+                </a>{' '}
+                with <code className="px-1 py-0.5 bg-muted rounded text-[9px]">repo</code> and <code className="px-1 py-0.5 bg-muted rounded text-[9px]">user</code> scopes.
               </p>
             </div>
             <div className="flex w-full gap-1 px-2 nodrag">
@@ -156,6 +193,20 @@ const GitHubPRsWidget = ({ data, onUpdate }: any) => {
                 <p className="text-xs font-medium">Connected Account</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">github.com/{username || 'Loading...'}</p>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">PR Filter</label>
+              <select
+                value={filter}
+                onChange={(e) => onUpdate({ ...data, filter: e.target.value })}
+                className="w-full text-xs bg-muted border border-border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="created">Created by me</option>
+                <option value="assigned">Assigned to me</option>
+                <option value="review-requested">Review requested from me</option>
+                <option value="user">In my repositories</option>
+                <option value="involves">Involving me</option>
+              </select>
             </div>
             <Button
               size="sm"

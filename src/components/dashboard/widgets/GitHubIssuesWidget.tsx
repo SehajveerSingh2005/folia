@@ -61,6 +61,24 @@ const GitHubIssuesWidget = ({ data, onUpdate }: any) => {
     setShowSettings(false);
   };
 
+  const filter = data.filter || 'assigned';
+
+  const getTitle = () => {
+    switch (filter) {
+      case 'created':
+        return 'Created Issues';
+      case 'user':
+        return 'Issues in My Repos';
+      case 'mentioned':
+        return 'Mentioned Issues';
+      case 'involves':
+        return 'Issues Involving Me';
+      case 'assigned':
+      default:
+        return 'Assigned Issues';
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -77,7 +95,13 @@ const GitHubIssuesWidget = ({ data, onUpdate }: any) => {
         setUsername(login);
         setAvatarUrl(userData.avatar_url);
 
-        const issuesRes = await fetch(`https://api.github.com/search/issues?q=is:issue+state:open+assignee:${login}`, {
+        let queryPart = `assignee:${login}`;
+        if (filter === 'created') queryPart = `author:${login}`;
+        else if (filter === 'user') queryPart = `user:${login}`;
+        else if (filter === 'mentioned') queryPart = `mentions:${login}`;
+        else if (filter === 'involves') queryPart = `involves:${login}`;
+
+        const issuesRes = await fetch(`https://api.github.com/search/issues?q=is:issue+state:open+${queryPart}`, {
           headers: { Authorization: `token ${token}` },
         });
         if (!issuesRes.ok) throw new Error('Failed to fetch Issues.');
@@ -102,28 +126,32 @@ const GitHubIssuesWidget = ({ data, onUpdate }: any) => {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, filter]);
 
   return (
-    <div className="h-full flex flex-col p-4 bg-card text-card-foreground select-none">
+    <div className="h-full flex flex-col p-4 bg-card text-card-foreground select-none relative group">
+      {/* Floating Settings Button in Bottom Left */}
+      {token && (
+        <div className="absolute bottom-3 left-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto nodrag">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-1.5 rounded-full bg-background/80 dark:bg-zinc-900/80 border shadow-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
         <div className="flex items-center gap-2">
           <CircleDot className="h-4 w-4 text-emerald-500" />
-          <span className="font-serif font-medium text-sm tracking-wide">Assigned Issues</span>
+          <span className="font-serif font-medium text-sm tracking-wide">{getTitle()}</span>
         </div>
-        {token && (
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors nodrag"
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
 
       {/* Content */}
-      <div className="flex-grow overflow-y-auto pt-2 min-h-0">
+      <div className="flex-grow overflow-y-auto pt-2 pb-10 min-h-0">
         {!token ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-2 gap-3">
             <div className="p-2.5 bg-zinc-100 dark:bg-zinc-800/40 rounded-full">
@@ -132,7 +160,16 @@ const GitHubIssuesWidget = ({ data, onUpdate }: any) => {
             <div className="space-y-1">
               <p className="text-xs font-semibold">GitHub Issues</p>
               <p className="text-[10px] text-muted-foreground max-w-[220px] leading-normal">
-                Paste your Personal Access Token (PAT) below to track your assigned open issues.
+                Paste your Personal Access Token (PAT) below to track your assigned open issues. You can{' '}
+                <a
+                  href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo,user"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  generate one here
+                </a>{' '}
+                with <code className="px-1 py-0.5 bg-muted rounded text-[9px]">repo</code> and <code className="px-1 py-0.5 bg-muted rounded text-[9px]">user</code> scopes.
               </p>
             </div>
             <div className="flex w-full gap-1 px-2 nodrag">
@@ -156,6 +193,20 @@ const GitHubIssuesWidget = ({ data, onUpdate }: any) => {
                 <p className="text-xs font-medium">Connected Account</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">github.com/{username || 'Loading...'}</p>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Issue Filter</label>
+              <select
+                value={filter}
+                onChange={(e) => onUpdate({ ...data, filter: e.target.value })}
+                className="w-full text-xs bg-muted border border-border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="assigned">Assigned to me</option>
+                <option value="created">Created by me</option>
+                <option value="user">In my repositories</option>
+                <option value="mentioned">Mentioned me</option>
+                <option value="involves">Involving me</option>
+              </select>
             </div>
             <Button
               size="sm"

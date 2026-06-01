@@ -323,7 +323,16 @@ const SettingsDialog = ({
                                             </Button>
                                         </div>
                                         <p className="text-[11px] text-muted-foreground">
-                                            Optional. Used to close or create issues on GitHub. Will be stored locally on your device.
+                                            Optional. Used to close or create issues on GitHub. Will be stored locally on your device. You can{' '}
+                                            <a
+                                                href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                                            >
+                                                generate a Personal Access Token (Classic)
+                                            </a>{' '}
+                                            with the <code className="px-1 py-0.5 bg-muted rounded text-[10px]">repo</code> scope.
                                         </p>
                                     </div>
                                 </div>

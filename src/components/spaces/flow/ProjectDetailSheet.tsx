@@ -25,7 +25,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X, Github, CircleDot, GitPullRequest, ExternalLink } from 'lucide-react';
+import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X, Github, CircleDot, GitPullRequest, ExternalLink, Archive } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -316,6 +316,23 @@ const ProjectDetailSheet = ({
         }
     };
 
+    const handleArchive = async () => {
+        if (!project) return;
+        try {
+            const { error } = await supabase
+                .from('loom_items')
+                .update({ status: 'Completed' })
+                .eq('id', project.id);
+
+            if (error) throw error;
+            showSuccess('Project moved to Archive');
+            onProjectUpdated();
+            onOpenChange(false);
+        } catch (err: any) {
+            showError(err.message || 'Failed to archive project');
+        }
+    };
+
     const localGithubUrls = tasks
         .map((t: any) => {
             const match = t.notes?.match(/https:\/\/github\.com\/[^\s]+/);
@@ -382,6 +399,11 @@ const ProjectDetailSheet = ({
                             <DialogTitle className="text-2xl font-serif font-bold">{project.name}</DialogTitle>
                         )}
                         <div className="flex gap-2">
+                            {!isEditing && project.status !== 'Completed' && (
+                                <Button variant="outline" size="sm" onClick={handleArchive}>
+                                    <Archive className="h-4 w-4 mr-1.5 text-muted-foreground" /> Archive
+                                </Button>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
                                 {isEditing ? 'Cancel' : 'Edit Details'}
                             </Button>

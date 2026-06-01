@@ -256,7 +256,16 @@ const GitHubWidget = ({ data, onUpdate }: any) => {
             <div className="space-y-1">
               <p className="text-xs font-semibold">Link GitHub Token</p>
               <p className="text-[10px] text-muted-foreground max-w-[220px] leading-normal">
-                Paste your Personal Access Token (PAT) below to fetch your actual streak, PRs, and issues.
+                Paste your Personal Access Token (PAT) below to fetch your actual streak, PRs, and issues. You can{' '}
+                <a
+                  href="https://github.com/settings/tokens/new?description=Folia%20App&scopes=repo,user"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  generate one here
+                </a>{' '}
+                with <code className="px-1 py-0.5 bg-muted rounded text-[9px]">repo</code> and <code className="px-1 py-0.5 bg-muted rounded text-[9px]">user</code> scopes.
               </p>
             </div>
             <div className="flex w-full gap-1 px-2 nodrag">
