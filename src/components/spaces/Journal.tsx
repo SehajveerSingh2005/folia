@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Book, ClipboardCheck, Check, Loader2 } from 'lucide-react';
+import { Book, ClipboardCheck, Check, Loader2, Sparkles, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import JournalSkeleton from '../skeletons/JournalSkeleton';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WinsBoard from './journal/WinsBoard';
+import WeeklyReviewDialog from './journal/WeeklyReviewDialog';
 
 // Types
 type ChronicleEntry = { id?: string; entry_date: string; entry: string; mood: string; };
@@ -83,6 +84,28 @@ const Journal = () => {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+
+  useEffect(() => {
+    const today = new Date();
+    const isSunday = today.getDay() === 0;
+    if (isSunday) {
+      const currentWeekKey = `weekly_review_nudge_dismissed_${format(today, 'yyyy-w')}`;
+      const isDismissed = localStorage.getItem(currentWeekKey) === 'true';
+      if (!isDismissed) {
+        setShowNudge(true);
+      }
+    }
+  }, []);
+
+  const handleDismissNudge = () => {
+    const today = new Date();
+    const currentWeekKey = `weekly_review_nudge_dismissed_${format(today, 'yyyy-w')}`;
+    localStorage.setItem(currentWeekKey, 'true');
+    setShowNudge(false);
+  };
 
   const isSelectedDateToday = selectedDate ? isToday(selectedDate) : false;
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
@@ -176,13 +199,47 @@ const Journal = () => {
   return (
     <div className="space-y-0">
       {/* Space header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Book className="h-10 w-10 text-primary flex-shrink-0" />
-        <div>
-          <h2 className="text-3xl sm:text-4xl font-serif">Journal</h2>
-          <p className="text-foreground/70">Reflect daily. Track your wins.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <Book className="h-10 w-10 text-primary flex-shrink-0" />
+          <div>
+            <h2 className="text-3xl sm:text-4xl font-serif">Journal</h2>
+            <p className="text-foreground/70">Reflect daily. Track your wins.</p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsReviewOpen(true)}
+          className="self-start sm:self-center gap-1.5"
+        >
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          Weekly Review
+        </Button>
       </div>
+
+      {/* Sunday Nudge Banner */}
+      {showNudge && (
+        <div className="flex items-center justify-between p-4 mb-6 rounded-2xl border bg-amber-500/10 text-amber-950 dark:text-amber-100 border-amber-500/20 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-amber-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Ready for your Weekly Review?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Reflect on your achievements and set your priorities for the upcoming week.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setIsReviewOpen(true)} className="h-8 text-xs font-medium">
+              Start Review
+            </Button>
+            <Button size="icon" variant="ghost" onClick={handleDismissNudge} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="journal" className="w-full">
         <TabsList className="mb-6 h-auto p-0 bg-transparent border-b rounded-none w-full justify-start space-x-6">
@@ -352,6 +409,14 @@ const Journal = () => {
           <WinsBoard />
         </TabsContent>
       </Tabs>
+
+      <WeeklyReviewDialog
+        isOpen={isReviewOpen}
+        onOpenChange={setIsReviewOpen}
+        onSaveSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['journal_entry', formattedDate] });
+        }}
+      />
     </div>
   );
 };
