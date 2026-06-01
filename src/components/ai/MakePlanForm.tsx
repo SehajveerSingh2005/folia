@@ -142,46 +142,44 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
   }
 
   return (
-    <div className="animate-in fade-in-0 zoom-in-95 duration-300">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
 
-        <div className="relative pt-2">
-          <Textarea
-            placeholder="What would you like to achieve? (e.g., 'Learn Spanish in 6 months')"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            className="min-h-[140px] resize-none text-lg p-6 bg-secondary/20 border-transparent focus:border-primary/20 focus:ring-0 transition-all font-serif placeholder:text-muted-foreground/50 rounded-xl leading-relaxed selection:bg-primary/10"
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Ideas</p>
-          <div className="flex flex-wrap gap-2">
-            {planPresets.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setGoal(preset)}
-                disabled={isLoading}
-                className="text-xs px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary hover:text-primary transition-colors text-muted-foreground border border-transparent hover:border-border"
-              >
-                {preset}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary mt-2"
+      <div className="relative pt-2">
+        <Textarea
+          placeholder="What would you like to achieve? (e.g., 'Learn Spanish in 6 months')"
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          className="min-h-[140px] resize-none text-lg p-6 bg-secondary/20 border-transparent focus:border-primary/20 focus:ring-0 transition-all font-serif placeholder:text-muted-foreground/50 rounded-xl leading-relaxed selection:bg-primary/10"
           disabled={isLoading}
-        >
-          <Sparkles className="mr-2 h-4 w-4" />
-          Generate Plan
-        </Button>
-      </form>
-    </div>
+        />
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Ideas</p>
+        <div className="flex flex-wrap gap-2">
+          {planPresets.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setGoal(preset)}
+              disabled={isLoading}
+              className="text-xs px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary hover:text-primary transition-colors text-muted-foreground border border-transparent hover:border-border"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary mt-2"
+        disabled={isLoading}
+      >
+        <Sparkles className="mr-2 h-4 w-4" />
+        Generate Plan
+      </Button>
+    </form>
   );
 };
 
