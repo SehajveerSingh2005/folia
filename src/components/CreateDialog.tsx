@@ -26,7 +26,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, CheckSquare, FolderKanban, Sparkles, Wand2 } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -168,44 +168,47 @@ const CreateDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl flex flex-col p-0 gap-0 overflow-hidden h-[600px]">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="text-xl font-serif">Create New</DialogTitle>
+      <DialogContent className="max-w-xl flex flex-col p-0 gap-0 overflow-hidden h-[600px]" style={{ background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary)/0.06), transparent 50%), hsl(var(--background))' }}>
+        <DialogHeader className="p-6 pb-4 border-b border-border/40">
+          <DialogTitle className="text-2xl font-serif font-normal tracking-tight">Create New</DialogTitle>
           <DialogDescription className="hidden">Create tasks, projects, or use AI planning.</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="task" className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-2 border-b bg-muted/30">
-            <TabsList className="bg-transparent p-0 gap-6 w-full justify-start">
+          <div className="px-6 py-3 border-b border-border/40 bg-muted/20">
+            <TabsList className="bg-transparent p-0 gap-3 w-full justify-start">
               <TabsTrigger
                 value="task"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-1 pb-2 font-medium text-muted-foreground transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/15 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all flex items-center gap-1.5 shadow-none"
               >
+                <CheckSquare className="h-3.5 w-3.5" />
                 Task
               </TabsTrigger>
               <TabsTrigger
                 value="flow"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-1 pb-2 font-medium text-muted-foreground transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/15 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all flex items-center gap-1.5 shadow-none"
               >
+                <FolderKanban className="h-3.5 w-3.5" />
                 Project
               </TabsTrigger>
               <TabsTrigger
                 value="plan"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-1 pb-2 font-medium text-muted-foreground transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/15 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all flex items-center gap-1.5 shadow-none"
               >
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                 AI Plan
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 bg-background/50">
+          <div className="flex-1 overflow-y-auto p-6 bg-background/30 backdrop-blur-sm">
             <TabsContent value="task" className="mt-0 h-full">
               <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-5 flex flex-col h-full">
                 <div className="space-y-4">
                   <Input
                     {...taskForm.register('content')}
                     placeholder="What needs to be done?"
-                    className="text-lg border-transparent px-0 shadow-none border-b border-border/50 rounded-none focus-visible:ring-0 placeholder:text-muted-foreground/50 h-12"
+                    className="text-lg border-transparent px-0 shadow-none border-b border-border/50 rounded-none focus-visible:ring-0 placeholder:text-muted-foreground/45 h-12 transition-all focus:border-primary/50 bg-transparent"
                     autoFocus
                   />
 
@@ -213,24 +216,24 @@ const CreateDialog = ({
                     <Controller control={taskForm.control} name="due_date" render={({ field }) => (
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant={'outline'} className={cn('justify-start text-left font-normal border-border/50', !field.value && 'text-muted-foreground')}>
-                            <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                          <Button variant={'outline'} className={cn('justify-start text-left font-normal border-border/40 hover:bg-accent/50 rounded-xl h-10 bg-transparent text-xs', !field.value && 'text-muted-foreground')}>
+                            <CalendarIcon className="mr-2 h-4 w-4 opacity-60" />
                             {field.value ? format(field.value, 'PPP') : <span>Due Date</span>}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
+                        <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden border-border/40" align="start">
                           <Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} initialFocus />
-                          <Button variant="ghost" className="w-full rounded-t-none" onClick={() => field.onChange(null)}>Clear Date</Button>
+                          <Button variant="ghost" className="w-full rounded-t-none border-t text-xs h-9" onClick={() => field.onChange(null)}>Clear Date</Button>
                         </PopoverContent>
                       </Popover>
                     )} />
 
                     <Controller control={taskForm.control} name="priority" render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <SelectTrigger className="border-border/50">
+                        <SelectTrigger className="border-border/40 hover:bg-accent/50 rounded-xl h-10 bg-transparent text-xs">
                           <SelectValue placeholder="Priority" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl border-border/40">
                           {priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -239,10 +242,10 @@ const CreateDialog = ({
 
                   <Controller control={taskForm.control} name="loom_item_id" render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <SelectTrigger className="border-border/50">
+                      <SelectTrigger className="border-border/40 hover:bg-accent/50 rounded-xl h-10 bg-transparent text-xs">
                         <SelectValue placeholder="Link to Project (Optional)" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl border-border/40">
                         {loomItems.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -252,12 +255,12 @@ const CreateDialog = ({
                     {...taskForm.register('notes')}
                     placeholder="Additional notes..."
                     rows={4}
-                    className="resize-none bg-muted/20 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/20"
+                    className="resize-none bg-muted/10 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl text-xs"
                   />
                 </div>
 
                 <div className="flex-grow" />
-                <Button type="submit" size="lg" className="w-full font-medium" disabled={taskForm.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary" disabled={taskForm.formState.isSubmitting}>
                   {taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}
                 </Button>
               </form>
@@ -268,7 +271,7 @@ const CreateDialog = ({
                 <Input
                   {...flowForm.register('name')}
                   placeholder="Project Name"
-                  className="text-lg border-transparent px-0 shadow-none border-b border-border/50 rounded-none focus-visible:ring-0 placeholder:text-muted-foreground/50 h-12"
+                  className="text-lg border-transparent px-0 shadow-none border-b border-border/50 rounded-none focus-visible:ring-0 placeholder:text-muted-foreground/45 h-12 transition-all focus:border-primary/50 bg-transparent"
                   autoFocus
                 />
 
@@ -288,7 +291,7 @@ const CreateDialog = ({
                               role="combobox"
                               aria-expanded={open}
                               className={cn(
-                                "w-full justify-between border-border/50 font-normal",
+                                "w-full justify-between border-border/40 hover:bg-accent/50 font-normal rounded-xl h-10 bg-transparent text-xs",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
@@ -298,7 +301,7 @@ const CreateDialog = ({
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl overflow-hidden border-border/40" align="start">
                             <Command>
                               <CommandInput
                                 placeholder="Search or create..."
@@ -307,7 +310,7 @@ const CreateDialog = ({
                               <CommandList>
                                 <CommandEmpty>
                                   <div
-                                    className="py-2 px-4 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                                    className="py-2 px-4 text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       const val = inputValue.charAt(0).toUpperCase() + inputValue.slice(1);
@@ -327,10 +330,11 @@ const CreateDialog = ({
                                         field.onChange(type);
                                         setOpen(false);
                                       }}
+                                      className="text-xs"
                                     >
                                       <Check
                                         className={cn(
-                                          "mr-2 h-4 w-4",
+                                          "mr-2 h-3.5 w-3.5",
                                           field.value === type ? "opacity-100" : "opacity-0"
                                         )}
                                       />
@@ -349,7 +353,7 @@ const CreateDialog = ({
                   <Input
                     {...flowForm.register('link')}
                     placeholder="External Link (Optional)"
-                    className="border-border/50 bg-background"
+                    className="border-border/40 bg-transparent rounded-xl h-10 text-xs"
                   />
                 </div>
 
@@ -357,11 +361,11 @@ const CreateDialog = ({
                   {...flowForm.register('notes')}
                   placeholder="Description and goals..."
                   rows={6}
-                  className="resize-none bg-muted/20 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/20"
+                  className="resize-none bg-muted/10 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl text-xs"
                 />
 
                 <div className="flex-grow" />
-                <Button type="submit" size="lg" className="w-full font-medium" disabled={flowForm.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary" disabled={flowForm.formState.isSubmitting}>
                   {flowForm.formState.isSubmitting ? 'Creating...' : 'Create Project'}
                 </Button>
               </form>
@@ -369,10 +373,13 @@ const CreateDialog = ({
 
             <TabsContent value="plan" className="mt-0 h-full flex flex-col">
               <div className="mb-4">
-                <h3 className="text-sm font-medium text-foreground mb-1">AI Planner</h3>
-                <p className="text-sm text-muted-foreground">Describe your goal, and we'll generate a project with actionable steps.</p>
+                <h3 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  AI Planner
+                </h3>
+                <p className="text-xs text-muted-foreground">Describe your goal, and we'll generate a project with actionable steps.</p>
               </div>
-              <div className="flex-grow border rounded-lg bg-muted/10 p-4 border-border/50">
+              <div className="flex-grow border rounded-2xl bg-muted/10 p-4 border-border/40">
                 <MakePlanForm onPlanCreated={handlePlanCreated} />
               </div>
             </TabsContent>
