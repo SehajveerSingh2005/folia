@@ -23,6 +23,8 @@ import FlowWidget from './dashboard/widgets/FlowWidget';
 import ImageWidget from './dashboard/widgets/ImageWidget';
 import NoteWidget from './dashboard/widgets/NoteWidget'; // New Editable Note
 import EmbedWidget from './dashboard/widgets/EmbedWidget';
+import GoogleCalendarWidget from './dashboard/widgets/GoogleCalendarWidget';
+import GitHubWidget from './dashboard/widgets/GitHubWidget';
 
 const LOCAL_STORAGE_KEY = 'dashboard_layout_data';
 
@@ -53,7 +55,9 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
     // New
     Image: ImageWidget,
     Note: NoteWidget, // The new one
-    Embed: EmbedWidget
+    Embed: EmbedWidget,
+    GoogleCalendar: GoogleCalendarWidget,
+    GitHub: GitHubWidget
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
