@@ -162,11 +162,11 @@ export default function HomePage() {
                             <div className="flex flex-wrap items-center justify-center gap-2 mt-10" id="spaces">
                                 {[
                                     { icon: LayoutDashboard, label: 'Dashboard' },
-                                    { icon: FolderKanban, label: 'Flow' },
-                                    { icon: Sparkles, label: 'Garden' },
+                                    { icon: FolderKanban, label: 'Projects' },
+                                    { icon: Sparkles, label: 'Notes' },
                                     { icon: Book, label: 'Journal' },
-                                    { icon: Telescope, label: 'Horizon' },
-                                    { icon: Inbox, label: 'Loom' },
+                                    { icon: Telescope, label: 'Goals' },
+                                    { icon: Inbox, label: 'Tasks' },
                                 ].map(({ icon: Icon, label }) => (
                                     <div
                                         key={label}
@@ -192,9 +192,9 @@ export default function HomePage() {
 
                 {/* ── Flow ── */}
                 <SpaceStorySection
-                    eyebrow="Flow · Projects"
+                    eyebrow="Projects"
                     title="Bring your projects to life."
-                    description="Flow is where your active endeavors live. Break any goal into tasks, assign due dates, and track progress. Whether you're launching a product or learning a skill, Flow keeps you moving."
+                    description="Projects is where your active endeavors live. Break any goal into tasks, assign due dates, and track progress. Whether you're launching a product or learning a skill, Projects keeps you moving."
                     direction="left"
                     visual={<FlowMockup />}
                     className="bg-secondary/10"
@@ -208,7 +208,7 @@ export default function HomePage() {
                             <div className="flex-1 max-w-lg">
                                 <ScrollFadeIn>
                                     <p className="text-xs tracking-widest uppercase font-medium mb-4 text-background/50">
-                                        Garden · Notes
+                                        Notes
                                     </p>
                                     <h2 className="text-4xl md:text-5xl font-serif font-normal mb-5 leading-tight text-background">
                                         A dedicated space to think and write.
@@ -259,9 +259,9 @@ export default function HomePage() {
 
                 {/* ── Horizon ── */}
                 <SpaceStorySection
-                    eyebrow="Horizon · Long-term Goals"
+                    eyebrow="Goals"
                     title="Dream in decades, not just days."
-                    description="Horizon holds your big, bold ambitions — things you're working toward over months and years. Build goal trees with nested milestones. Keep your north star always in view."
+                    description="Goals holds your big, bold ambitions — things you're working toward over months and years. Build goal trees with nested milestones. Keep your north star always in view."
                     direction="left"
                     visual={<HorizonMockup />}
                     className="bg-secondary/10"

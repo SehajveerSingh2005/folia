@@ -12,9 +12,9 @@ import { View } from './Sidebar';
 
 const navItems: { id: View; label: string; icon: React.ElementType; path: string }[] = [
   { id: 'Overview', label: 'Home', icon: LayoutGrid, path: '/dashboard' },
-  { id: 'Loom', label: 'Loom', icon: ClipboardList, path: '/loom' },
-  { id: 'Flow', label: 'Flow', icon: FolderKanban, path: '/flow' },
-  { id: 'Garden', label: 'Garden', icon: Sparkles, path: '/garden' },
+  { id: 'Tasks', label: 'Tasks', icon: ClipboardList, path: '/loom' },
+  { id: 'Projects', label: 'Projects', icon: FolderKanban, path: '/flow' },
+  { id: 'Notes', label: 'Notes', icon: Sparkles, path: '/garden' },
 ];
 
 interface BottomNavBarProps {

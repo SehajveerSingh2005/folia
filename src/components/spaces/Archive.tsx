@@ -76,7 +76,7 @@ const Archive = () => {
       if (!response.ok) throw new Error('Failed to unarchive item');
     },
     onSuccess: () => {
-      showSuccess('Item moved back to Flow.');
+      showSuccess('Item moved back to Projects.');
       queryClient.invalidateQueries({ queryKey: ['archived_items'] });
       queryClient.invalidateQueries({ queryKey: ['flow_data'] });
     },
@@ -111,7 +111,7 @@ const Archive = () => {
       if (!response.ok) throw new Error('Failed to clone item');
     },
     onSuccess: () => {
-      showSuccess('Project cloned to active Flow.');
+      showSuccess('Project cloned to Projects.');
       queryClient.invalidateQueries({ queryKey: ['flow_data'] });
     },
     onError: (err: Error) => showError(err.message),
@@ -142,9 +142,9 @@ const Archive = () => {
         <div className="flex items-center gap-4">
           <ArchiveIcon className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-3xl sm:text-4xl font-serif">Archive</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif">Shipped</h2>
             <p className="text-foreground/70">
-              A record of your completed projects and endeavors.
+              Your completed projects — everything you've shipped.
             </p>
           </div>
         </div>
@@ -287,8 +287,8 @@ const Archive = () => {
           })}
           {completedItems && completedItems.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-lg text-foreground/70">Your archive is empty.</p>
-              <p className="text-sm text-foreground/50">Completed items from Flow will appear here.</p>
+              <p className="text-lg text-foreground/70">Nothing shipped yet.</p>
+              <p className="text-sm text-foreground/50">Completed projects will appear here.</p>
             </div>
           )}
         </div>

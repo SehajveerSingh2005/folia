@@ -57,12 +57,12 @@ const widgetMap: { [key: string]: React.ComponentType<any> } = {
 };
 
 const widgetNavigationMap: { [key: string]: string } = {
-    DueToday: 'Loom',
-    Inbox: 'Loom',
-    Notes: 'Garden',
+    DueToday: 'Tasks',
+    Inbox: 'Tasks',
+    Notes: 'Notes',
     Journal: 'Journal',
-    Goals: 'Horizon',
-    Flow: 'Flow',
+    Goals: 'Goals',
+    Flow: 'Projects',
 };
 
 const generateDefaultLayouts = (): { layouts: CustomLayouts; widgetData: WidgetDataMap } => {

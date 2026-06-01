@@ -219,8 +219,8 @@ const Flow = () => {
         <div className="flex items-center gap-4">
           <FolderKanban className="h-10 w-10 text-primary flex-shrink-0" />
           <div>
-            <h2 className="text-3xl sm:text-4xl font-serif">Flow</h2>
-            <p className="text-foreground/70">Manage active projects, courses, and tasks.</p>
+            <h2 className="text-3xl sm:text-4xl font-serif">Projects</h2>
+            <p className="text-foreground/70">Manage your active projects and track their progress.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
