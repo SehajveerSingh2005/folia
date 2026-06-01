@@ -93,14 +93,12 @@ const CreateDialog = ({
       setContainerHeight(undefined);
       setActiveTab("task");
     }
-  }, [isOpen]);
-
-  useEffect(() => {
+  }, [isOpen]);  useEffect(() => {
     const element = containerRef.current;
     if (!element || !isOpen) return;
 
     const measure = () => {
-      setContainerHeight(element.scrollHeight);
+      setContainerHeight(element.getBoundingClientRect().height);
     };
 
     // Delay measurement slightly to ensure DOM has settled
@@ -116,7 +114,6 @@ const CreateDialog = ({
       observer.disconnect();
     };
   }, [activeTab, isOpen]);
-
   const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: { content: '', priority: null, due_date: null, loom_item_id: null, notes: '' },
@@ -234,11 +231,10 @@ const CreateDialog = ({
           </div>
 
           <div
-            ref={containerRef}
             style={{ height: containerHeight ? `${containerHeight}px` : 'auto' }}
             className="overflow-hidden transition-[height] duration-300 ease-in-out bg-background/30 backdrop-blur-sm"
           >
-            <div className="p-6">
+            <div ref={containerRef} className="p-6">
               <TabsContent value="task" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
                 <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-5">
                   <div className="space-y-4">
