@@ -25,7 +25,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X, Github, CircleDot, GitPullRequest } from 'lucide-react';
+import { CalendarIcon, Trash2, CheckCircle2, Circle, Plus, MoreHorizontal, Pencil, Calendar as CalendarIconLucide, StickyNote, X, Github, CircleDot, GitPullRequest, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +53,25 @@ interface ProjectDetailSheetProps {
     onProjectUpdated: () => void;
 }
 
+const parseGitHubRepo = (link: string | null) => {
+    if (!link) return null;
+    const clean = link.trim().replace(/\/$/, '');
+    if (clean.split('/').length === 2) {
+        const [owner, repo] = clean.split('/');
+        return { owner, repo };
+    }
+    try {
+        const url = new URL(clean.startsWith('http') ? clean : `https://${clean}`);
+        if (url.hostname.includes('github.com')) {
+            const parts = url.pathname.split('/').filter(Boolean);
+            if (parts.length >= 2) {
+                return { owner: parts[0], repo: parts[1] };
+            }
+        }
+    } catch (e) {}
+    return null;
+};
+
 const ProjectDetailSheet = ({
     isOpen,
     onOpenChange,
@@ -62,6 +81,7 @@ const ProjectDetailSheet = ({
     const queryClient = useQueryClient();
     const router = useRouter();
     const [newTaskContent, setNewTaskContent] = useState('');
+    const [createAsGithubIssue, setCreateAsGithubIssue] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [githubRepoInput, setGithubRepoInput] = useState('');
     const [isLinkingRepo, setIsLinkingRepo] = useState(false);
@@ -77,6 +97,38 @@ const ProjectDetailSheet = ({
             notes: '',
             link: '',
         },
+    });
+
+    const parsedRepo = parseGitHubRepo(project?.link);
+
+    // Fetch GitHub issues & PRs
+    const { data: githubData = { issues: [], prs: [] }, isLoading: isLoadingGitHub } = useQuery({
+        queryKey: ['project_github_issues', project?.link],
+        queryFn: async () => {
+            if (!parsedRepo) return { issues: [], prs: [] };
+            const { owner, repo } = parsedRepo;
+            const token = localStorage.getItem('folia_github_token');
+            const headers: HeadersInit = {
+                'Accept': 'application/vnd.github.v3+json',
+            };
+            if (token) {
+                headers['Authorization'] = `token ${token}`;
+            }
+
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=50`, { headers });
+            if (!res.ok) {
+                throw new Error(`GitHub API error: ${res.statusText}`);
+            }
+            const allIssues = await res.json();
+            
+            // Filter issues and PRs. GitHub returns PRs inside issues list with pull_request property
+            const issues = allIssues.filter((item: any) => !item.pull_request);
+            const prs = allIssues.filter((item: any) => item.pull_request);
+
+            return { issues, prs };
+        },
+        enabled: !!parsedRepo && isOpen,
+        staleTime: 1000 * 30, // Cache for 30 seconds
     });
 
     // Fetch tasks using React Query for caching and loading states
@@ -143,18 +195,55 @@ const ProjectDetailSheet = ({
         if (!newTaskContent.trim() || !project) return;
 
         try {
+            let githubIssueUrl = '';
+            let githubIssueNum = '';
+
+            if (createAsGithubIssue && parsedRepo) {
+                const token = localStorage.getItem('folia_github_token');
+                if (!token) {
+                    showError("Please add your GitHub Personal Access Token in Settings to create issues.");
+                    return;
+                }
+                const { owner, repo } = parsedRepo;
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `token ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            title: newTaskContent,
+                            body: 'Created from Folia OS project workspace.',
+                        }),
+                    });
+                    if (!res.ok) throw new Error(res.statusText);
+                    const issueData = await res.json();
+                    githubIssueUrl = issueData.html_url;
+                    githubIssueNum = issueData.number;
+                    showSuccess(`Created GitHub issue #${githubIssueNum}`);
+                } catch (err: any) {
+                    showError(`Failed to create issue on GitHub: ${err.message}`);
+                    return; // stop creation if github fails
+                }
+            }
+
             const { error } = await supabase.from('ledger_items').insert({
                 content: newTaskContent,
                 loom_item_id: project.id,
                 user_id: (await supabase.auth.getUser()).data.user?.id,
                 is_done: false,
-                type: 'Task'
+                type: 'Task',
+                notes: githubIssueUrl ? `Linked GitHub issue: ${githubIssueUrl}` : ''
             });
 
             if (error) throw error;
 
             setNewTaskContent('');
+            setCreateAsGithubIssue(false);
             queryClient.invalidateQueries({ queryKey: ['tasks', project.id] });
+            queryClient.invalidateQueries({ queryKey: ['project_github_issues', project.link] });
             onProjectUpdated();
         } catch (error: any) {
             showError('Failed to add task');
@@ -225,6 +314,44 @@ const ProjectDetailSheet = ({
         }
     };
 
+    const localGithubUrls = tasks
+        .map((t: any) => {
+            const match = t.notes?.match(/https:\/\/github\.com\/[^\s]+/);
+            return match ? match[0] : null;
+        })
+        .filter(Boolean);
+
+    const openGitHubTasks = (githubData.issues || [])
+        .filter((issue: any) => issue.state === 'open' && !localGithubUrls.includes(issue.html_url))
+        .map((issue: any) => ({
+            id: `github-${issue.number}`,
+            content: issue.title,
+            is_done: false,
+            priority: 'Medium',
+            due_date: null,
+            notes: `GitHub Issue #${issue.number}`,
+            isGitHub: true,
+            githubUrl: issue.html_url,
+            githubNumber: issue.number,
+            githubRepo: parsedRepo ? `${parsedRepo.owner}/${parsedRepo.repo}` : '',
+        }));
+
+    const mergedTasks = [
+        ...tasks.map((t: any) => {
+            const hasGh = t.notes?.includes('github.com');
+            const match = t.notes?.match(/#(\d+)/) || t.notes?.match(/\/issues\/(\d+)/);
+            const num = match ? match[1] : null;
+            return {
+                ...t,
+                isGitHub: hasGh,
+                githubUrl: hasGh ? t.notes.match(/https:\/\/github\.com\/[^\s]+/)?.[0] : null,
+                githubNumber: num ? parseInt(num, 10) : null,
+                githubRepo: parsedRepo ? `${parsedRepo.owner}/${parsedRepo.repo}` : null
+            };
+        }),
+        ...openGitHubTasks
+    ];
+
     if (!project) return null;
 
     return (
@@ -280,7 +407,7 @@ const ProjectDetailSheet = ({
                     <div className="px-6 border-b shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
                         <TabsList className="bg-transparent p-0 w-full justify-start h-10">
                             <TabsTrigger value="tasks" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
-                                Tasks ({tasks.filter((t: any) => !t.is_done).length})
+                                Tasks ({mergedTasks.filter((t: any) => !t.is_done).length})
                             </TabsTrigger>
                             <TabsTrigger value="notes" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
                                 Notes
@@ -288,8 +415,9 @@ const ProjectDetailSheet = ({
                             <TabsTrigger value="info" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
                                 Info
                             </TabsTrigger>
-                            <TabsTrigger value="github" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm">
-                                GitHub 🐙
+                            <TabsTrigger value="github" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-4 text-sm flex items-center gap-1.5">
+                                <Github className="h-4 w-4" />
+                                GitHub
                             </TabsTrigger>
                         </TabsList>
                     </div>
@@ -297,31 +425,48 @@ const ProjectDetailSheet = ({
                     <div className="flex-1 overflow-y-auto">
                         <TabsContent value="tasks" className="p-6 m-0 space-y-6 min-h-full">
                             {/* Add Task Input */}
-                            <form onSubmit={handleAddTask} className="flex gap-2">
-                                <Input
-                                    value={newTaskContent}
-                                    onChange={(e) => setNewTaskContent(e.target.value)}
-                                    placeholder="Add a new task..."
-                                    className="flex-1"
-                                />
-                                <Button type="submit" size="icon" variant="secondary">
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                            <form onSubmit={handleAddTask} className="space-y-2">
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newTaskContent}
+                                        onChange={(e) => setNewTaskContent(e.target.value)}
+                                        placeholder="Add a new task..."
+                                        className="flex-1"
+                                    />
+                                    <Button type="submit" size="icon" variant="secondary">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                {parsedRepo && (
+                                    <div className="flex items-center gap-2 pl-1">
+                                        <input
+                                            type="checkbox"
+                                            id="create-gh-issue"
+                                            checked={createAsGithubIssue}
+                                            onChange={(e) => setCreateAsGithubIssue(e.target.checked)}
+                                            className="rounded border-muted text-primary focus:ring-primary h-3.5 w-3.5"
+                                        />
+                                        <label htmlFor="create-gh-issue" className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer select-none">
+                                            <Github className="h-3.5 w-3.5" />
+                                            Also create as GitHub issue
+                                        </label>
+                                    </div>
+                                )}
                             </form>
 
                             {/* Task List */}
                             <div className="space-y-1 min-h-[100px]">
-                                {isLoadingTasks ? (
+                                {isLoadingTasks || (parsedRepo && isLoadingGitHub) ? (
                                     <div className="flex flex-col gap-2 py-4">
                                         {[1, 2, 3].map(i => (
                                             <div key={i} className="h-10 bg-muted/30 rounded-md animate-pulse" />
                                         ))}
                                     </div>
-                                ) : tasks.length === 0 ? (
+                                ) : mergedTasks.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground italic">No tasks yet.</div>
                                 ) : (
                                     <AnimatePresence mode="popLayout">
-                                        {tasks.map((task: any, index: number) => (
+                                        {mergedTasks.map((task: any, index: number) => (
                                             <TaskItem
                                                 key={task.id}
                                                 index={index}
@@ -384,7 +529,7 @@ const ProjectDetailSheet = ({
                         </TabsContent>
 
                         <TabsContent value="github" className="p-6 m-0 space-y-6">
-                            {project.link && project.link.includes('github.com') ? (
+                            {project.link && (project.link.includes('github.com') || parseGitHubRepo(project.link)) ? (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
                                         <div className="flex items-center gap-3">
@@ -392,12 +537,12 @@ const ProjectDetailSheet = ({
                                             <div>
                                                 <h4 className="font-serif font-semibold text-sm">Linked Repository</h4>
                                                 <a
-                                                    href={project.link}
+                                                    href={project.link.startsWith('http') ? project.link : `https://${project.link}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-xs text-primary hover:underline truncate block max-w-xs sm:max-w-md"
                                                 >
-                                                    {project.link.replace('https://github.com/', '')}
+                                                    {parsedRepo ? `${parsedRepo.owner}/${parsedRepo.repo}` : project.link}
                                                 </a>
                                             </div>
                                         </div>
@@ -406,41 +551,61 @@ const ProjectDetailSheet = ({
                                         </Button>
                                     </div>
 
-                                    {/* Mock Repo Issues and Pull Requests */}
+                                    {/* Real Repo Issues and Pull Requests */}
                                     <div className="space-y-4">
                                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active GitHub Issues & PRs</h4>
-                                        <div className="space-y-2">
-                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
-                                                <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-medium truncate">fix: overflow bug in commonplace list scroll view</p>
-                                                    <span className="text-[10px] text-muted-foreground">#142 · Opened yesterday by sehaj</span>
-                                                </div>
-                                                <Badge className="text-[9px] font-normal shrink-0 bg-amber-500/10 text-amber-500 border-none hover:bg-amber-500/20">
-                                                    in-progress
-                                                </Badge>
+                                        {isLoadingGitHub ? (
+                                            <div className="space-y-2">
+                                                {[1, 2, 3].map(i => (
+                                                    <div key={i} className="h-12 bg-muted/20 animate-pulse rounded-lg" />
+                                                ))}
                                             </div>
-                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
-                                                <GitPullRequest className="h-4 w-4 mt-0.5 text-purple-500 shrink-0" />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-medium truncate">feat: schedule email reminders dynamically via profiles</p>
-                                                    <span className="text-[10px] text-muted-foreground">#140 · Drafted 2 days ago</span>
-                                                </div>
-                                                <Badge className="text-[9px] font-normal shrink-0 bg-blue-500/10 text-blue-500 border-none hover:bg-blue-500/20">
-                                                    draft
-                                                </Badge>
+                                        ) : githubData.issues.length === 0 && githubData.prs.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground italic">No open issues or pull requests found.</p>
+                                        ) : (
+                                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                                {githubData.issues.map((issue: any) => (
+                                                    <a
+                                                        key={issue.id}
+                                                        href={issue.html_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 hover:bg-muted/20 transition-colors block"
+                                                    >
+                                                        <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-medium truncate">{issue.title}</p>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                #{issue.number} · Opened by {issue.user?.login}
+                                                            </span>
+                                                        </div>
+                                                        <Badge className="text-[9px] font-normal shrink-0 bg-primary/10 text-primary border-none">
+                                                            {issue.state}
+                                                        </Badge>
+                                                    </a>
+                                                ))}
+                                                {githubData.prs.map((pr: any) => (
+                                                    <a
+                                                        key={pr.id}
+                                                        href={pr.html_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 hover:bg-muted/20 transition-colors block"
+                                                    >
+                                                        <GitPullRequest className="h-4 w-4 mt-0.5 text-purple-500 shrink-0" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-medium truncate">{pr.title}</p>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                #{pr.number} · Created by {pr.user?.login}
+                                                            </span>
+                                                        </div>
+                                                        <Badge className="text-[9px] font-normal shrink-0 bg-purple-500/10 text-purple-500 border-none">
+                                                            PR
+                                                        </Badge>
+                                                    </a>
+                                                ))}
                                             </div>
-                                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors">
-                                                <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-medium truncate">chore: migrate user layout state storage key structure</p>
-                                                    <span className="text-[10px] text-muted-foreground">#139 · Opened 3 days ago</span>
-                                                </div>
-                                                <Badge className="text-[9px] font-normal shrink-0 bg-zinc-500/10 text-zinc-500 border-none hover:bg-zinc-500/20">
-                                                    backlog
-                                                </Badge>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -490,7 +655,6 @@ interface TaskItemProps {
 }
 
 const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
-    // ... (rest of TaskItem component logic can remain or be partially updated if needed, but I'll update the motion.div below)
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState(task.content);
     const [dueDate, setDueDate] = useState<Date | undefined>(task.due_date ? new Date(task.due_date) : undefined);
@@ -514,6 +678,41 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
     };
 
     const toggleComplete = async () => {
+        if (task.isGitHub) {
+            const token = localStorage.getItem('folia_github_token');
+            if (!token) {
+                showError("Please add your GitHub Personal Access Token in Settings to close issues.");
+                return;
+            }
+            try {
+                const [owner, repo] = task.githubRepo.split('/');
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${task.githubNumber}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: 'closed' }),
+                });
+                if (!res.ok) throw new Error(res.statusText);
+                showSuccess(`Closed GitHub issue #${task.githubNumber}`);
+                
+                // If it is also a local DB task, toggle it in DB too
+                if (task.id && !task.id.startsWith('github-')) {
+                    await supabase.from('ledger_items').update({
+                        is_done: true,
+                        completed_at: new Date().toISOString()
+                    }).eq('id', task.id);
+                }
+                
+                onUpdate();
+            } catch (err: any) {
+                showError(`Failed to close GitHub issue: ${err.message}`);
+            }
+            return;
+        }
+
         const newStatus = !task.is_done;
         const { error } = await supabase.from('ledger_items').update({
             is_done: newStatus,
@@ -575,7 +774,7 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                                     <SelectItem value="Medium">Medium</SelectItem>
                                     <SelectItem value="Low">Low</SelectItem>
                                 </SelectContent>
-                            </Select>
+                              </Select>
                         </div>
                         <Textarea
                             value={notes}
@@ -597,8 +796,14 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                             {task.content}
                         </span>
 
-                        {(task.due_date || task.priority || task.notes) && (
+                        {(task.due_date || task.priority || task.notes || task.isGitHub) && (
                             <div className="flex flex-wrap gap-2 items-center mt-1">
+                                {task.isGitHub && (
+                                    <Badge variant="outline" className="h-5 px-1.5 text-[9px] font-normal border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-foreground flex items-center gap-1">
+                                        <Github className="w-2.5 h-2.5 text-foreground" />
+                                        GitHub #{task.githubNumber}
+                                    </Badge>
+                                )}
                                 {task.due_date && (
                                     <span className={cn("text-xs flex items-center gap-1", task.is_done ? "text-muted-foreground/50" : "text-muted-foreground")}>
                                         <CalendarIconLucide className="w-3 h-3" />
@@ -610,7 +815,7 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                                         {task.priority}
                                     </Badge>
                                 )}
-                                {task.notes && (
+                                {task.notes && !task.notes.includes('Linked GitHub issue') && (
                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                         <StickyNote className="w-3 h-3" />
                                         Notes
@@ -630,15 +835,29 @@ const TaskItem = ({ task, onUpdate, onDelete, index }: TaskItemProps) => {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                            <Pencil className="h-3.5 w-3.5 mr-2" />
-                            Edit Task
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={onDelete} className="text-destructive text-xs">
-                            <Trash2 className="h-3.5 w-3.5 mr-2" />
-                            Delete Task
-                        </DropdownMenuItem>
+                        {!task.isGitHub && (
+                            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" />
+                                Edit Task
+                            </DropdownMenuItem>
+                        )}
+                        {task.githubUrl && (
+                            <DropdownMenuItem asChild>
+                                <a href={task.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center w-full px-2 py-1.5 text-xs text-foreground cursor-pointer hover:bg-muted rounded-sm">
+                                    <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                                    Open in GitHub
+                                </a>
+                            </DropdownMenuItem>
+                        )}
+                        {!task.isGitHub && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={onDelete} className="text-destructive text-xs">
+                                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                    Delete Task
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
