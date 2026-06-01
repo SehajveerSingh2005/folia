@@ -41,11 +41,20 @@ const SettingsDialog = ({
     const [notifTime, setNotifTime] = useState('08:00');
     const [notifLoading, setNotifLoading] = useState(false);
 
+    // GitHub State
+    const [githubToken, setGithubToken] = useState('');
+
     useEffect(() => {
         if (isOpen) {
             fetchUserProfile();
+            setGithubToken(localStorage.getItem('folia_github_token') || '');
         }
     }, [isOpen]);
+
+    const handleSaveGithubToken = () => {
+        localStorage.setItem('folia_github_token', githubToken.trim());
+        showSuccess('GitHub token saved successfully.');
+    };
 
     const fetchUserProfile = async () => {
         setUserLoading(true);
@@ -67,7 +76,7 @@ const SettingsDialog = ({
             .single();
 
         if (profileError && profileError.code !== 'PGRST116') {
-            showError("Failed to fetch user profile data");
+            showError(`Failed to fetch user profile data: ${profileError.message} (Code: ${profileError.code})`);
         }
 
         if (profile) {
@@ -297,6 +306,26 @@ const SettingsDialog = ({
                                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Changes
                                     </Button>
+
+                                    <div className="space-y-2 border-t pt-4 mt-2">
+                                        <Label htmlFor="githubToken">GitHub Personal Access Token (PAT)</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="githubToken"
+                                                type="password"
+                                                placeholder="ghp_..."
+                                                value={githubToken}
+                                                onChange={(e) => setGithubToken(e.target.value)}
+                                                className="font-mono flex-1 text-xs"
+                                            />
+                                            <Button size="sm" variant="secondary" onClick={handleSaveGithubToken}>
+                                                Save Token
+                                            </Button>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Optional. Used to close or create issues on GitHub. Will be stored locally on your device.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="border-t pt-6">
