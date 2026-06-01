@@ -12,18 +12,18 @@ Folia is a structured workspace that brings order to your thoughts, tasks, and f
 
 ## 🌌 The Spaces
 
-*   **⚡ AI Planner** — Type a goal, and AI generates structured project tasks & timelines automatically.
-*   **🎛️ Dashboard** — A custom, widget-based command center (Clock, GitHub Heatmap, PRs, Tasks, and more).
-*   **🌊 Flow** — Your active projects workspace. Add tasks, take notes, and track progress.
-*   **🌱 Garden** — Cultivate raw ideas, seeds, and notes. Link them and promote them to projects when ready.
-*   **📖 Journal** — Private daily logs with mood tracking, auto-imported completed tasks, and weekly reviews.
-*   **🔭 Horizon** — Set your sights on long-term goals, skill trees, readlists, and bucket lists.
-*   **🧵 Loom** — A unified, filterable task manager consolidating all project and personal tasks.
-*   **📦 Shipped (Archive)** — A clean shelf for your completed projects and milestones.
+*   **AI Planner** — Type a goal, and AI generates structured project tasks & timelines automatically.
+*   **Dashboard** — A custom, widget-based command center (Clock, GitHub Heatmap, PRs, Tasks, and more).
+*   **Flow** — Your active projects workspace. Add tasks, take notes, and track progress.
+*   **Garden** — Cultivate raw ideas, seeds, and notes. Link them and promote them to projects when ready.
+*   **Journal** — Private daily logs with mood tracking, auto-imported completed tasks, and weekly reviews.
+*   **Horizon** — Set your sights on long-term goals, skill trees, readlists, and bucket lists.
+*   **Loom** — A unified, filterable task manager consolidating all project and personal tasks.
+*   **Shipped (Archive)** — A clean shelf for your completed projects and milestones.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework:** Next.js (App Router) + TypeScript
 - **Database & Auth:** Supabase (Postgres RLS)
@@ -33,7 +33,7 @@ Folia is a structured workspace that brings order to your thoughts, tasks, and f
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Clone & Install**
    ```bash
@@ -57,6 +57,6 @@ Folia is a structured workspace that brings order to your thoughts, tasks, and f
 
 ---
 
-## 📄 License
+## License
 
 Licensed under the [GNU AGPLv3](LICENSE).
