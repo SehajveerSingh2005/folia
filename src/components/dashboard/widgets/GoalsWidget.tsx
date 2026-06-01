@@ -35,9 +35,9 @@ const GoalsWidget = () => {
   return (
     <Card className="w-full h-full flex flex-col border-none shadow-none">
       <CardHeader>
-        <CardTitle className="font-sans font-medium">Horizon Items</CardTitle>
-        <CardDescription>
-          Your future goals and ideas.
+        <CardTitle className="font-sans font-medium text-base sm:text-lg">Goals</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
+          Your future milestones and targets.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
@@ -67,7 +67,7 @@ const GoalsWidget = () => {
               </div>
             ))
           )}
-          {items.length === 0 && <p className="text-sm text-muted-foreground">No items in your horizon yet.</p>}
+          {items.length === 0 && <p className="text-sm text-muted-foreground">No goals set yet.</p>}
         </div>
       </CardContent>
     </Card>

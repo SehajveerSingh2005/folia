@@ -39,7 +39,7 @@ const NotesWidget = () => {
     if (error) {
       showError(error.message);
     } else {
-      showSuccess('Note added to Garden.');
+      showSuccess('Note added to Notes.');
       setContent('');
       setCategory('');
     }
@@ -51,7 +51,7 @@ const NotesWidget = () => {
       <CardHeader>
         <CardTitle className="font-sans font-medium text-base sm:text-lg">Quick Note</CardTitle>
         <CardDescription className="text-xs sm:text-sm">
-          Plant a new seed in your Garden.
+          Capture a quick thought for your commonplace book.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-2">
