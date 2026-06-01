@@ -142,15 +142,15 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
   }
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in-0 zoom-in-95 duration-300">
-      <form onSubmit={handleSubmit} className="flex flex-col h-full space-y-4">
+    <div className="animate-in fade-in-0 zoom-in-95 duration-300">
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-        <div className="relative flex-grow pt-2">
+        <div className="relative pt-2">
           <Textarea
             placeholder="What would you like to achieve? (e.g., 'Learn Spanish in 6 months')"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            className="h-full resize-none text-xl p-8 bg-secondary/20 border-transparent focus:border-primary/20 focus:ring-0 transition-all font-serif placeholder:text-muted-foreground/50 rounded-xl leading-relaxed selection:bg-primary/10"
+            className="min-h-[140px] resize-none text-lg p-6 bg-secondary/20 border-transparent focus:border-primary/20 focus:ring-0 transition-all font-serif placeholder:text-muted-foreground/50 rounded-xl leading-relaxed selection:bg-primary/10"
             disabled={isLoading}
           />
         </div>
@@ -174,7 +174,7 @@ const MakePlanForm = ({ onPlanCreated }: MakePlanFormProps) => {
 
         <Button
           type="submit"
-          className="w-full h-12 text-base font-medium"
+          className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary mt-2"
           disabled={isLoading}
         >
           <Sparkles className="mr-2 h-4 w-4" />

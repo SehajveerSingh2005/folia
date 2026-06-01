@@ -85,6 +85,8 @@ const ProjectDetailSheet = ({
     const [isEditing, setIsEditing] = useState(false);
     const [githubRepoInput, setGithubRepoInput] = useState('');
     const [isLinkingRepo, setIsLinkingRepo] = useState(false);
+    const [githubStatusFilter, setGithubStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
+    const [githubTypeFilter, setGithubTypeFilter] = useState<'issue' | 'pr' | 'all'>('issue');
 
     const form = useForm<z.infer<typeof projectSchema>>({
         resolver: zodResolver(projectSchema),
@@ -352,6 +354,20 @@ const ProjectDetailSheet = ({
         ...openGitHubTasks
     ];
 
+    const filteredIssues = (githubData.issues || []).filter((issue: any) => {
+        if (githubStatusFilter !== 'all' && issue.state !== githubStatusFilter) return false;
+        return true;
+    });
+
+    const filteredPRs = (githubData.prs || []).filter((pr: any) => {
+        if (githubStatusFilter !== 'all' && pr.state !== githubStatusFilter) return false;
+        return true;
+    });
+
+    const hasMatches = (githubTypeFilter === 'issue' && filteredIssues.length > 0) ||
+                       (githubTypeFilter === 'pr' && filteredPRs.length > 0) ||
+                       (githubTypeFilter === 'all' && (filteredIssues.length > 0 || filteredPRs.length > 0));
+
     if (!project) return null;
 
     return (
@@ -553,18 +569,72 @@ const ProjectDetailSheet = ({
 
                                     {/* Real Repo Issues and Pull Requests */}
                                     <div className="space-y-4">
-                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active GitHub Issues & PRs</h4>
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
+                                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active GitHub Issues & PRs</h4>
+                                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                                {/* Type filter */}
+                                                <div className="flex items-center gap-0.5 bg-muted/40 p-0.5 rounded-lg border">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubTypeFilter('issue')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubTypeFilter === 'issue' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        Issues
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubTypeFilter('pr')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubTypeFilter === 'pr' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        PRs
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubTypeFilter('all')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubTypeFilter === 'all' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        All
+                                                    </button>
+                                                </div>
+
+                                                {/* Status filter */}
+                                                <div className="flex items-center gap-0.5 bg-muted/40 p-0.5 rounded-lg border">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubStatusFilter('open')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubStatusFilter === 'open' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        Open
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubStatusFilter('closed')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubStatusFilter === 'closed' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        Closed
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setGithubStatusFilter('all')}
+                                                        className={cn("px-2 py-0.5 rounded-md transition-all text-[11px]", githubStatusFilter === 'all' ? "bg-background shadow-xs text-foreground font-medium" : "text-muted-foreground")}
+                                                    >
+                                                        All
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {isLoadingGitHub ? (
                                             <div className="space-y-2">
                                                 {[1, 2, 3].map(i => (
                                                     <div key={i} className="h-12 bg-muted/20 animate-pulse rounded-lg" />
                                                 ))}
                                             </div>
-                                        ) : githubData.issues.length === 0 && githubData.prs.length === 0 ? (
-                                            <p className="text-xs text-muted-foreground italic">No open issues or pull requests found.</p>
+                                        ) : !hasMatches ? (
+                                            <p className="text-xs text-muted-foreground italic py-2">No matching issues or pull requests found.</p>
                                         ) : (
                                             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                                                {githubData.issues.map((issue: any) => (
+                                                {(githubTypeFilter === 'issue' || githubTypeFilter === 'all') && filteredIssues.map((issue: any) => (
                                                     <a
                                                         key={issue.id}
                                                         href={issue.html_url}
@@ -572,19 +642,21 @@ const ProjectDetailSheet = ({
                                                         rel="noopener noreferrer"
                                                         className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 hover:bg-muted/20 transition-colors block"
                                                     >
-                                                        <CircleDot className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+                                                        <CircleDot className={cn("h-4 w-4 mt-0.5 shrink-0", issue.state === 'open' ? "text-emerald-500" : "text-zinc-400")} />
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-xs font-medium truncate">{issue.title}</p>
+                                                            <p className={cn("text-xs font-medium truncate", issue.state === 'closed' && "line-through text-muted-foreground")}>
+                                                                {issue.title}
+                                                            </p>
                                                             <span className="text-[10px] text-muted-foreground">
-                                                                #{issue.number} · Opened by {issue.user?.login}
+                                                                #{issue.number} · {issue.state === 'open' ? 'Opened' : 'Closed'} by {issue.user?.login}
                                                             </span>
                                                         </div>
-                                                        <Badge className="text-[9px] font-normal shrink-0 bg-primary/10 text-primary border-none">
+                                                        <Badge variant="outline" className={cn("text-[9px] font-normal shrink-0 border-none", issue.state === 'open' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-500/10 text-zinc-500")}>
                                                             {issue.state}
                                                         </Badge>
                                                     </a>
                                                 ))}
-                                                {githubData.prs.map((pr: any) => (
+                                                {(githubTypeFilter === 'pr' || githubTypeFilter === 'all') && filteredPRs.map((pr: any) => (
                                                     <a
                                                         key={pr.id}
                                                         href={pr.html_url}
@@ -592,15 +664,17 @@ const ProjectDetailSheet = ({
                                                         rel="noopener noreferrer"
                                                         className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 hover:bg-muted/20 transition-colors block"
                                                     >
-                                                        <GitPullRequest className="h-4 w-4 mt-0.5 text-purple-500 shrink-0" />
+                                                        <GitPullRequest className={cn("h-4 w-4 mt-0.5 shrink-0", pr.state === 'open' ? "text-purple-500" : "text-zinc-400")} />
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-xs font-medium truncate">{pr.title}</p>
+                                                            <p className={cn("text-xs font-medium truncate", pr.state === 'closed' && "line-through text-muted-foreground")}>
+                                                                {pr.title}
+                                                            </p>
                                                             <span className="text-[10px] text-muted-foreground">
-                                                                #{pr.number} · Created by {pr.user?.login}
+                                                                #{pr.number} · {pr.state === 'open' ? 'Created' : 'Closed'} by {pr.user?.login}
                                                             </span>
                                                         </div>
-                                                        <Badge className="text-[9px] font-normal shrink-0 bg-purple-500/10 text-purple-500 border-none">
-                                                            PR
+                                                        <Badge variant="outline" className={cn("text-[9px] font-normal shrink-0 border-none", pr.state === 'open' ? "bg-purple-500/10 text-purple-500" : "bg-zinc-500/10 text-zinc-500")}>
+                                                            {pr.state === 'open' ? 'PR' : 'Closed PR'}
                                                         </Badge>
                                                     </a>
                                                 ))}

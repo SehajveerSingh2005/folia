@@ -168,7 +168,7 @@ const CreateDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl flex flex-col p-0 gap-0 overflow-hidden h-[600px]" style={{ background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary)/0.06), transparent 50%), hsl(var(--background))' }}>
+      <DialogContent className="max-w-xl flex flex-col p-0 gap-0 overflow-hidden rounded-[28px] sm:rounded-[28px] max-h-[90vh] h-auto" style={{ background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary)/0.06), transparent 50%), hsl(var(--background))' }}>
         <DialogHeader className="p-6 pb-4 border-b border-border/40">
           <DialogTitle className="text-2xl font-serif font-normal tracking-tight">Create New</DialogTitle>
           <DialogDescription className="hidden">Create tasks, projects, or use AI planning.</DialogDescription>
@@ -201,9 +201,9 @@ const CreateDialog = ({
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 bg-background/30 backdrop-blur-sm">
-            <TabsContent value="task" className="mt-0 h-full">
-              <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-5 flex flex-col h-full">
+          <div className="overflow-y-auto max-h-[70vh] p-6 bg-background/30 backdrop-blur-sm">
+            <TabsContent value="task" className="mt-0">
+              <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-5">
                 <div className="space-y-4">
                   <Input
                     {...taskForm.register('content')}
@@ -259,15 +259,14 @@ const CreateDialog = ({
                   />
                 </div>
 
-                <div className="flex-grow" />
-                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary" disabled={taskForm.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary mt-2" disabled={taskForm.formState.isSubmitting}>
                   {taskForm.formState.isSubmitting ? 'Creating...' : 'Create Task'}
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="flow" className="mt-0 h-full">
-              <form onSubmit={flowForm.handleSubmit(onFlowSubmit)} className="space-y-5 flex flex-col h-full">
+            <TabsContent value="flow" className="mt-0">
+              <form onSubmit={flowForm.handleSubmit(onFlowSubmit)} className="space-y-5">
                 <Input
                   {...flowForm.register('name')}
                   placeholder="Project Name"
@@ -364,14 +363,13 @@ const CreateDialog = ({
                   className="resize-none bg-muted/10 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl text-xs"
                 />
 
-                <div className="flex-grow" />
-                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary" disabled={flowForm.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full font-medium rounded-full shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 h-11 text-sm bg-primary mt-2" disabled={flowForm.formState.isSubmitting}>
                   {flowForm.formState.isSubmitting ? 'Creating...' : 'Create Project'}
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="plan" className="mt-0 h-full flex flex-col">
+            <TabsContent value="plan" className="mt-0">
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
                   <Wand2 className="h-4 w-4 text-primary" />
@@ -379,7 +377,7 @@ const CreateDialog = ({
                 </h3>
                 <p className="text-xs text-muted-foreground">Describe your goal, and we'll generate a project with actionable steps.</p>
               </div>
-              <div className="flex-grow border rounded-2xl bg-muted/10 p-4 border-border/40">
+              <div className="border rounded-2xl bg-muted/10 p-4 border-border/40">
                 <MakePlanForm onPlanCreated={handlePlanCreated} />
               </div>
             </TabsContent>
